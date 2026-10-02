@@ -2,11 +2,13 @@ package oap.notification.mqtt;
 
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.exceptions.MqttSessionExpiredException;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscription;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.annotation.Start;
 import oap.application.annotation.Stop;
@@ -26,18 +28,25 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class HivemqNotificationTransport implements NotificationTransport, AutoCloseable {
+    @Getter
     private final String identifier;
     private final String host;
     private final int port;
     public long connectTimeout = Dates.s( 10 );
     public long publishTimeout = Dates.s( 1 );
     /** Seconds (not millis, unlike the timeouts above — the MQTT5 CONNECT property is wire-encoded in seconds).
-     *  Keeps the broker-side session alive across a brief disconnect/automatic-reconnect window, so a transient
-     *  broker-initiated DISCONNECT doesn't surface as {@code MqttSessionExpiredException} on the next publish —
-     *  MQTT5 defaults this to 0 (session dies the instant the connection drops). */
-    public long sessionExpiryInterval = 60;
+     *  MQTT5 defaults this to 0 (session dies the instant the connection drops). Only raise this if the broker
+     *  is known to preserve sessions across reconnects — if it doesn't (e.g. a restart, or a non-sticky
+     *  load-balanced/clustered broker with no shared session state), a nonzero value makes every automatic
+     *  reconnect throw {@code MqttSessionExpiredException} (broker's CONNACK won't have the session-present flag
+     *  the client now expects), which is worse than the plain-0 behavior this guards against. The actual
+     *  safety net for a publish landing in a disconnect/reconnect gap is the retry in {@link #publish}, which
+     *  works regardless of this value. */
+    public long sessionExpiryInterval = 0;
     private Mqtt5AsyncClient client;
 
     /**
@@ -48,10 +57,6 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
         this.identifier = identifier.replace( "%rnd%", RandomStringUtils.insecure().nextAlphabetic( 5 ) );
         this.host = host;
         this.port = port;
-    }
-
-    public String getIdentifier() {
-        return identifier;
     }
 
     @Start
@@ -95,6 +100,10 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
 
     @Override
     public void publish( String topic, Qos qos, boolean retain, Notification notification ) throws NotificationException {
+        publish( topic, qos, retain, notification, true );
+    }
+
+    private void publish( String topic, Qos qos, boolean retain, Notification notification, boolean retryOnSessionExpired ) throws NotificationException {
         try {
             log.trace( "[{}] publish topic {} qos {} retain {} notification {}", identifier, topic, qos, retain, Binder.json.marshal( notification ) );
 
@@ -110,7 +119,32 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
 
             log.trace( "[{}] publish topic {} qos {} result {}", identifier, topic, qos, result );
         } catch( CompletionException e ) {
+            if( retryOnSessionExpired && e.getCause() instanceof MqttSessionExpiredException ) {
+                log.warn( "[{}] MQTT session expired mid-publish ({}), waiting for automatic reconnect and retrying once in background",
+                    identifier, e.getCause().getMessage() );
+                Thread.ofVirtual().name( s( "notification-retry-${identifier}" ) ).start( () -> {
+                    try {
+                        awaitReconnect();
+                        publish( topic, qos, retain, notification, false );
+                    } catch( NotificationException retryException ) {
+                        log.error( "[{}] retry after session-expired publish failed: {}", identifier, retryException.getMessage(), retryException );
+                    }
+                } );
+                return;
+            }
             throw new NotificationException( e.getCause() );
+        }
+    }
+
+    private void awaitReconnect() {
+        long deadline = System.currentTimeMillis() + connectTimeout;
+        while( !client.getState().isConnected() && System.currentTimeMillis() < deadline ) {
+            try {
+                Thread.sleep( 100 );
+            } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
