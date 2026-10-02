@@ -62,6 +62,9 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         if( basedirStr.endsWith( "/" ) ) {
             basedirStr = basedirStr.substring( 0, basedirStr.length() - 1 );
         }
+        if( basedirStr.startsWith( "/" ) ) {
+            basedirStr = basedirStr.substring( 1 );
+        }
         return s( "file://${basedirStr}/${path.path}" );
     }
 
