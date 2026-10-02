@@ -54,8 +54,11 @@ public class FileSystemFileTest extends Fixtures {
     @Test
     public void testToUri() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            String basedirStr = FilenameUtils.separatorsToUnix( basedir.toString() );
+            if( basedirStr.startsWith( "/" ) ) basedirStr = basedirStr.substring( 1 );
+
             assertThat( fileSystem.toUri( new CloudURI( "file", "logs/file.txt" ) ) )
-                .isEqualTo( "file://" + FilenameUtils.separatorsToUnix( basedir.toString() ) + "/logs/file.txt" );
+                .isEqualTo( "file://" + basedirStr + "/logs/file.txt" );
         }
     }
 

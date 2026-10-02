@@ -197,9 +197,10 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     }
 
     @Override
-    public void deleteBlob( CloudURI path ) {
+    public boolean deleteBlob( CloudURI path ) {
         try {
             smbFile( path ).delete();
+            return true;
         } catch( IOException e ) {
             throw new CloudException( e );
         }

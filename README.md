@@ -4,7 +4,7 @@ A light-weight application framework to build high performant and distributed ja
 
 ## Modules
 
-| Module | Description                                                                                                 |
+| Module | Description                \                                                                                 |
 |---|-------------------------------------------------------------------------------------------------------------|
 | [oap-application](#oap-application) | IoC/DI Kernel — discovers services from HOCON descriptors, wires dependencies, manages start/stop lifecycle |
 | [oap-stdlib](#oap-stdlib) | Core utilities — `Binder` (JSON/HOCON/YAML/XML), `Files`, `IoStreams`, `Cuid`, `Dates`, `Stream`, `Result`  |

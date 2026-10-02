@@ -62,6 +62,9 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         if( basedirStr.endsWith( "/" ) ) {
             basedirStr = basedirStr.substring( 0, basedirStr.length() - 1 );
         }
+        if( basedirStr.startsWith( "/" ) ) {
+            basedirStr = basedirStr.substring( 1 );
+        }
         return s( "file://${basedirStr}/${path.path}" );
     }
 
@@ -71,7 +74,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     @Override
-    public void deleteBlob( CloudURI path ) {
+    public boolean deleteBlob( CloudURI path ) {
         try {
             Path fsPath = getPath( path );
             Files.delete( fsPath );
@@ -84,6 +87,8 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                     parent = parent.getParent();
                 }
             }
+
+            return true;
         } catch( IOException e ) {
             throw new CloudException( e );
         }

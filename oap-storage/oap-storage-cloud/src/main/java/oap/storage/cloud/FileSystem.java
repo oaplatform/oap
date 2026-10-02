@@ -33,6 +33,13 @@ import java.util.concurrent.ExecutionException;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
+/**
+ * Facade over pluggable cloud/local storage backends ({@link FileSystemCloudApi} implementations — S3, SMB,
+ * FTP/FTPS, local file), addressed uniformly via {@link CloudURI} ({@code fs://<configurationId>/<path>}).
+ * Backend selection and credentials come from {@code fileSystemConfiguration}; the actual {@link FileSystemCloudApi}
+ * per configurationId is created lazily on first use and cached (see {@link #close()}). Reads can be transparently
+ * served from/refreshed into a configured cache backend (see {@link #resolveForRead}).
+ */
 @Slf4j
 public class FileSystem implements AutoCloseable {
     private static final HashMap<String, Class<? extends FileSystemCloudApi>> providers = new HashMap<>();
@@ -65,6 +72,10 @@ public class FileSystem implements AutoCloseable {
         .removalListener( rl -> Closeables.close( ( FileSystemCloudApi ) rl.getValue() ) )
         .build();
 
+    /**
+     * Backend API instances ({@link FileSystemCloudApi}) are created lazily per `scheme://configurationId` and
+     * cached/closed via {@link #apis}; nothing is connected until first use.
+     */
     public FileSystem( FileSystemConfiguration fileSystemConfiguration ) {
         this.fileSystemConfiguration = fileSystemConfiguration;
     }
@@ -186,9 +197,9 @@ public class FileSystem implements AutoCloseable {
 
         boolean stale = cacheMetadata == null
             || ( sourceMetadata != null
-                 && sourceMetadata.getLastModified() != null
-                 && cacheMetadata.getLastModified() != null
-                 && sourceMetadata.getLastModified().isAfter( cacheMetadata.getLastModified() ) );
+            && sourceMetadata.getLastModified() != null
+            && cacheMetadata.getLastModified() != null
+            && sourceMetadata.getLastModified().isAfter( cacheMetadata.getLastModified() ) );
 
         if( !stale ) {
             log.trace( "cache hit {} -> {} (source not modified since cache)", source, cacheURI );
@@ -220,6 +231,10 @@ public class FileSystem implements AutoCloseable {
         return new CloudURI( cacheConfigurationId, source.configurationId + "/" + source.path );
     }
 
+    /**
+     * Opens `path` for reading — cache-aware, via {@link #resolveForRead}, so a configured cache is read from
+     * (and refreshed first if stale/missing) instead of `path` itself.
+     */
     public InputStream getInputStream( CloudURI path ) throws CloudException {
         log.debug( "getInputStream {}", path );
 
@@ -227,14 +242,23 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( effective ).getInputStream( effective );
     }
 
+    /**
+     * Opens `cloudURI` for writing, tagged with `tags` (backend-specific; may be ignored). Not cache-aware.
+     */
     public OutputStream getOutputStream( CloudURI cloudURI, Map<String, String> tags ) throws CloudException {
         return getCloudApi( cloudURI ).getOutputStream( cloudURI, tags );
     }
 
+    /**
+     * @see #downloadFile(CloudURI, Path)
+     */
     public void downloadFile( String source, Path destination ) throws CloudException {
         downloadFile( new CloudURI( source ), destination );
     }
 
+    /**
+     * Downloads `source` to the local `destination` — cache-aware, see {@link #getInputStream}.
+     */
     public void downloadFile( CloudURI source, Path destination ) throws CloudException {
         log.debug( "downloadFile {} to {}", source, destination );
 
@@ -242,12 +266,20 @@ public class FileSystem implements AutoCloseable {
         getCloudApi( effective ).downloadFile( effective, destination );
     }
 
+    /**
+     * Uploads `blobData` to `destination`.
+     */
     public void upload( CloudURI destination, BlobData blobData ) throws CloudException {
         log.debug( "upload byte[] to {} (blobData {})", destination, blobData );
 
         getCloudApi( destination ).upload( destination, blobData );
     }
 
+    /**
+     * Copies `source` to `destination` — cache-aware on the read side (see {@link #getInputStream}); when the
+     * effective source is a local file, its path is handed straight to the destination backend's upload instead
+     * of streaming through an {@link InputStream}.
+     */
     public void copy( CloudURI source, CloudURI destination, Map<String, String> tags ) throws CloudException {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
@@ -270,22 +302,34 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
+    /**
+     * Uploads the local `source` to `destination`.
+     */
     public void copy( Path source, CloudURI destination, Map<String, String> tags ) throws CloudException {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
         getCloudApi( destination ).upload( destination, BlobData.builder().content( source ).tags( tags ).build() );
     }
 
+    /**
+     * Uploads the local `source` to `destination`.
+     */
     public void copy( File source, CloudURI destination, Map<String, String> tags ) throws CloudException {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
         getCloudApi( destination ).upload( destination, BlobData.builder().content( source ).tags( tags ).build() );
     }
 
+    /**
+     * Lists blobs under `path` (a container/prefix) per `listOptions`.
+     */
     public PageSet<? extends StorageItem> list( CloudURI path, ListOptions listOptions ) throws CloudException {
         return getCloudApi( path ).list( path, listOptions );
     }
 
+    /**
+     * @return metadata for `path`, or {@code null} if it doesn't exist. Not cache-aware — always queries `path` itself.
+     */
     @Nullable
     public StorageItem getMetadata( CloudURI path ) throws CloudException {
         log.debug( "getMetadata {}", path );
@@ -293,52 +337,88 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( path ).getMetadata( path );
     }
 
-    public void deleteBlob( CloudURI path ) throws CloudException {
-        log.debug( "deleteBlob {}", path );
+    /**
+     * Deletes `path`, then also deletes its cached copy (if one exists and a cache is configured for
+     * `path`'s configurationId — see {@link #resolveForRead}).
+     *
+     * @return {@code true} if deleting `path` itself succeeded (the cache-side result doesn't gate this)
+     */
+    public boolean deleteBlob( CloudURI path ) throws CloudException {
+        FileSystemCloudApi cloudApi = getCloudApi( path );
 
-        getCloudApi( path ).deleteBlob( path );
+        log.debug( "deleteBlob {} / real path {}", path, cloudApi.toUri( path ) );
 
-        String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( path.configurationId );
-        if( cacheConfigurationId != null ) {
-            CloudURI cacheURI = cacheURIFor( path, cacheConfigurationId );
-            FileSystemCloudApi cacheApi = getCloudApi( cacheURI );
-            if( cacheApi.blobExists( cacheURI ) ) {
-                log.trace( "deleteBlob cache {}", cacheURI );
-                cacheApi.deleteBlob( cacheURI );
+        try {
+            String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( path.configurationId );
+            if( cacheConfigurationId != null ) {
+                CloudURI cacheURI = cacheURIFor( path, cacheConfigurationId );
+                FileSystemCloudApi cacheApi = getCloudApi( cacheURI );
+                if( cacheApi.blobExists( cacheURI ) ) {
+                    boolean cacheSuccess = cacheApi.deleteBlob( cacheURI );
+                    log.trace( "deleteBlob cache {} success {}", cacheURI, cacheSuccess );
+                }
             }
+        } catch( CloudException e ) {
+            log.trace( "deleteBlob cache {} failed", path );
+        }
+
+        try {
+            return cloudApi.deleteBlob( path );
+        } catch( CloudException e ) {
+            log.trace( "deleteBlob {} failed", path );
+
+            return false;
         }
     }
 
+    /**
+     * @return {@code true} if `path`'s container was deleted; {@code false} if it was non-empty (not deleted).
+     */
     public boolean deleteContainerIfEmpty( CloudURI path ) {
         log.debug( "deleteContainerIfEmpty {}", path );
 
         return getCloudApi( path ).deleteContainerIfEmpty( path );
     }
 
+    /**
+     * Deletes `path`'s container unconditionally (backend-specific whether it must be empty first).
+     */
     public void deleteContainer( CloudURI path ) throws CloudException {
         log.debug( "deleteContainer {}", path );
 
         getCloudApi( path ).deleteContainer( path );
     }
 
+    /**
+     * @return {@code true} if a blob exists at `path`.
+     */
     public boolean blobExists( CloudURI path ) throws CloudException {
         log.debug( "blobExists {}", path );
 
         return getCloudApi( path ).blobExists( path );
     }
 
+    /**
+     * @return {@code true} if `path`'s container exists.
+     */
     public boolean containerExists( CloudURI path ) {
         log.debug( "containerExists {}", path );
 
         return getCloudApi( path ).containerExists( path );
     }
 
+    /**
+     * @return {@code true} if `path`'s container was created; {@code false} if it already existed.
+     */
     public boolean createContainer( CloudURI path ) throws CloudException {
         log.debug( "createContainer {}", path );
 
         return getCloudApi( path ).createContainer( path );
     }
 
+    /**
+     * Builds a {@code CloudURI} for `configurationId`/`path`, normalizing Windows-style separators to {@code /}.
+     */
     public CloudURI getDefaultURL( String configurationId, String path ) {
         log.debug( "getDefaultURL configurationId {} path {}", configurationId, path );
 
@@ -355,6 +435,10 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( cloudURI ).toUri( cloudURI );
     }
 
+    /**
+     * Converts an absolute local `path` to a {@code CloudURI} under the {@code file}-scheme `configurationId`,
+     * relativizing it against that configuration's {@code filesystem.basedir} (or {@code /} if unset).
+     */
     public CloudURI toLocalFileURI( String configurationId, Path path ) {
         log.debug( "toLocalFileURI {} {}", configurationId, path );
 
@@ -364,14 +448,24 @@ public class FileSystem implements AutoCloseable {
             : Paths.get( "/" ).relativize( path ).toString() );
     }
 
+    /**
+     * @see #toLocalFileURI(String, Path)
+     */
     public CloudURI toLocalFileURI( String configurationId, String path ) {
         return toLocalFileURI( configurationId, Paths.get( path ) );
     }
 
+    /**
+     * @return {@code true} if `cloudURI`'s configurationId resolves to the {@code file} scheme.
+     */
     public boolean isLocalFile( CloudURI cloudURI ) {
         return "file".equals( resolveScheme( cloudURI.configurationId ) );
     }
 
+    /**
+     * @return the local {@link File} backing `cloudURI`.
+     * @throws IllegalArgumentException if `cloudURI`'s configurationId isn't the {@code file} scheme
+     */
     public File toFile( CloudURI cloudURI ) {
         Preconditions.checkArgument( "file".equals( resolveScheme( cloudURI.configurationId ) ) );
 
@@ -380,6 +474,10 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
+    /**
+     * @return the local {@link Path} for `path` under the {@code file}-scheme `configurationId`.
+     * @throws IllegalArgumentException if `configurationId` isn't the {@code file} scheme
+     */
     public Path toLocalFilePath( String configurationId, String path ) {
         Preconditions.checkArgument( "file".equals( resolveScheme( configurationId ) ) );
 
@@ -388,11 +486,17 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
+    /**
+     * Closes and evicts every cached {@link FileSystemCloudApi} backend instance.
+     */
     @Override
     public void close() {
         apis.invalidateAll();
     }
 
+    /**
+     * A blob's metadata/listing entry, as returned by {@link #getMetadata} and {@link #list}.
+     */
     public interface StorageItem {
         String getName();
 
