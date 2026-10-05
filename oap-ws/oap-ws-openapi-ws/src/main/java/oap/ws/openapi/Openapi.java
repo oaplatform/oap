@@ -28,6 +28,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import lombok.extern.slf4j.Slf4j;
 import oap.ws.WebServices;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -61,9 +62,15 @@ public class Openapi {
         openapiGenerator.beforeProcesingServices();
         for( Map.Entry<String, Object> ws : webServices.services.entrySet() ) {
             if( !webServices.servicePorts.getOrDefault( ws.getKey(), Optional.empty() ).equals( port ) ) continue;
-            openapiGenerator.processWebservice( ws.getValue().getClass(), ws.getKey() );
+            openapiGenerator.processWebservice( ws.getValue().getClass(), ws.getKey(), interceptorClasses( ws.getKey() ) );
         }
         openapiGenerator.afterProcesingServices();
         return openapiGenerator.build();
+    }
+
+    private List<Class<?>> interceptorClasses( String context ) {
+        return webServices.interceptors.getOrDefault( context, List.of() ).stream()
+            .<Class<?>>map( Object::getClass )
+            .toList();
     }
 }

@@ -1371,7 +1371,7 @@ HTTP web service framework for the OAP platform. Provides annotation-driven endp
 | [oap-ws-api-ws](oap-ws/oap-ws-api-ws/README.md)                           | HTTP endpoint that exposes the service registry as JSON (`GET /system/api`) | `oap-ws` |
 | [oap-ws-file-ws](oap-ws/oap-ws-file-ws/README.md)                         | File upload and download over HTTP with multi-bucket storage | `oap-ws` |
 | [oap-ws-openapi-annotations](oap-ws/oap-ws-openapi-annotations)           | `@OpenApiIgnore` annotation (classes, methods, fields, getters) excluded from OpenAPI output | — |
-| [oap-ws-openapi](oap-ws/oap-ws-openapi/README.md)                         | Core OpenAPI 3.x generation library (`OpenapiGenerator`, `WebServicesWalker`) | `oap-ws`, `oap-ws-openapi-annotations` |
+| [oap-ws-openapi](oap-ws/oap-ws-openapi/README.md)                         | Core OpenAPI 3.x generation library (`OpenapiGenerator`, `WebServicesWalker`), with error responses and interceptor codes read from bytecode | `oap-ws`, `oap-ws-openapi-annotations` |
 | [oap-ws-openapi-ws](oap-ws/oap-ws-openapi-ws/README.md)                   | HTTP endpoint that serves the generated OpenAPI spec (`GET /system/openapi`) | `oap-ws`, `oap-ws-api-ws` |
 | [oap-ws-openapi-maven-plugin](oap-ws/oap-ws-openapi-maven-plugin/README.md) | Maven plugin to generate `swagger.json` / YAML at build time | — |
 | [oap-ws-sso-api](oap-ws/oap-ws-sso-api/README.md)                         | SSO contracts + interceptors: `@WsSecurity`, JWT, API key, throttle-login | — |

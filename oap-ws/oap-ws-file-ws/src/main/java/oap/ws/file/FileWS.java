@@ -59,7 +59,7 @@ public class FileWS {
             .orElseGet( () -> bucketManager.get( path ) )
             .orElse( null );
         if( bytes == null ) {
-            return Response.notFound();
+            return Response.build404().build();
         } else {
             var contentType = mimetypeOf( FilenameUtils.getExtension( path ) ).orElse( Http.ContentType.APPLICATION_OCTET_STREAM );
 

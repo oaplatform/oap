@@ -1,6 +1,6 @@
 # oap-ws-openapi-ws
 
-Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived entirely from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenApiIgnore` annotations via reflection.
+Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenApiIgnore` annotations, the `ValidationErrors` and `Response` error codes in the code, and the interceptors of each service, all via reflection and bytecode.
 
 Depends on: `oap-ws`, `oap-ws-api-ws`
 
@@ -87,6 +87,10 @@ public String healthProbe() { return "ok"; }
 ```
 
 **Optional parameters** are automatically marked as not required in the spec; all other parameters are treated as required.
+
+## Error responses
+
+Each operation lists the error responses it can return, such as `400` from a `ValidationErrors` validator, `401` from `Response.build401()`, or `403` from an interceptor. The rules and sources are described in [`oap-ws-openapi`](../oap-ws-openapi/README.md#error-responses). Interceptor codes apply to every operation of the service that lists the interceptor in `ws-service.interceptors`.
 
 ## Comparison with oap-ws-api-ws
 

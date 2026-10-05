@@ -155,6 +155,10 @@ public class Info {
         public boolean shouldBeIgnored() {
             return method.isAnnotatedWith( OpenApiIgnore.class );
         }
+
+        public java.lang.reflect.Method reflectMethod() {
+            return method.underlying;
+        }
     }
 
     public static class WebMethodParameterInfo {

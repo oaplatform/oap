@@ -1,0 +1,86 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package oap.ws.openapi;
+
+import oap.ws.Response;
+import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.WsValidate;
+import org.testng.annotations.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class ErrorCodeScannerTest {
+    private final ErrorCodeScanner scanner = new ErrorCodeScanner();
+
+    private static java.lang.reflect.Method method( String name ) throws NoSuchMethodException {
+        return Fixture.class.getMethod( name, String.class );
+    }
+
+    @Test
+    public void collectsCodesFromMethodValidatorsAndResponses() throws NoSuchMethodException {
+        assertThat( scanner.errorCodes( method( "web" ) ) ).containsExactly( 400, 401, 403, 404 );
+    }
+
+    @Test
+    public void skipsSuccessCodesAndNonConstantCodes() throws NoSuchMethodException {
+        assertThat( scanner.errorCodes( method( "builders" ) ) ).containsExactly( 403, 404 );
+        assertThat( scanner.errorCodes( method( "okOnly" ) ) ).isEmpty();
+        assertThat( scanner.errorCodes( method( "nonConstant" ) ) ).isEmpty();
+    }
+
+    public static class Fixture {
+        @WsValidate( "validateCode" )
+        public Response web( @WsValidate( "validateParam" ) String param ) {
+            return switch( param ) {
+                case "forbidden" -> Response.build403().message( "denied" ).build();
+                case "missing" -> Response.build404().build();
+                case "anonymous" -> Response.build401().message( "no token" ).build();
+                case null, default -> Response.ok();
+            };
+        }
+
+        public Response okOnly( String param ) {
+            return Response.ok();
+        }
+
+        public Response builders( String param ) {
+            if( "forbidden".equals( param ) ) return Response.build403().message( "no access" ).build();
+            return Response.build404().build();
+        }
+
+        public Response nonConstant( String param ) {
+            int code = param.length();
+            return new Response( code );
+        }
+
+        public ValidationErrors validateCode( String value ) {
+            return ValidationErrors.error( 400, "bad code" );
+        }
+
+        public ValidationErrors validateParam( String value ) {
+            return ValidationErrors.error( value.length(), "non-constant code" );
+        }
+    }
+}

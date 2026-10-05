@@ -257,7 +257,9 @@ import oap.ws.Response;
 // factory methods
 Response.ok()                         // 200
 Response.noContent()                  // 204
-Response.notFound()                   // 404
+Response.build404().build()           // 404 + JSON error body
+Response.build401().message( "no token" ).build()  // 401 + WWW-Authenticate: Bearer + JSON error body
+Response.build403().message( "no access" ).build() // 403 + JSON error body
 Response.jsonOk()                     // 200 + Content-Type: application/json
 Response.redirect( "/new/location" )  // 302 + Location header
 
@@ -275,7 +277,7 @@ return Response.ok()
 
 ## Interceptors
 
-Interceptors run before and after each endpoint invocation. They are applied in the order listed in `ws-service.interceptors`; `after()` is called in reverse order.
+Interceptors run before and after each endpoint invocation. They are applied in the order listed in `ws-service.interceptors`; `after()` is called in reverse order. Error responses an interceptor returns from `before()` are listed in the generated OpenAPI for every operation of its service (see [oap-ws-openapi](../oap-ws-openapi/README.md#interceptors)).
 
 ```java
 import oap.ws.interceptor.Interceptor;
@@ -434,7 +436,9 @@ public Response patch(
 | `WsClientException( message, errors )` | 400 | `{ "statusCode": 400, "error": "message", "messages": [ { "message": "…" }, … ] }` |
 | `WsClientException( message, code, errors )` | `code` | `{ "statusCode": code, "error": "message", "messages": [ … ] }` |
 | any other unchecked exception | 500 | error details |
-| `Response.notFound()` | 404 | — |
+| `Response.build404().build()` | 404 | `{ "statusCode": 404, "error": "Not Found", … }` |
+| `Response.build401().build()` | 401 | `{ "statusCode": 401, "error": "Unauthorized", … }` + `WWW-Authenticate: Bearer` |
+| `Response.build403().build()` | 403 | `{ "statusCode": 403, "error": "Forbidden", … }` |
 
 `WsClientException` carries an `ErrorResponseBuilder` (`errorResponse`). Its `errors` list becomes the `messages` array and its status code becomes `statusCode`.
 

@@ -61,6 +61,7 @@ import oap.io.content.ContentWriter;
 import oap.reflect.Reflect;
 import oap.util.Strings;
 import oap.ws.WsParam;
+import oap.ws.InvocationContext;
 import oap.ws.api.Info.WebMethodInfo;
 import oap.ws.openapi.swagger.DeprecationAnnotationResolver;
 import org.apache.commons.lang3.StringUtils;
@@ -75,10 +76,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Collection;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import static oap.ws.openapi.OpenapiSchema.prepareType;
+import static oap.http.Http.StatusCode.UNAUTHORIZED;
 
 /**
  * Common procedure:
@@ -97,6 +102,19 @@ public class OpenapiGenerator {
     private final ModelConverters converters = new ModelConverters();
     private final OpenAPI api = new OpenAPI();
     private final OpenapiSchema openapiSchema = new OpenapiSchema();
+    private final ErrorCodeScanner errorCodeScanner = new ErrorCodeScanner();
+    private static final Map<Integer, String> REASON_PHRASES = Map.ofEntries(
+        Map.entry( 400, "Bad Request" ),
+        Map.entry( 401, "Unauthorized" ),
+        Map.entry( 403, "Forbidden" ),
+        Map.entry( 404, "Not Found" ),
+        Map.entry( 405, "Method Not Allowed" ),
+        Map.entry( 409, "Conflict" ),
+        Map.entry( 422, "Unprocessable Entity" ),
+        Map.entry( 429, "Too Many Requests" ),
+        Map.entry( 500, "Internal Server Error" ),
+        Map.entry( 502, "Bad Gateway" ),
+        Map.entry( 503, "Service Unavailable" ) );
     @Setter
     private String title;
     @Setter
@@ -180,6 +198,13 @@ public class OpenapiGenerator {
     }
 
     public Result processWebservice( Class<?> clazz, String context ) {
+        return processWebservice( clazz, context, List.of() );
+    }
+
+    /**
+     * @param interceptors interceptor classes of the ws-service; their {@code before} methods' error codes are added to every operation
+     */
+    public Result processWebservice( Class<?> clazz, String context, Collection<Class<?>> interceptors ) {
         log.info( "Processing web-service {} implementation class '{}' ...", context, clazz.getCanonicalName() );
 
         if( !processedClasses.add( clazz.getCanonicalName() ) ) return Result.SKIPPED_DUE_TO_ALREADY_PROCESSED;
@@ -192,6 +217,7 @@ public class OpenapiGenerator {
                 clazz.getPackage().getImplementationVersion() != null
                     ? clazz.getPackage().getImplementationVersion()
                     : Strings.UNDEFINED, wsInfo.name );
+        SortedSet<Integer> interceptorCodes = interceptorErrorCodes( interceptors );
         boolean atLeastOneMethodProcessed = false;
         int methodNumber = 0;
         List<WebMethodInfo> methods = wsInfo.methods( !settings.skipDeprecated );
@@ -206,7 +232,7 @@ public class OpenapiGenerator {
 
             for( HttpServerExchange.HttpMethod httpMethod : method.methods ) {
                 atLeastOneMethodProcessed = true;
-                var operation = prepareOperation( method, tag, httpMethod, methodNumber );
+                var operation = prepareOperation( method, tag, httpMethod, methodNumber, interceptorCodes );
                 pathItem.operation( convertMethod( httpMethod ), operation );
             }
         }
@@ -216,7 +242,20 @@ public class OpenapiGenerator {
         return Result.PROCESSED_OK;
     }
 
-    private Operation prepareOperation( WebMethodInfo method, Tag tag, HttpServerExchange.HttpMethod httpMethod, int methodNumber ) {
+    private SortedSet<Integer> interceptorErrorCodes( Collection<Class<?>> interceptors ) {
+        SortedSet<Integer> codes = new TreeSet<>();
+        for( Class<?> interceptor : interceptors ) {
+            try {
+                codes.addAll( errorCodeScanner.errorCodes( interceptor.getMethod( "before", InvocationContext.class ) ) );
+            } catch( NoSuchMethodException e ) {
+                log.warn( "Interceptor {} has no before(InvocationContext) method, skipped", interceptor.getName() );
+            }
+        }
+        return codes;
+    }
+
+    private Operation prepareOperation( WebMethodInfo method, Tag tag, HttpServerExchange.HttpMethod httpMethod, int methodNumber,
+                                        Set<Integer> interceptorCodes ) {
         var params = method.parameters();
         var returnType = prepareType( method.resultType() );
 
@@ -226,7 +265,7 @@ public class OpenapiGenerator {
             .description( method.description )
             .operationId( generateOperationId( method, methodNumber, httpMethod ) )
             .requestBody( prepareRequestBody( params ) )
-            .responses( prepareResponse( returnType, method ) );
+            .responses( prepareResponse( returnType, method, interceptorCodes ) );
         if( method.deprecated ) operation.deprecated( true );
         if( method.secure ) {
             operation.addSecurityItem( new SecurityRequirement().addList( SECURITY_SCHEMA_NAME ) );
@@ -259,14 +298,27 @@ public class OpenapiGenerator {
         return result.toString();
     }
 
-    private ApiResponses prepareResponse( Type returnType, WebMethodInfo method ) {
+    private ApiResponses prepareResponse( Type returnType, WebMethodInfo method, Set<Integer> interceptorCodes ) {
         var responses = new ApiResponses();
         ApiResponse response = new ApiResponse();
         response.description( "" );
         responses.addApiResponse( "200", response );
-        if( returnType.equals( Void.class ) ) return responses;
-        response.content( createContent( method, returnType ) );
+        if( !returnType.equals( Void.class ) ) response.content( createContent( method, returnType ) );
+        addErrorResponses( responses, method, interceptorCodes );
         return responses;
+    }
+
+    private void addErrorResponses( ApiResponses responses, WebMethodInfo method, Set<Integer> interceptorCodes ) {
+        SortedSet<Integer> codes = new TreeSet<>( interceptorCodes );
+        codes.addAll( errorCodeScanner.errorCodes( method.reflectMethod() ) );
+        for( int code : codes ) {
+            responses.addApiResponse( String.valueOf( code ), code == UNAUTHORIZED
+                ? new ApiResponse().$ref( "#/components/responses/UnauthorizedError" )
+                : new ApiResponse()
+                    .description( REASON_PHRASES.getOrDefault( code, "HTTP " + code ) )
+                    .content( createContent( ContentType.APPLICATION_JSON.getMimeType(),
+                        new Schema<>().$ref( RefUtils.constructRef( "ErrorResponse" ) ) ) ) );
+        }
     }
 
     private Schema getSchemaByReturnType( Type returnType, WebMethodInfo method ) {

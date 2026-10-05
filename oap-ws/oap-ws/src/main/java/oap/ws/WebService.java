@@ -198,7 +198,7 @@ public class WebService implements HttpHandler {
             return Response.noContent();
         } else if( result instanceof Response response ) return response;
         else if( result instanceof Optional<?> optResult ) return optResult.isEmpty()
-            ? Response.notFound()
+            ? Response.build404().build()
             : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces );
         else if( result instanceof Result<?, ?> resultResult ) if( resultResult.isSuccess() )
             return Response.ok().withBody( resultResult.successValue, isRaw ).withContentType( produces );

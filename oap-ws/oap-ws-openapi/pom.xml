@@ -72,6 +72,21 @@
             <artifactId>swagger-core-jakarta</artifactId>
             <version>${oap.deps.swagger.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>${oap.deps.asm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-tree</artifactId>
+            <version>${oap.deps.asm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-analysis</artifactId>
+            <version>${oap.deps.asm.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

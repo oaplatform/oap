@@ -39,7 +39,6 @@ import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.Http.Headers.CONTENT_TYPE;
 import static oap.http.Http.Headers.LOCATION;
 import static oap.http.Http.StatusCode.FOUND;
-import static oap.http.Http.StatusCode.NOT_FOUND;
 import static oap.http.Http.StatusCode.NO_CONTENT;
 import static oap.http.Http.StatusCode.OK;
 
@@ -84,12 +83,16 @@ public class Response {
         return ok().withContentType( APPLICATION_JSON );
     }
 
-    public static Response notFound() {
-        return new Response( NOT_FOUND );
-    }
-
     public static ErrorResponse401Builder build401() {
         return new ErrorResponse401Builder();
+    }
+
+    public static ErrorResponse403Builder build403() {
+        return new ErrorResponse403Builder();
+    }
+
+    public static ErrorResponse404Builder build404() {
+        return new ErrorResponse404Builder();
     }
 
     public static Response ok() {
