@@ -14,8 +14,8 @@ public class AccountWS extends AbstractSecureWS {
     @WsMethod( path = "/profile", method = HttpMethod.GET )
     @WsSecurity( realm = WsSecurity.USER, permissions = { "READ" } )
     public Response getProfile( @WsParam( from = From.SESSION ) Optional<User> loggedUser ) {
-        return validateUserLoggedIn( loggedUser )
-            .ifOk( () -> Response.ok().withBody( loggedUser.get() ) );
+        validateUserLoggedIn( loggedUser ).throwIfInvalid();
+        return Response.ok().withBody( loggedUser.get() );
     }
 }
 ```
@@ -24,4 +24,4 @@ public class AccountWS extends AbstractSecureWS {
 
 Returns `ValidationErrors.empty()` when the user is present, or `ValidationErrors.error( 401, "not logged in" )` when the `Optional` is empty.
 
-Combine with `ValidationErrors.ifOk()` to return a response only when validation passes, or let the framework convert the error into a 401 response automatically.
+`throwIfInvalid()` throws a `WsClientException` with the code chosen by `resolvedCode()`. `ValidationErrors.error( 401, … )` takes priority over other codes, as described in `oap-ws/oap-ws/README.md` under "Validation errors".

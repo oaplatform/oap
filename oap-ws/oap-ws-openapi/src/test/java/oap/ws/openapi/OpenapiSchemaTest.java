@@ -166,6 +166,29 @@ public class OpenapiSchemaTest {
     }
 
     @Test
+    public void testOpenApiIgnoreOnFieldAndGetterExcludesProperty() {
+        OpenapiSchema openapiSchema = new OpenapiSchema();
+
+        ResolvedSchema resolvedSchema = openapiSchema.resolveSchema( IgnoredMembersBean.class, method );
+
+        assertThat( resolvedSchema.schema.getProperties().keySet() ).containsExactly( "name" );
+    }
+
+    public static class IgnoredMembersBean {
+        public String name;
+
+        @OpenApiIgnore
+        public String internalId;
+
+        private String secret;
+
+        @OpenApiIgnore
+        public String getSecret() {
+            return secret;
+        }
+    }
+
+    @Test
     public void testResolvedSchemaForOptionalType() {
         OpenapiSchema openapiSchema = new OpenapiSchema();
 

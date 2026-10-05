@@ -13,7 +13,23 @@ Depends on: `oap-ws`
 - **Security requirements** from `@WsSecurity` annotations
 - **Tags** from the service class name
 
-Methods annotated with `@OpenapiIgnore` are excluded from the output.
+Methods annotated with `@OpenApiIgnore` are excluded from the output.
+
+Bean fields and getters annotated with `@OpenApiIgnore` are left out of the generated schemas:
+
+```java
+public class Account {
+    public String name;
+
+    @OpenApiIgnore
+    public String internalId;
+
+    @OpenApiIgnore
+    public String getSecret() { return secret; }
+}
+```
+
+The annotation lives in the `oap-ws-openapi-annotations` module.
 
 ## Key classes
 
@@ -44,7 +60,7 @@ String yaml = Yaml.pretty( spec );
 
 ```java
 @WsMethod( path = "/probe", method = HttpMethod.GET )
-@OpenapiIgnore
+@OpenApiIgnore
 public String healthProbe() { return "ok"; }
 ```
 

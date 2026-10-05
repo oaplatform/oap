@@ -35,7 +35,7 @@ import oap.util.Strings;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import oap.ws.openapi.OpenapiIgnore;
+import oap.ws.openapi.OpenApiIgnore;
 import oap.ws.sso.WsSecurity;
 
 import java.lang.reflect.Modifier;
@@ -153,7 +153,7 @@ public class Info {
         }
 
         public boolean shouldBeIgnored() {
-            return method.isAnnotatedWith( OpenapiIgnore.class );
+            return method.isAnnotatedWith( OpenApiIgnore.class );
         }
     }
 

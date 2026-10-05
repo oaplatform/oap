@@ -83,7 +83,7 @@ public class MethodValidatorPeerParamTest extends Fixtures {
     @Test
     public void validationRequiredFailed() {
         assertPost( kernel.httpUrl( "/mvpp/run/validation/ok" ), "test", Http.ContentType.TEXT_PLAIN )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "'int i' is required", "{\"errors\": [\"'int i' is required\"]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "'int i' is required", "{\"statusCode\": 400, \"error\": \"'int i' is required\", \"messages\": [{\"message\": \"'int i' is required\"}]}" );
     }
 
     @Test

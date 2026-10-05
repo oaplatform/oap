@@ -93,6 +93,7 @@ public interface Http {
         String CONTENT_TYPE = io.undertow.util.Headers.CONTENT_TYPE_STRING;
         String LOCATION = io.undertow.util.Headers.LOCATION_STRING;
         String AUTHORIZATION = io.undertow.util.Headers.AUTHORIZATION_STRING;
+        String WWW_AUTHENTICATE = io.undertow.util.Headers.WWW_AUTHENTICATE_STRING;
         String DATE = io.undertow.util.Headers.DATE_STRING;
         String CONNECTION = io.undertow.util.Headers.CONNECTION_STRING;
     }

@@ -32,10 +32,10 @@ import static oap.http.test.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public final class ValidationAssertion {
-    private final ValidationErrors errors;
+    private final ValidationErrors.ErrorResponse errors;
 
     private ValidationAssertion( Response response ) {
-        errors = Binder.json.unmarshal( ValidationErrors.class, response.contentString() );
+        errors = Binder.json.unmarshal( ValidationErrors.ErrorResponse.class, response.contentString() );
     }
 
     public static ValidationAssertion assertValidation( Response response ) {

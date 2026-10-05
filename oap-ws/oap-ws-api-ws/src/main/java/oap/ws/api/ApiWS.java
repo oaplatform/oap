@@ -35,7 +35,7 @@ import oap.util.Lists;
 import oap.ws.Response;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
-import oap.ws.openapi.OpenapiIgnore;
+import oap.ws.openapi.OpenApiIgnore;
 import org.joda.time.DateTime;
 
 import java.lang.ref.Reference;
@@ -61,7 +61,7 @@ import static oap.util.Strings.join;
 
 @SuppressWarnings( "StringConcatenationInLoop" )
 @Slf4j
-@OpenapiIgnore
+@OpenApiIgnore
 public class ApiWS {
     private final WebServices webServices;
 

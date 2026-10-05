@@ -88,7 +88,7 @@ public class Validators {
             var total = ValidationErrors.empty();
             for( var peer : peers ) {
                 var result = peer.validate( value, originalValues );
-                if( result.failed() && !result.hasDefaultCode() ) return result;
+                if( result.failed() && result.hasNonDefaultCode() ) return result;
                 total = total.merge( result );
             }
             return total;

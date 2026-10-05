@@ -17,13 +17,13 @@ Each `WebServiceInfo` exposes:
 - Service class name and mount path
 - Per-method: HTTP method(s), path pattern, parameter descriptors, `@WsSecurity` permissions
 
-### `@OpenapiIgnore`
+### `@OpenApiIgnore`
 
 Method-level annotation that excludes a `@WsMethod` from OpenAPI generation while keeping it fully functional at runtime.
 
 ```java
 @WsMethod( path = "/internal", method = HttpMethod.GET )
-@OpenapiIgnore
+@OpenApiIgnore
 public Response internalEndpoint() { … }
 ```
 

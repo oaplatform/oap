@@ -1,6 +1,6 @@
 # oap-ws-openapi-ws
 
-Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived entirely from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenapiIgnore` annotations via reflection.
+Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived entirely from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenApiIgnore` annotations via reflection.
 
 Depends on: `oap-ws`, `oap-ws-api-ws`
 
@@ -10,7 +10,7 @@ Depends on: `oap-ws`, `oap-ws-api-ws`
 GET /system/openapi
 ```
 
-Returns the OpenAPI 3.x YAML document describing the web services bound to the **same port** as this endpoint (except those marked `@OpenapiIgnore`). `OpenapiWS` only documents services reachable on its own port — it does not aggregate services from other ports.
+Returns the OpenAPI 3.x YAML document describing the web services bound to the **same port** as this endpoint (except those marked `@OpenApiIgnore`). `OpenapiWS` only documents services reachable on its own port — it does not aggregate services from other ports.
 
 ```bash
 curl http://localhost:8080/system/openapi
@@ -82,7 +82,7 @@ public List<Item> list(
 
 ```java
 @WsMethod( path = "/probe", method = HttpMethod.GET )
-@OpenapiIgnore
+@OpenApiIgnore
 public String healthProbe() { return "ok"; }
 ```
 
@@ -94,7 +94,7 @@ public String healthProbe() { return "ok"; }
 |---|---|---|
 | Format | OpenAPI 3.x (OAS) | OAP-native JSON |
 | Tooling | Swagger UI, code generators | Internal only |
-| Inclusion control | `@OpenapiIgnore` per method | All services |
+| Inclusion control | `@OpenApiIgnore` per method | All services |
 | Schema | OAS `$ref` components | Simple type names |
 
 Use `oap-ws-openapi-ws` for public APIs; use `oap-ws-api-ws` for lightweight internal introspection.

@@ -88,6 +88,10 @@ public class Response {
         return new Response( NOT_FOUND );
     }
 
+    public static ErrorResponse401Builder build401() {
+        return new ErrorResponse401Builder();
+    }
+
     public static Response ok() {
         return new Response( OK );
     }
@@ -169,21 +173,28 @@ public class Response {
     @SuppressWarnings( "unchecked" )
     public void send( HttpServerExchange exchange ) {
         exchange.setStatusCode( code );
-        if( reasonPhrase != null ) exchange.setReasonPhrase( reasonPhrase );
+        if( reasonPhrase != null ) {
+            exchange.setReasonPhrase( reasonPhrase );
+        }
         headers.forEach( exchange::setResponseHeader );
         cookies.forEach( exchange::setResponseCookie );
-        if( contentType != null ) exchange.setResponseHeader( CONTENT_TYPE, contentType );
-        if( body != null )
-            if( body instanceof byte[] bytes ) exchange.send( bytes );
-            else if( body instanceof ByteBuffer byteBuffer ) exchange.send( byteBuffer );
-            else if( body instanceof String string )
-                if( raw ) exchange.send( string );
-                else exchange.send( HttpServerExchange.contentToString( false, string, contentType ) );
-            else if( body instanceof Consumer cons ) cons.accept( exchange.getOutputStream() );
-            else {
-                Preconditions.checkArgument( !raw );
-                exchange.send( HttpServerExchange.contentToString( false, body, contentType ) );
+        if( contentType != null ) {
+            exchange.setResponseHeader( CONTENT_TYPE, contentType );
+        }
+        if( body != null ) {
+            switch( body ) {
+                case byte[] bytes -> exchange.send( bytes );
+                case ByteBuffer byteBuffer -> exchange.send( byteBuffer );
+                case String string -> {
+                    if( raw ) exchange.send( string );
+                    else exchange.send( HttpServerExchange.contentToString( false, string, contentType ) );
+                }
+                case Consumer cons -> cons.accept( exchange.getOutputStream() );
+                default -> {
+                    Preconditions.checkArgument( !raw );
+                    exchange.send( HttpServerExchange.contentToString( false, body, contentType ) );
+                }
             }
-        else exchange.endExchange();
+        } else exchange.endExchange();
     }
 }

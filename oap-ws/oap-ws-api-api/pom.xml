@@ -51,6 +51,11 @@
             <artifactId>oap-ws-sso-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-ws-openapi-annotations</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

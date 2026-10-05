@@ -70,12 +70,12 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
     }
 
     public ValidationErrorsAssertion hasCode( int code ) {
-        assertThat( this.actual.code ).isEqualTo( code );
+        assertThat( this.actual.resolvedCode() ).isEqualTo( code );
         return this;
     }
 
     public ValidationErrorsAssertion containsErrors( String... errors ) {
-        assertThat( this.actual.errors ).contains( errors );
+        assertThat( this.actual.resolvedErrors() ).contains( errors );
         return this;
     }
 
@@ -104,17 +104,17 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         @SneakyThrows
         @SuppressWarnings( "unchecked" )
         public ValidatedInvocation( I instance ) {
-            var factory = new ProxyFactory();
+            ProxyFactory factory = new ProxyFactory();
             factory.setSuperclass( instance.getClass() );
 
             MethodHandler handler = ( self, jmethod, proceed, args ) -> {
-                var method = Reflect.reflect( instance.getClass() )
+                Reflection.Method method = Reflect.reflect( instance.getClass() )
                     .method( jmethod )
                     .orElse( null );
                 if( method == null ) throw new NoSuchMethodError( jmethod.toString() );
-                var paramErrors = ValidationErrors.empty();
+                ValidationErrors paramErrors = ValidationErrors.empty();
 
-                var parameters = method.parameters;
+                List<Reflection.Parameter> parameters = method.parameters;
 
                 Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
                     .zipWithIndex()
@@ -128,7 +128,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                     return null;
                 }
 
-                var values = new LinkedHashMap<Reflection.Parameter, Object>();
+                LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
 
                 for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
 
@@ -139,7 +139,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                     return null;
                 }
 
-                var methodErrors = Validators
+                ValidationErrors methodErrors = Validators
                     .forMethod( method, instance, false )
                     .validate( args, values );
                 if( methodErrors.failed() )
@@ -149,14 +149,10 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                 try {
                     return method.invoke( instance, args );
                 } catch( ReflectException e ) {
-                    var cause = e.getCause();
+                    Throwable cause = e.getCause();
                     if( cause instanceof InvocationTargetException && ( cause = cause.getCause() ) instanceof WsClientException ) {
-                        var wsClientException = ( WsClientException ) cause;
-                        var code = wsClientException.code;
-                        var errors = wsClientException.errors;
-
-                        var validationErrors = ValidationErrors.errors( code, errors );
-                        runAsserts( validationErrors );
+                        WsClientException wsClientException = ( WsClientException ) cause;
+                        runAsserts( wsClientException.errorResponse.toValidationErrors() );
                         return null;
                     } else {
                         throw Throwables.propagate( e );
@@ -164,7 +160,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                 }
             };
 
-            var klass = factory.createClass();
+            Class<?> klass = factory.createClass();
 
             this.instance = ( I ) klass.getDeclaredConstructor().newInstance();
 
@@ -196,7 +192,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         }
 
         private void runAsserts( ValidationErrors errors ) {
-            var assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
+            ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
             assertions.forEach( f -> f.apply( assertion ) );
         }
 

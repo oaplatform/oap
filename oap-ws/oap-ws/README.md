@@ -430,11 +430,30 @@ public Response patch(
 
 | Throw / return | HTTP status | Body |
 |---|---|---|
-| `WsClientException( message )` | 400 | `{ "errors": ["message"] }` |
-| `WsClientException( message, errors )` | 400 | `{ "errors": [ … ] }` |
-| `WsClientException( message, code, errors )` | `code` | `{ "errors": [ … ] }` |
+| `WsClientException( message )` | 400 | `{ "statusCode": 400, "error": "message", "messages": [ { "message": "message" } ] }` |
+| `WsClientException( message, errors )` | 400 | `{ "statusCode": 400, "error": "message", "messages": [ { "message": "…" }, … ] }` |
+| `WsClientException( message, code, errors )` | `code` | `{ "statusCode": code, "error": "message", "messages": [ … ] }` |
 | any other unchecked exception | 500 | error details |
 | `Response.notFound()` | 404 | — |
+
+`WsClientException` carries an `ErrorResponseBuilder` (`errorResponse`). Its `errors` list becomes the `messages` array and its status code becomes `statusCode`.
+
+### Validation errors
+
+`ValidationErrors` groups messages by HTTP status code (`HashMap<Integer, LinkedHashSet<String>>`). A validator reports an error with a code (default 400):
+
+```java
+ValidationErrors.error( "name must not be null" );           // 400
+ValidationErrors.error( 404, "product not found" );           // 404
+```
+
+`resolvedCode()` and `resolvedErrors()` pick one code for the response:
+
+1. Multiple 4xx codes are merged into 400.
+2. Multiple 5xx codes are merged into 502.
+3. Priority order: 401, 403, 400, 404, other 4xx (ascending), 502, other codes (ascending).
+
+`throwIfInvalid()` throws a `WsClientException` using the resolved code and that code's messages.
 
 ```java
 public Response update( @WsParam( from = From.PATH ) String id,

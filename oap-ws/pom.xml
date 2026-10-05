@@ -21,6 +21,7 @@
 
     <modules>
         <module>oap-ws</module>
+        <module>oap-ws-openapi-annotations</module>
         <module>oap-ws-api-api</module>
         <module>oap-ws-api-ws</module>
         <module>oap-ws-test</module>

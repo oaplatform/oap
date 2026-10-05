@@ -64,7 +64,7 @@ public class OpenapiWS {
         return openapi.generateOpenApi( skipDeprecated.orElse( true ), port );
     }
 
-    @OpenapiIgnore
+    @OpenApiIgnore
     public ValidationErrors isValid( Optional<Boolean> skipDeprecated ) {
         return ValidationErrors.empty();
     }
