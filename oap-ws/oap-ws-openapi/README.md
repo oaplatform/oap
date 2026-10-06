@@ -80,7 +80,7 @@ Rules:
 
 - Only codes `>= 400` are reported. `200`, `204` and `302` from `Response.ok()`, `noContent()` and `redirect()` are dropped.
 - `401` points to the shared `UnauthorizedError` response component (it carries the `WWW-Authenticate` header). Other codes use `application/json` with the `ErrorResponse` schema. The description is the reason phrase (`400 Bad Request`, `403 Forbidden`, …); codes without a known phrase show `HTTP <code>`.
-- Helper methods called from the scanned code are followed up to 5 levels deep, within the endpoint's class hierarchy and the `Response` classes.
+- Helper methods called from the scanned code are followed up to 5 levels deep, within the endpoint's class hierarchy, the classes in the same package, and the `Response` classes. Calls into other packages are not followed.
 - A code that is not a literal (held in a local variable or computed at runtime) is skipped and logged as a warning.
 - A class processed under two contexts is generated once (class-name dedup), so its codes come from the first context only.
 

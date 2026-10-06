@@ -66,7 +66,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Scanned: the web method itself and the methods named in {@link WsValidate} (on the method and on its parameters).
  * A literal {@code int} code passed to {@link ValidationErrors}, {@link WsClientException}, {@link Response}
  * or {@code oap.http.Response} is an HTTP status code, recorded when it is {@code >= 400}.
- * Calls to methods of the scanned class hierarchy and to {@link Response} are followed, up to {@link #MAX_DEPTH} levels.
+ * Calls to methods of the scanned class hierarchy, of classes in the same package and to {@link Response} are followed,
+ * up to {@link #MAX_DEPTH} levels.
  * {@code Response.build401()}, {@code build403()} and {@code build404()} always yield their status code.
  * <p>
  * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( code, text )} on
@@ -296,7 +297,8 @@ public class ErrorCodeScanner {
     private static boolean followable( Class<?> target, Class<?> scanned ) {
         return target == Response.class
             || target == oap.http.Response.class
-            || target != Object.class && target.isAssignableFrom( scanned );
+            || target != Object.class && target.isAssignableFrom( scanned )
+            || target.getPackageName().equals( scanned.getPackageName() );
     }
 
     private static Class<?> resolve( String internalName, ClassLoader loader ) {

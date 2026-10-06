@@ -135,14 +135,21 @@ public class OpenapiErrorResponseTest {
     public void testInnerValidationReportsStatusCodeCodeAndMessage() {
         OpenapiGenerator generator = new OpenapiGenerator( "title", "description" );
         generator.processWebservice( Fixture.class, "ctx", List.of( JWTSecurityInterceptor.class ) );
-        api = generator.build();
+        generator.processWebservice( Fixture2.class, "ctx2", List.of( JWTSecurityInterceptor.class ) );
+        OpenAPI localApi = generator.build();
 
-        ApiResponses responses = api.getPaths().get( "/ctx/validateMethods" ).getGet().getResponses();
+        ApiResponses responses = localApi.getPaths().get( "/ctx/validateMethods" ).getGet().getResponses();
+        ApiResponses responses2 = localApi.getPaths().get( "/ctx2/validateMethods2" ).getGet().getResponses();
 
         assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
         assertJsonError( responses.get( "400" ), "Bad Request" );
         assertThat( responses.get( "400" ).getContent().get( "application/json" ).getExample() )
             .isEqualTo( Map.of( "messages", List.of( Map.of( "code", 1023, "message", "${c} - v" ) ) ) );
+
+        assertThat( responses2.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
+        assertJsonError( responses2.get( "400" ), "Bad Request" );
+        assertThat( responses2.get( "400" ).getContent().get( "application/json" ).getExample() )
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "message", "bad code" ) ) ) );
     }
 
     private ApiResponses responses( String name ) {
@@ -219,6 +226,20 @@ public class OpenapiErrorResponseTest {
         @OpenApiIgnore
         public ValidationErrors validateForbidden() {
             return ValidationErrors.empty().statusCode( FORBIDDEN ).errors( List.of( "denied" ) ).endCode();
+        }
+    }
+
+    public static class Fixture2 {
+        private final Fixture fixture;
+
+        public Fixture2( Fixture fixture ) {
+            this.fixture = fixture;
+        }
+
+        @WsMethod( path = "/validateMethods2", method = GET )
+        @WsSecurity( permissions = "a:test" )
+        public void testInnerValidation2( @WsParam( from = QUERY ) int c ) {
+            fixture.validateCode();
         }
     }
 }
