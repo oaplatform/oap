@@ -14,6 +14,7 @@ import static oap.http.Http.StatusCode.NOT_FOUND;
 import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.http.Http.StatusCode.UNPROCESSABLE_ENTITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ValidationErrorsBuilderTest {
     @Test
@@ -59,19 +60,61 @@ public class ValidationErrorsBuilderTest {
     @Test
     public void testErrorFormatsArgumentsWithMessageCode() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( 1004, "item ${id} not found", Map.of( "id", "y" ) ).endCode();
+            .statusCode( NOT_FOUND ).error( 1_000_004, "item ${id} not found", Map.of( "id", "y" ) ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1004, "item y not found" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_004, "item y not found" ) );
     }
 
     @Test
     public void testMessageCodesAreKept() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( 1001, "missing" ).endCode()
-            .statusCode( NOT_FOUND ).errors( 1002, List.of( "gone" ) ).endCode()
-            .statusCode( NOT_FOUND ).pairs( List.of( Pair.__( 1003, "x" ) ) ).endCode();
+            .statusCode( NOT_FOUND ).error( 1_000_001, "missing" ).endCode()
+            .statusCode( NOT_FOUND ).errors( 1_000_002, List.of( "gone" ) ).endCode()
+            .statusCode( NOT_FOUND ).pairs( List.of( Pair.__( 1_000_003, "x" ) ) ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1001, "missing" ), Pair.__( 1002, "gone" ), Pair.__( 1003, "x" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_001, "missing" ), Pair.__( 1_000_002, "gone" ), Pair.__( 1_000_003, "x" ) );
+    }
+
+    @Test
+    public void testPublicCodeMustBeAboveLimit() {
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( 1001, "small" ) )
+            .isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( 1_000_000, "limit" ) )
+            .isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).errors( 1, List.of( "a" ) ) )
+            .isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( 1, "a", Map.of() ) )
+            .isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).pairs( List.of( Pair.__( 1, "a" ) ) ) )
+            .isInstanceOf( IllegalArgumentException.class );
+    }
+
+    @Test
+    public void testPublicPairsAllowNullCode() {
+        ValidationErrors errors = ValidationErrors.empty()
+            .statusCode( BAD_REQUEST ).pairs( List.of( Pair.__( null, "no code" ) ) ).endCode();
+
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( null, "no code" ) );
+    }
+
+    @Test
+    public void testInternalCodeMustBeAtMostLimit() {
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).internalError( 1_000_001, "big" ) )
+            .isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).internalErrors( 1_000_001, List.of( "a" ) ) )
+            .isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).internalError( 1_000_001, "big", Map.of() ) )
+            .isInstanceOf( IllegalArgumentException.class );
+    }
+
+    @Test
+    public void testInternalCodesUpToLimitAreKept() {
+        ValidationErrors errors = ValidationErrors.empty()
+            .statusCode( NOT_FOUND ).internalError( 1001, "missing" ).endCode()
+            .statusCode( NOT_FOUND ).internalErrors( 1_000_000, List.of( "limit" ) ).endCode()
+            .statusCode( NOT_FOUND ).internalError( 2, "fmt ${id}", Map.of( "id", "x" ) ).endCode();
+
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1001, "missing" ), Pair.__( 1_000_000, "limit" ), Pair.__( 2, "fmt x" ) );
     }
 
     @Test

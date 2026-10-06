@@ -72,6 +72,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -333,10 +334,16 @@ public class OpenapiGenerator {
         return new Content().addMediaType( ContentType.APPLICATION_JSON.getMimeType(), mediaType );
     }
 
-    /** Example body {@code {"messages": [{"code": ..., "message": ...}]}}; {@code code} is omitted when absent. */
+    /**
+     * Example body {@code {"messages": [{"code": ..., "message": ...}]}}; {@code code} is omitted when absent.
+     * Messages are sorted by code, messages without a code last, then by text.
+     */
     private static Map<String, Object> messagesExample( Set<ErrorCodeScanner.ScannedMessage> messages ) {
         List<Map<String, Object>> items = new ArrayList<>();
-        for( ErrorCodeScanner.ScannedMessage message : messages ) {
+        Comparator<ErrorCodeScanner.ScannedMessage> order = Comparator
+            .comparing( ErrorCodeScanner.ScannedMessage::code, Comparator.nullsLast( Comparator.naturalOrder() ) )
+            .thenComparing( ErrorCodeScanner.ScannedMessage::text, Comparator.nullsLast( Comparator.naturalOrder() ) );
+        for( ErrorCodeScanner.ScannedMessage message : messages.stream().sorted( order ).toList() ) {
             Map<String, Object> item = new LinkedHashMap<>();
             if( message.code() != null ) item.put( "code", message.code() );
             item.put( "message", message.text() != null ? message.text() : RUNTIME_MESSAGE );

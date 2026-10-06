@@ -90,23 +90,24 @@ Each validation message is also scanned. The `application/json` media type of ev
 
 | Code in scanned code | Example message |
 |---|---|
-| `statusCode( 400 ).error( 1001, "a" )` | `{ "code": 1001, "message": "a" }` |
+| `statusCode( 400 ).error( 1_000_001, "a" )` | `{ "code": 1000001, "message": "a" }` |
 | `statusCode( 400 ).error( "a" )` | `{ "message": "a" }` (no `code`) |
-| `statusCode( 400 ).error( 1002, "item " + id )` | `{ "code": 1002, "message": "<runtime message>" }` |
-| `statusCode( 404 ).error( 1004, "item ${id} not found", Map.of( "id", id ) )` | `{ "code": 1004, "message": "item ${id} not found" }` |
+| `statusCode( 400 ).error( 1_000_002, "item " + id )` | `{ "code": 1000002, "message": "<runtime message>" }` |
+| `statusCode( 404 ).error( 1_000_004, "item ${id} not found", Map.of( "id", id ) )` | `{ "code": 1000004, "message": "item ${id} not found" }` |
 
 Rules:
 
-- The message code is optional. A literal `int` code is recorded; a computed one makes the message skipped with a warning.
+- The message code is optional. A literal `int` code is recorded; a computed one makes the message skipped with a warning. Public codes must be above `1_000_000`, so every scanned code is above that limit.
 - A text that is not a literal is shown as the placeholder `<runtime message>`.
 - Formatted messages (`error( text, Map )` / `error( code, text, Map )`) show their template text, with the `${name}` placeholders as written, since the rendered text is only known at runtime.
 - Messages from the endpoint and from its interceptors are merged per status code. Duplicates are dropped.
+- Messages in an example are sorted by code, ascending. Messages without a code come last; ties are sorted by text.
 - Messages added through lists (`error(List)`, `errors(List)`, `pairs(...)`, `errors(Integer, List)`) are not listed, since their count is unknown at scan time. The status code is still reported.
 - The receiver must be the chained form `statusCode( x ).error(...)`. A builder held in a local variable is skipped with a warning.
 - `401` stays a `$ref` to `UnauthorizedError`, which cannot carry a per-operation example.
 - The shared `ErrorResponse` schema (`statusCode`, `error`, `messages`) does not match the validation body `{"messages": [...]}`. The examples follow the real body; the schema is unchanged.
 
-Example: an endpoint with a `400` validator (messages `1001 "a"` and a runtime text) and an interceptor that returns `401`:
+Example: an endpoint with a `400` validator (messages `1000001 "a"` and a runtime text) and an interceptor that returns `401`:
 
 ```json
 "responses": {
@@ -116,7 +117,7 @@ Example: an endpoint with a `400` validator (messages `1001 "a"` and a runtime t
     "content": {
       "application/json": {
         "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-        "example": { "messages": [ { "code": 1001, "message": "a" }, { "code": 1002, "message": "<runtime message>" } ] }
+        "example": { "messages": [ { "code": 1000001, "message": "a" }, { "code": 1000002, "message": "<runtime message>" } ] }
       }
     }
   },

@@ -449,22 +449,27 @@ public Response patch(
 ```java
 ValidationErrors.empty().statusCode( 400 ).error( "name must not be null" ).endCode();      // 400
 ValidationErrors.empty().statusCode( 404 ).error( "product not found" ).endCode();           // 404
-ValidationErrors.empty().statusCode( 400 ).error( 1001, "name must not be null" ).endCode(); // 400, message code 1001
-ValidationErrors.empty().statusCode( 400 ).errors( 1002, List.of( "a", "b" ) ).endCode();    // one message code for all
-ValidationErrors.empty().statusCode( 400 ).pairs( List.of( Pair.__( 1003, "c" ) ) ).endCode(); // one pair per message
+ValidationErrors.empty().statusCode( 400 ).error( 1_000_001, "name must not be null" ).endCode(); // 400, message code 1_000_001
+ValidationErrors.empty().statusCode( 400 ).errors( 1_000_002, List.of( "a", "b" ) ).endCode();    // one message code for all
+ValidationErrors.empty().statusCode( 400 ).pairs( List.of( Pair.__( 1_000_003, "c" ) ) ).endCode(); // one pair per message
 ```
 
 The message code is optional (use the variants without it). A validation failure responds with the messages, each with its code when set:
 
+Message codes are split into two ranges:
+
+- Public methods (`error`, `errors`, `pairs`) accept only codes above `1_000_000` (`ValidationErrorsBuilder.MAX_INTERNAL_CODE`). A code at or below the limit throws `IllegalArgumentException`. A `null` code (no code) is always allowed.
+- Codes up to `1_000_000` are for package-internal messages only. They use the package-level `internalError` / `internalErrors` methods, which reject codes above the limit.
+
 ```json
-{ "messages": [ { "code": 1001, "message": "name must not be null" }, { "message": "product not found" } ] }
+{ "messages": [ { "code": 1000001, "message": "name must not be null" }, { "message": "product not found" } ] }
 ```
 
 Messages can be formatted from a map. Placeholders are `${name}` and are resolved by the oap template engine at runtime:
 
 ```java
 ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) ).endCode();          // no code
-ValidationErrors.empty().statusCode( 404 ).error( 1004, "item ${id} not found", Map.of( "id", id ) ).endCode();   // code 1004
+ValidationErrors.empty().statusCode( 404 ).error( 1_000_004, "item ${id} not found", Map.of( "id", id ) ).endCode();   // code 1_000_004
 ```
 
 The rendered text is only known at runtime, so the OpenAPI generator shows the template text with its `${name}` placeholders (see [oap-ws-openapi](../oap-ws-openapi/README.md#messages-in-examples)).

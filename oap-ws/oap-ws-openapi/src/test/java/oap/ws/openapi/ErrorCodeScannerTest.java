@@ -48,9 +48,9 @@ public class ErrorCodeScannerTest {
         SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "messages" ) );
 
         assertThat( responses.get( 400 ) ).containsExactly(
-            new ErrorCodeScanner.ScannedMessage( 1001, "a" ),
-            new ErrorCodeScanner.ScannedMessage( 1002, null ),
-            new ErrorCodeScanner.ScannedMessage( 1003, "item ${id}" ),
+            new ErrorCodeScanner.ScannedMessage( 1_000_001, "a" ),
+            new ErrorCodeScanner.ScannedMessage( 1_000_002, null ),
+            new ErrorCodeScanner.ScannedMessage( 1_000_003, "item ${id}" ),
             new ErrorCodeScanner.ScannedMessage( null, "ctx ${id}" ) );
         assertThat( responses.get( 404 ) ).isEmpty();
     }
@@ -84,11 +84,11 @@ public class ErrorCodeScannerTest {
 
         public ValidationErrors messages( String param ) {
             return ValidationErrors.empty()
-                .statusCode( 400 ).error( 1001, "a" ).endCode()
-                .statusCode( 400 ).error( 1002, "a" + param ).endCode()
-                .statusCode( 400 ).error( 1003, "item ${id}", Map.of( "id", param ) ).endCode()
+                .statusCode( 400 ).error( 1_000_001, "a" ).endCode()
+                .statusCode( 400 ).error( 1_000_002, "a" + param ).endCode()
+                .statusCode( 400 ).error( 1_000_003, "item ${id}", Map.of( "id", param ) ).endCode()
                 .statusCode( 400 ).error( "ctx ${id}", Map.of( "id", param ) ).endCode()
-                .statusCode( 404 ).errors( 1003, List.of( "gone" ) ).endCode();
+                .statusCode( 404 ).errors( 1_000_003, List.of( "gone" ) ).endCode();
         }
 
         public Response builders( String param ) {

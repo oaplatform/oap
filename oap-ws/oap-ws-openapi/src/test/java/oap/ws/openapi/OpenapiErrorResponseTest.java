@@ -144,7 +144,7 @@ public class OpenapiErrorResponseTest {
         assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
         assertJsonError( responses.get( "400" ), "Bad Request" );
         assertThat( responses.get( "400" ).getContent().get( "application/json" ).getExample() )
-            .isEqualTo( Map.of( "messages", List.of( Map.of( "code", 1023, "message", "${c} - v" ) ) ) );
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "code", 1_001_023, "message", "${c} - v" ) ) ) );
 
         assertThat( responses2.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
         assertJsonError( responses2.get( "400" ), "Bad Request" );
@@ -157,7 +157,7 @@ public class OpenapiErrorResponseTest {
     }
 
     public static class Fixture {
-        public static final int ERROR_CODE_1 = 1023;
+        public static final int ERROR_CODE_1 = 1_001_023;
 
         @WsMethod( path = "/validated", method = GET )
         @WsValidate( "validateCode" )
