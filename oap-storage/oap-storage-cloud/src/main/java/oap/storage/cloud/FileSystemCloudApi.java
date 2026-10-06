@@ -56,8 +56,10 @@ public interface FileSystemCloudApi extends AutoCloseable {
     /**
      * Renders {@code path} as a "native"-looking URL for this backend instead of the {@code fs://<configurationId>/<path>}
      * address. Default falls back to {@code fs://<configurationId>/<path>} ({@code path.toString()}).
+     *
+     * @param credentials {@code true} to include the user name as a {@code user:XXX@} placeholder; the password is never rendered
      */
-    default String toUri( CloudURI path ) throws CloudException {
+    default String toUri( CloudURI path, boolean credentials ) throws CloudException {
         return path.toString();
     }
 }

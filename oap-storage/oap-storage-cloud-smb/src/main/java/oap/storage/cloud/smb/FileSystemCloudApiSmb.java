@@ -51,6 +51,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     private final String share;
     private final String basedir;
     private final CIFSContext cifsContext;
+    private final String username;
 
     public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
         String container = ( String ) fileSystemConfiguration.getOrThrow( "smb", configurationId, "container" );
@@ -74,6 +75,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
 
         Object identity = fileSystemConfiguration.get( "smb", configurationId, "identity" );
         String username = identity != null ? identity.toString() : "guest";
+        this.username = username;
 
         Object credential = fileSystemConfiguration.get( "smb", configurationId, "credential" );
         String password = credential != null ? credential.toString() : "";
@@ -101,7 +103,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     }
 
     private String physicalPath( String path ) {
-        return basedir.isEmpty() ? path : basedir + "/" + path;
+        return basedir.isEmpty() ? path : s( "${basedir}/${path}" );
     }
 
     private String rawUrl( String physicalPath ) {
@@ -113,8 +115,9 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     }
 
     @Override
-    public String toUri( CloudURI path ) {
-        return rawUrl( path.path );
+    public String toUri( CloudURI path, boolean credentials ) {
+        String auth = credentials ? s( "${username}:XXX@" ) : "";
+        return s( "smb://${auth}${host}:${port}/${share}/${path.path}" );
     }
 
     private SmbFile smbFile( CloudURI path ) {

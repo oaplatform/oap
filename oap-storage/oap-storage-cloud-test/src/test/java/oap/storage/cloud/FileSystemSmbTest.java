@@ -50,7 +50,9 @@ public class FileSystemSmbTest extends Fixtures {
     @Test
     public void testToUri() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.toUri( smbUri( "logs/file.txt" ) ) )
+            assertThat( fileSystem.toUri( smbUri( "logs/file.txt" ), true ) )
+                .isEqualTo( s( "smb://smb-test-user:XXX@${smbFixture.container()}/logs/file.txt" ) );
+            assertThat( fileSystem.toUri( smbUri( "logs/file.txt" ), false ) )
                 .isEqualTo( s( "smb://${smbFixture.container()}/logs/file.txt" ) );
         }
     }
@@ -201,8 +203,8 @@ public class FileSystemSmbTest extends Fixtures {
 
             assertThat( smbFixture.readFile( "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
 
-            assertThat( fileSystem.toUri( smbUri( "file.txt" ) ) )
-                .isEqualTo( s( "smb://${smbFixture.container()}/file.txt" ) );
+            assertThat( fileSystem.toUri( smbUri( "file.txt" ), true ) )
+                .isEqualTo( s( "smb://smb-test-user:XXX@${smbFixture.container()}/file.txt" ) );
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( smbUri( "" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 1 );
