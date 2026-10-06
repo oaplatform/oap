@@ -24,11 +24,14 @@
 package oap.json.schema.validator.array;
 
 import oap.json.schema.AbstractJsonSchemaValidator;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidatorErrors;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ArrayJsonValidator extends AbstractJsonSchemaValidator<ArraySchemaAST> {
     public ArrayJsonValidator() {
@@ -36,24 +39,24 @@ public class ArrayJsonValidator extends AbstractJsonSchemaValidator<ArraySchemaA
     }
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
                                   Object value ) {
         if( !( value instanceof List<?> ) ) return typeFailed( properties, schema, value );
 
         List<?> arrayValue = ( List<?> ) value;
-        List<String> errors = new ArrayList<>();
+        List<JsonSchemaError> errors = new ArrayList<>();
 
         schema.minItems.filter( minItems -> arrayValue.size() < minItems )
-            .ifPresent( minItems -> errors.add( properties.error( schema, "minItems", "array " + arrayValue + " has less than minItems elements " + minItems, arrayValue, minItems ) ) );
+            .ifPresent( minItems -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.MIN_ITEMS, Map.of( "value", arrayValue.toString(), "minItems", minItems ) ) ) );
 
         schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
-            .ifPresent( maxItems -> errors.add( properties.error( schema, "maxItems", "array " + arrayValue + " has more than maxItems elements " + maxItems, arrayValue, maxItems ) ) );
+            .ifPresent( maxItems -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.MAX_ITEMS, Map.of( "value", arrayValue.toString(), "maxItems", maxItems ) ) ) );
 
         for( int i = 0; i < arrayValue.size(); i++ ) {
             var validatorProperties = properties
                     .withPath( String.valueOf( i ) )
                     .withAdditionalProperties( schema.additionalProperties );
-            List<String> jsonPathErrors = properties.validator.apply( validatorProperties, schema.items, arrayValue.get( i ) );
+            List<JsonSchemaError> jsonPathErrors = properties.validator.apply( validatorProperties, schema.items, arrayValue.get( i ) );
             errors.addAll( jsonPathErrors );
         }
 

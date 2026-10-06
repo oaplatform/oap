@@ -51,7 +51,7 @@ public class ValidateJsonTest extends Fixtures {
         assertPost( kernel.httpUrl( "/vj/run/validation/1" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{\"a\":1}" );
         assertPost( kernel.httpUrl( "/vj/run/validation/1" ), "{}", Http.ContentType.APPLICATION_JSON )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"message\": \"/a: required property is missing\"}]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"code\":1010,\"message\":\"/a: required property is missing\"}]}" );
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ValidateJsonTest extends Fixtures {
         assertPost( kernel.httpUrl( "/vj/run/validation/2" ), "{}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{}" );
         assertPost( kernel.httpUrl( "/vj/run/validation/2" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"message\": \"additional properties are not permitted [b]\"}]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"code\":1011,\"message\":\"additional properties are not permitted [b]\"}]}" );
     }
 
     @Test
@@ -71,7 +71,7 @@ public class ValidateJsonTest extends Fixtures {
         assertPost( kernel.httpUrl( "/vj/run/validation/3?type=type2" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{\"b\":1}" );
         assertPost( kernel.httpUrl( "/vj/run/validation/3?type=type1" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"message\": \"/a: required property is missing\"}]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"code\":1010,\"message\":\"/a: required property is missing\"}]}" );
     }
 
     public static class TestWS {

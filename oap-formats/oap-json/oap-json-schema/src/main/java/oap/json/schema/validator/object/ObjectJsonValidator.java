@@ -26,7 +26,9 @@ package oap.json.schema.validator.object;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.AbstractSchemaAST;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidatorErrors;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaPath;
 import oap.util.Stream;
@@ -45,12 +47,12 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
     }
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {
         if( !( value instanceof Map<?, ?> ) ) return typeFailed( properties, schema, value );
 
         @SuppressWarnings( "unchecked" ) final Map<String, Object> mapValue = ( Map<String, Object> ) value;
 
-        final List<String> errors = new ArrayList<>();
+        final List<JsonSchemaError> errors = new ArrayList<>();
 
         final Map<String, AbstractSchemaAST> objectProperties = new HashMap<>();
 
@@ -86,7 +88,7 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
                 boolean gateOk = !schema.properties.containsKey( name ) || objectProperties.containsKey( name );
                 if( gateOk && mapValue.get( name ) == null ) {
                     JsonValidatorProperties np = properties.withPath( name );
-                    errors.add( np.requiredError( schema, name, "required property is missing" ) );
+                    errors.add( np.requiredError( schema, name ) );
                 }
             }
         }
@@ -95,7 +97,7 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             && !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
             && !additionalProperties.isEmpty() ) {
 
-            errors.add( properties.error( schema, "additionalProperties", "additional properties are not permitted " + additionalProperties, additionalProperties ) );
+            errors.add( properties.error( schema, JsonSchemaValidatorErrors.ADDITIONAL_PROPERTIES_NOT_PERMITTED, Map.of( "additionalProperties", additionalProperties.toString() ) ) );
         }
 
         return errors;

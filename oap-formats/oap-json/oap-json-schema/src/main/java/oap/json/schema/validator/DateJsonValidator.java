@@ -26,11 +26,14 @@ package oap.json.schema.validator;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.DefaultSchemaAST;
 import oap.json.schema.DefaultSchemaASTWrapper;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidatorErrors;
 import oap.json.schema.JsonValidatorProperties;
 import oap.util.Dates;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DateJsonValidator extends AbstractJsonSchemaValidator<DefaultSchemaAST> {
@@ -40,15 +43,15 @@ public class DateJsonValidator extends AbstractJsonSchemaValidator<DefaultSchema
     }
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
         if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
         final String dateValue = ( String ) value;
 
-        final List<String> errors = new ArrayList<>();
+        final List<JsonSchemaError> errors = new ArrayList<>();
 
         Dates.parseDateWithTimeZone( dateValue )
-            .ifFailure( e -> errors.add( properties.error( schema, "date", e.getMessage(), dateValue ) ) );
+            .ifFailure( e -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.DATE, Collections.singletonMap( "error", e.getMessage() ) ) ) );
 
         return errors;
     }

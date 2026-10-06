@@ -55,7 +55,7 @@ public class ValidatePartialJsonTest extends Fixtures {
         assertPost( kernel.httpUrl( "/vpj/run/validation/1/id1" ), "{\"b\":[{\"element\":\"test\"}],\"id\":1}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{\"id\":1,\"b\":[{\"element\":\"test\"}]}],\"id\":\"id1\"}" );
         assertPost( kernel.httpUrl( "/vpj/run/validation/1/id1" ), "{}", Http.ContentType.APPLICATION_JSON )
-            .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"messages\":[{\"message\":\"/a/1/id: required property is missing\"}]}" );
+            .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"messages\":[{\"code\":1010,\"message\":\"/a/1/id: required property is missing\"}]}" );
     }
 
     @Test
@@ -65,7 +65,7 @@ public class ValidatePartialJsonTest extends Fixtures {
         assertPost( kernel.httpUrl( "/vpj/run/validation/2/id1" ), "{}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{}],\"id\":\"id1\"}" );
         assertPost( kernel.httpUrl( "/vpj/run/validation/2/id1" ), "{\"c\":1}", Http.ContentType.APPLICATION_JSON )
-            .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"messages\":[{\"message\":\"/a/1: additional properties are not permitted [c]\"}]}" );
+            .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"messages\":[{\"code\":1011,\"message\":\"/a/1: additional properties are not permitted [c]\"}]}" );
     }
 
     @Test

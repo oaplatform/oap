@@ -17,7 +17,7 @@ import static oap.util.Pair.__;
  * Adds validation messages to a {@link ValidationErrors} under one HTTP status code.
  * <p>
  * Obtain it with {@link ValidationErrors#statusCode(int)} and finish with {@link #endCode()}, which returns the
- * {@link ValidationErrors} it was created from, so several status codes can be chained.
+ * {@link ValidationErrors} it was created from, so several status codes can be chain
  * <p>
  * Each message may carry an optional message code (the {@code code} of {@code ErrorResponse.Message}).
  * Messages without a code use the variants without an {@code int code} parameter.

@@ -1,6 +1,6 @@
 # oap-json-schema
 
-Data-driven JSON schema validation for the OAP platform. Schemas are HOCON or JSON documents; validation returns a `List<String>` of error messages — empty means valid. No annotations, no code generation.
+Data-driven JSON schema validation for the OAP platform. Schemas are HOCON or JSON documents; validation returns a `List<JsonSchemaError>` — empty means valid. Each error has a code, a message template and its args. No annotations, no code generation.
 
 ## Schema types
 
@@ -187,6 +187,35 @@ This match is by key name only (not "must be inside `properties`"), so a branch 
 
 ## Custom error messages
 
+## Error codes and messages
+
+Every validation failure is a `JsonSchemaError { code, message, args }`. `message` is a template with `${name}` placeholders, and `args` holds the values. The codes are fixed and unique, starting at 1000 (`JsonSchemaValidatorErrors`):
+
+| Code | Keyword | Template |
+|---|---|---|
+| 1000 | `type` | `instance type is ${actualType}, but allowed type is ${schemaType}` |
+| 1001 | `minLength` | `string ${value} is shorter than minLength ${minLength}` |
+| 1002 | `maxLength` | `string ${value} is longer than maxLength ${maxLength}` |
+| 1003 | `pattern` | `string ${value} does not match specified regex ${pattern}` |
+| 1004 | `minimum` | `number ${value} is lower than the required minimum ${minimum}` |
+| 1005 | `maximum` | `number ${value} is greater than the required maximum ${maximum}` |
+| 1006 | `minimum` (exclusive) | `number ${value} is not strictly greater than the required minimum ${minimum}` |
+| 1007 | `maximum` (exclusive) | `number ${value} is not strictly lower than the required maximum ${maximum}` |
+| 1008 | `minItems` | `array ${value} has less than minItems elements ${minItems}` |
+| 1009 | `maxItems` | `array ${value} has more than maxItems elements ${maxItems}` |
+| 1010 | `required` | `required property is missing` |
+| 1011 | `additionalProperties` | `additional properties are not permitted ${additionalProperties}` |
+| 1012 | `date` | `${error}` (the parser message) |
+| 1013 | — | `dictionary ${name} not found` |
+| 1014 | — | `instance of '${value}' does not match any member resolve the enumeration ${ids}` |
+| 1015 | `enum` | `instance of '${value}' does not match any member resolve the enumeration ${enumeration}` |
+| 1016 | `const` | `instance does not equal const value '${constValue}'` |
+| 1017 | — | `instance does not match any schema in anyOf` |
+| 1018 | — | `instance must match exactly one schema in oneOf, matched ${matched}` |
+| 1019 | — | `instance must not be valid against the schema in not` |
+
+A path, if any, is prefixed as `/${path}: ` in the template and bound in `args`. When the README and the enum differ, the enum wins.
+
 Any schema node may carry an `errorMessage` object to override the built-in message for one or more failing keywords, ajv-errors style:
 
 ```hocon
@@ -203,7 +232,7 @@ Any schema node may carry an `errorMessage` object to override the built-in mess
 }
 ```
 
-A custom message **fully replaces** the default text — there's no automatic `/path: ` prefix. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root); remember to escape literal single quotes as `''`. Some keywords pass extra values as `{1}`, `{2}`, … (e.g. `type` passes the actual and allowed type).
+A custom message **fully replaces** the default text — there's no automatic `/path: ` prefix. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root); remember to escape literal single quotes as `''`. The following `{1}`, `{2}`, … are the values of the default template's placeholders, in template order (e.g. `type` passes the actual and allowed type). A custom message keeps the code of its keyword.
 
 ```hocon
 {
@@ -334,7 +363,7 @@ JsonSchema schema = JsonSchema.schemaFromString( """
 
 // Validate — returns error messages; empty list means valid
 Object json = Binder.json.unmarshal( Object.class, jsonString );
-List<String> errors = schema.validate( json, false );
+List<JsonSchemaError> errors = schema.validate( json, false );
 if( !errors.isEmpty() ) {
     // handle errors
 }
@@ -354,7 +383,7 @@ Validate only a sub-path of the schema against a value, given the full root docu
 
 ```java
 // Validate only the fields inside array items at path "lines.items"
-List<String> errors = schema.partialValidate( rootJson, partialJson, "lines.items", false );
+List<JsonSchemaError> errors = schema.partialValidate( rootJson, partialJson, "lines.items", false );
 ```
 
 ### Custom `SchemaStorage`

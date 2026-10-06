@@ -26,6 +26,7 @@ package oap.json.schema.validator;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.DefaultSchemaAST;
 import oap.json.schema.DefaultSchemaASTWrapper;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonValidatorProperties;
 import oap.util.Lists;
@@ -38,7 +39,7 @@ public class AnyJsonValidator extends AbstractJsonSchemaValidator<DefaultSchemaA
     }
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
         return Lists.empty();
     }
 

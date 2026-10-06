@@ -21,32 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json.schema.validator;
+package oap.json.schema;
 
-import oap.json.schema.AbstractJsonSchemaValidator;
-import oap.json.schema.DefaultSchemaAST;
-import oap.json.schema.DefaultSchemaASTWrapper;
-import oap.json.schema.JsonSchemaError;
-import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonValidatorProperties;
-import oap.util.Lists;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.util.List;
+import java.util.Map;
 
-public class BooleanJsonValidator extends AbstractJsonSchemaValidator<DefaultSchemaAST> {
-    public BooleanJsonValidator() {
-        super( "boolean" );
-    }
+/**
+ * One validation failure: a message code, a message template with {@code ${name}} placeholders, and the values
+ * for the placeholders.
+ */
+@EqualsAndHashCode
+@ToString
+public final class JsonSchemaError {
+    public final int code;
+    public final String message;
+    public final Map<String, Object> args;
 
-    @Override
-    public List<JsonSchemaError> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
-        if( !( value instanceof Boolean ) ) return typeFailed( properties, schema, value );
-
-        return Lists.empty();
-    }
-
-    @Override
-    public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-        return defaultParse( context );
+    public JsonSchemaError( int code, String message, Map<String, Object> args ) {
+        this.code = code;
+        this.message = message;
+        this.args = args;
     }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Http;
+import oap.json.schema.JsonSchemaError;
 import oap.reflect.Reflection;
 import oap.util.Mergeable;
 import oap.util.Pair;
@@ -104,6 +105,13 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     void add( int httpStatusCode, Collection<Pair<Integer, String>> messages ) {
         if( messages.isEmpty() ) return;
         this.messages.computeIfAbsent( httpStatusCode, c -> new LinkedHashSet<>() ).addAll( messages );
+    }
+
+    /** JSON schema failures as a {@code BAD_REQUEST}; each error keeps its code, template and args (see {@link ValidationErrorsBuilder#internalError}). */
+    static ValidationErrors jsonSchemaErrors( List<JsonSchemaError> errors ) {
+        ValidationErrorsBuilder builder = empty().statusCode( BAD_REQUEST );
+        for( JsonSchemaError error : errors ) builder = builder.internalError( error.code, error.message, error.args );
+        return builder.endCode();
     }
 
     private void normalize() {

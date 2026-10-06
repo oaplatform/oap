@@ -27,7 +27,6 @@ package oap.ws.validate;
 import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.Http;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonSchema;
@@ -131,7 +130,7 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 } else child = ( Map<Object, Object> ) next;
             }
 
-            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).errors( schema.validate( rootMap, validate.ignoreRequired() ) ).endCode();
+            return ValidationErrors.jsonSchemaErrors( schema.validate( rootMap, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }
