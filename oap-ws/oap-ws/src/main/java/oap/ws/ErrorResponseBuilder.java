@@ -37,6 +37,10 @@ public class ErrorResponseBuilder implements Serializable {
         return this;
     }
 
+    public ErrorResponseBuilder message( ValidationMessage message ) {
+        return message( message.code(), message.message() );
+    }
+
     public ErrorResponse build() {
         return new ErrorResponse( statusCode, error, List.copyOf( messages ) );
     }

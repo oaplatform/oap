@@ -1,5 +1,7 @@
 package oap.ws;
 
+import oap.validation.ValidationMessage;
+
 import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.Http.Headers.WWW_AUTHENTICATE;
 import static oap.http.Http.StatusCode.UNAUTHORIZED;
@@ -22,6 +24,10 @@ public class ErrorResponse401Builder {
     public ErrorResponse401Builder message( String code, String message ) {
         builder.message( code, message );
         return this;
+    }
+
+    public ErrorResponse401Builder message( ValidationMessage message ) {
+        return message( message.code(), message.message() );
     }
 
     public Response build() {
