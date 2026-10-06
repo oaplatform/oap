@@ -112,7 +112,9 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     public ValidationErrors throwIfInvalid() throws WsClientException {
         if( failed() ) {
             List<String> messages = resolvedErrors();
-            throw new WsClientException( messages.size() > 1 ? "validation failed" : messages.getFirst(), resolvedCode(), messages );
+            int code = resolvedCode();
+            String reason = Http.StatusCode.getReason( code );
+            throw new WsClientException( reason, code, messages );
         }
         return this;
     }

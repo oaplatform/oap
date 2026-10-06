@@ -149,28 +149,35 @@ public class Response {
     }
 
     public String bodyToString() {
-        if( body == null ) return null;
-
-        if( body instanceof byte[] bytes ) return new String( bytes );
-        else if( body instanceof ByteBuffer byteBuffer ) {
-            byte[] bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get( bytes );
-            return new String( bytes );
-        } else if( body instanceof String str ) {
-            if( raw ) return str;
-            else return HttpServerExchange.contentToString( false, str, contentType );
-        } else if( body instanceof Consumer ) {
-            @SuppressWarnings( "unchecked" )
-            var cons = ( Consumer<ByteArrayOutputStream> ) body;
-            var baos = new ByteArrayOutputStream();
-            cons.accept( baos );
-            body = baos.toByteArray();
-            return new String( ( byte[] ) body );
-        } else {
-            Preconditions.checkArgument( !raw );
-            return HttpServerExchange.contentToString( false, body, contentType );
+        switch( body ) {
+            case null -> {
+                return null;
+            }
+            case byte[] bytes -> {
+                return new String( bytes );
+            }
+            case ByteBuffer byteBuffer -> {
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get( bytes );
+                return new String( bytes );
+            }
+            case String str -> {
+                if( raw ) return str;
+                else return HttpServerExchange.contentToString( false, str, contentType );
+            }
+            case Consumer consumer -> {
+                @SuppressWarnings( "unchecked" )
+                Consumer<ByteArrayOutputStream> cons = ( Consumer<ByteArrayOutputStream> ) body;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                cons.accept( baos );
+                body = baos.toByteArray();
+                return new String( ( byte[] ) body );
+            }
+            default -> {
+                Preconditions.checkArgument( !raw );
+                return HttpServerExchange.contentToString( false, body, contentType );
+            }
         }
-
     }
 
     @SuppressWarnings( "unchecked" )

@@ -2,6 +2,7 @@ package oap.http;
 
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.google.common.io.ByteStreams;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import oap.io.Closeables;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
@@ -35,7 +37,9 @@ public class Response implements Closeable, AutoCloseable {
     public final String reasonPhrase;
     public final String contentType;
     public final List<Pair<String, String>> headers;
-    private InputStream inputStream;
+    private final ReentrantLock lock = new ReentrantLock();
+    @Getter
+    private volatile InputStream inputStream;
     private volatile byte[] content = null;
 
     public Response( String url, int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull String contentType, InputStream inputStream ) {
@@ -75,10 +79,6 @@ public class Response implements Closeable, AutoCloseable {
         return content;
     }
 
-    public InputStream getInputStream() {
-        return inputStream;
-    }
-
     public String contentString() {
         var text = content();
 
@@ -88,9 +88,14 @@ public class Response implements Closeable, AutoCloseable {
     }
 
     public <T> Optional<T> unmarshal( Class<T> clazz ) {
-        if( inputStream != null ) synchronized( this ) {
-            if( inputStream != null )
-                return Optional.of( Binder.json.unmarshal( clazz, inputStream ) );
+        if( inputStream != null ) {
+            lock.lock();
+            try {
+                if( inputStream != null )
+                    return Optional.of( Binder.json.unmarshal( clazz, inputStream ) );
+            } finally {
+                lock.unlock();
+            }
         }
 
         var contentString = contentString();
@@ -100,12 +105,17 @@ public class Response implements Closeable, AutoCloseable {
     }
 
     public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
-        if( inputStream != null ) synchronized( this ) {
-            if( inputStream != null )
-                return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
+        if( inputStream != null ) {
+            lock.lock();
+            try {
+                if( inputStream != null )
+                    return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
+            } finally {
+                lock.unlock();
+            }
         }
 
-        var contentString = contentString();
+        String contentString = contentString();
         if( contentString == null ) return Optional.empty();
 
         return Optional.of( Binder.json.unmarshal( ref, contentString ) );
@@ -116,24 +126,27 @@ public class Response implements Closeable, AutoCloseable {
         MappingIterator<Object> objectMappingIterator = null;
 
         if( inputStream != null ) {
-            synchronized( this ) {
+            lock.lock();
+            try {
                 if( inputStream != null ) {
                     objectMappingIterator = Binder.json.readerFor( ref ).readValues( inputStream );
                 }
+            } finally {
+                lock.unlock();
             }
         }
 
         if( objectMappingIterator == null ) {
-            var contentString = contentString();
+            String contentString = contentString();
             if( contentString == null )
                 return Stream.empty();
 
             objectMappingIterator = Binder.json.readerFor( ref ).readValues( contentString );
         }
 
-        var finalObjectMappingIterator = objectMappingIterator;
+        MappingIterator<Object> finalObjectMappingIterator = objectMappingIterator;
 
-        var it = new Iterator<T>() {
+        Iterator<T> it = new Iterator<T>() {
             @Override
             public boolean hasNext() {
                 return finalObjectMappingIterator.hasNext();
@@ -146,7 +159,7 @@ public class Response implements Closeable, AutoCloseable {
             }
         };
 
-        var stream = Stream.of( it );
+        Stream<T> stream = Stream.of( it );
         if( inputStream != null ) stream = stream.onClose( Try.run( () -> inputStream.close() ) );
         return stream;
     }
