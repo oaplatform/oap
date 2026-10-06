@@ -72,6 +72,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( code, text )} on
  * {@link ValidationErrorsBuilder} add a message to status {@code x}. The message code is optional: without one it is
  * {@code null}, with one it must be a literal. The text is kept when it is a literal, otherwise it is {@code null}.
+ * Formatted messages ({@code error( text, Map )} / {@code error( code, text, Map )}) have a {@code null} text, since
+ * the text is built at runtime.
  * Messages added through lists are not listed, since their count is unknown.
  * <p>
  * Limits: a code held in a local variable or computed at runtime is not resolved and is logged as a warning.

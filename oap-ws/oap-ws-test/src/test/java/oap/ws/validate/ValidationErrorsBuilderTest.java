@@ -5,6 +5,7 @@ import oap.json.Binder;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static oap.http.Http.StatusCode.BAD_REQUEST;
 import static oap.http.Http.StatusCode.CONFLICT;
@@ -49,10 +50,18 @@ public class ValidationErrorsBuilderTest {
     @Test
     public void testErrorFormatsArguments() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( "item %s not found", "x" ).endCode();
+            .statusCode( NOT_FOUND ).error( "item ${id} not found", Map.of( "id", "x" ) ).endCode();
 
         assertThat( errors.resolvedCode() ).isEqualTo( NOT_FOUND );
         assertThat( errors.resolvedErrors().stream().map( p -> p._2 ).toList() ).containsExactly( "item x not found" );
+    }
+
+    @Test
+    public void testErrorFormatsArgumentsWithMessageCode() {
+        ValidationErrors errors = ValidationErrors.empty()
+            .statusCode( NOT_FOUND ).error( 1004, "item ${id} not found", Map.of( "id", "y" ) ).endCode();
+
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1004, "item y not found" ) );
     }
 
     @Test

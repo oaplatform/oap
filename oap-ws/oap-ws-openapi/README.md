@@ -93,11 +93,12 @@ Each validation message is also scanned. The `application/json` media type of ev
 | `statusCode( 400 ).error( 1001, "a" )` | `{ "code": 1001, "message": "a" }` |
 | `statusCode( 400 ).error( "a" )` | `{ "message": "a" }` (no `code`) |
 | `statusCode( 400 ).error( 1002, "item " + id )` | `{ "code": 1002, "message": "<runtime message>" }` |
+| `statusCode( 404 ).error( 1004, "item ${id} not found", Map.of( "id", id ) )` | `{ "code": 1004, "message": "<runtime message>" }` |
 
 Rules:
 
 - The message code is optional. A literal `int` code is recorded; a computed one makes the message skipped with a warning.
-- A text that is not a literal is shown as the placeholder `<runtime message>`.
+- A text that is not a literal is shown as the placeholder `<runtime message>`. This includes formatted messages (`error( text, Map )` / `error( code, text, Map )`), whose text is built from the map at runtime.
 - Messages from the endpoint and from its interceptors are merged per status code. Duplicates are dropped.
 - Messages added through lists (`error(List)`, `errors(List)`, `pairs(...)`, `errors(Integer, List)`) are not listed, since their count is unknown at scan time. The status code is still reported.
 - The receiver must be the chained form `statusCode( x ).error(...)`. A builder held in a local variable is skipped with a warning.

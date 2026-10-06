@@ -30,6 +30,7 @@ import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -48,7 +49,9 @@ public class ErrorCodeScannerTest {
 
         assertThat( responses.get( 400 ) ).containsExactly(
             new ErrorCodeScanner.ScannedMessage( 1001, "a" ),
-            new ErrorCodeScanner.ScannedMessage( 1002, null ) );
+            new ErrorCodeScanner.ScannedMessage( 1002, null ),
+            new ErrorCodeScanner.ScannedMessage( 1003, null ),
+            new ErrorCodeScanner.ScannedMessage( null, null ) );
         assertThat( responses.get( 404 ) ).isEmpty();
     }
 
@@ -83,6 +86,8 @@ public class ErrorCodeScannerTest {
             return ValidationErrors.empty()
                 .statusCode( 400 ).error( 1001, "a" ).endCode()
                 .statusCode( 400 ).error( 1002, "a" + param ).endCode()
+                .statusCode( 400 ).error( 1003, "item ${id}", Map.of( "id", param ) ).endCode()
+                .statusCode( 400 ).error( "ctx ${id}", Map.of( "id", param ) ).endCode()
                 .statusCode( 404 ).errors( 1003, List.of( "gone" ) ).endCode();
         }
 

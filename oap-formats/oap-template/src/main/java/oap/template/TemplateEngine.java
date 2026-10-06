@@ -83,7 +83,7 @@ public class TemplateEngine implements Runnable {
         this( null, ttl );
     }
 
-    public TemplateEngine( Path diskCache, long ttl ) {
+    public TemplateEngine( @Nullable Path diskCache, long ttl ) {
         this.diskCache = diskCache;
         this.ttl = ttl;
 
@@ -236,7 +236,7 @@ public class TemplateEngine implements Runnable {
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, @Nullable TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getRuntimeTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess, listener );
     }
 

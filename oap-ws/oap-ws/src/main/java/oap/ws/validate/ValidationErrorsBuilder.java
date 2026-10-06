@@ -1,8 +1,14 @@
 package oap.ws.validate;
 
+import oap.reflect.TypeRef;
+import oap.template.ErrorStrategy;
+import oap.template.TemplateAccumulators;
+import oap.template.TemplateEngine;
+import oap.util.Dates;
 import oap.util.Pair;
 
 import java.util.List;
+import java.util.Map;
 
 import static oap.util.Pair.__;
 
@@ -13,9 +19,11 @@ import static oap.util.Pair.__;
  * {@link ValidationErrors} it was created from, so several status codes can be chained.
  * <p>
  * Each message may carry an optional message code (the {@code code} of {@code ErrorResponse.Message}).
- * Pass {@code null} for no message code.
+ * Messages without a code use the variants without an {@code int code} parameter.
  */
 public final class ValidationErrorsBuilder {
+    private static final TemplateEngine TEMPLATE_ENGINE = new TemplateEngine( null, Dates.m( 10 ) );
+
     private final ValidationErrors parent;
     private final int httpStatusCode;
 
@@ -32,10 +40,11 @@ public final class ValidationErrorsBuilder {
     }
 
     /**
-     * Adds a message formatted with {@code args}, with no message code.
+     * Adds a message formatted with {@code args}, with no message code. Placeholders are {@code ${name}}, resolved from {@code args} by the template engine.
      */
-    public ValidationErrorsBuilder error( String message, Object... args ) {
-        return pairs( List.of( __( null, message.formatted( args ) ) ) );
+    public ValidationErrorsBuilder error( String message, Map<String, Object> args ) {
+        String s = TEMPLATE_ENGINE.getRuntimeTemplate( message, new TypeRef<Map<String, Object>>() {}, message, TemplateAccumulators.STRING, ErrorStrategy.ERROR, null, null ).render( args ).get();
+        return pairs( List.of( __( null, s ) ) );
     }
 
     /**
@@ -46,10 +55,11 @@ public final class ValidationErrorsBuilder {
     }
 
     /**
-     * Adds a message formatted with {@code args}, with the given message code.
+     * Adds a message formatted with {@code args}, with the given message code. Placeholders are {@code ${name}}, resolved from {@code args}.
      */
-    public ValidationErrorsBuilder error( int code, String message, Object... args ) {
-        return error( code, message.formatted( args ) );
+    public ValidationErrorsBuilder error( int code, String message, Map<String, Object> args ) {
+        String s = TEMPLATE_ENGINE.getRuntimeTemplate( message, new TypeRef<Map<String, Object>>() {}, message, TemplateAccumulators.STRING, ErrorStrategy.ERROR, null, null ).render( args ).get();
+        return error( code, s );
     }
 
     /**

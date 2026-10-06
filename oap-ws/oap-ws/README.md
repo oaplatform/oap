@@ -454,11 +454,20 @@ ValidationErrors.empty().statusCode( 400 ).errors( 1002, List.of( "a", "b" ) ).e
 ValidationErrors.empty().statusCode( 400 ).pairs( List.of( Pair.__( 1003, "c" ) ) ).endCode(); // one pair per message
 ```
 
-The message code is optional (pass `null` or use the variants without it). A validation failure responds with the messages, each with its code when set:
+The message code is optional (use the variants without it). A validation failure responds with the messages, each with its code when set:
 
 ```json
 { "messages": [ { "code": 1001, "message": "name must not be null" }, { "message": "product not found" } ] }
 ```
+
+Messages can be formatted from a map. Placeholders are `${name}` and are resolved by the oap template engine at runtime:
+
+```java
+ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) ).endCode();          // no code
+ValidationErrors.empty().statusCode( 404 ).error( 1004, "item ${id} not found", Map.of( "id", id ) ).endCode();   // code 1004
+```
+
+The text is only known at runtime, so the OpenAPI generator shows a placeholder for it (see [oap-ws-openapi](../oap-ws-openapi/README.md#messages-in-examples)).
 
 `resolvedCode()` and `resolvedErrors()` pick one code for the response:
 
