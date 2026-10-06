@@ -85,7 +85,7 @@ public class ErrorCodeScanner {
     private static final String CONSTRUCTOR = "<init>";
     private static final String STATUS_CODE = "statusCode";
     private static final String ERROR = "error";
-    private static final String MESSAGE_DESC_PREFIX = "(Ljava/lang/Integer;Ljava/lang/String;";
+    private static final String MESSAGE_DESC_PREFIX = "(ILjava/lang/String;";
     private static final String PLAIN_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;";
     private static final int MIN_ERROR_CODE = 400;
     static final int MAX_DEPTH = 5;
@@ -244,17 +244,10 @@ public class ErrorCodeScanner {
         boolean withCode = invoke.desc.startsWith( MESSAGE_DESC_PREFIX );
         Integer messageCode = null;
         if( withCode ) {
-            AbstractInsnNode codeProducer = single( frame.getStack( top - argc ) );
-            if( codeProducer == null ) {
-                log.warn( "Message code in {} is not traceable, skipped", owner.getName() );
+            messageCode = constantValue( frame.getStack( top - argc ) );
+            if( messageCode == null ) {
+                log.warn( "Non-constant message code in {}, skipped", owner.getName() );
                 return;
-            }
-            if( codeProducer.getOpcode() != Opcodes.ACONST_NULL ) {
-                messageCode = boxedIntConstant( codeProducer, body );
-                if( messageCode == null ) {
-                    log.warn( "Non-constant message code in {}, skipped", owner.getName() );
-                    return;
-                }
             }
         }
 
@@ -275,16 +268,6 @@ public class ErrorCodeScanner {
         AbstractInsnNode producer = single( receiver );
         if( !( producer instanceof MethodInsnNode call ) || !STATUS_CODE.equals( call.name )
             || !Type.getInternalName( ValidationErrors.class ).equals( call.owner ) ) return null;
-
-        Frame<SourceValue> frame = frameOf( call, body );
-        if( frame == null ) return null;
-        return constantValue( frame.getStack( frame.getStackSize() - 1 ) );
-    }
-
-    /** The int constant of {@code Integer.valueOf( int )} that produced the boxed value, or null. */
-    private static Integer boxedIntConstant( AbstractInsnNode producer, Body body ) {
-        if( !( producer instanceof MethodInsnNode call ) || !"valueOf".equals( call.name )
-            || !Type.getInternalName( Integer.class ).equals( call.owner ) ) return null;
 
         Frame<SourceValue> frame = frameOf( call, body );
         if( frame == null ) return null;

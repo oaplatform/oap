@@ -30,6 +30,8 @@ import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,8 +43,8 @@ public class ErrorCodeScannerTest {
     }
 
     @Test
-    public void collectsMessageCodesAndTexts() throws NoSuchMethodException {
-        var responses = scanner.errorResponses( method( "messages" ) );
+    public void testCollectsMessageCodesAndTexts() throws NoSuchMethodException {
+        SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "messages" ) );
 
         assertThat( responses.get( 400 ) ).containsExactly(
             new ErrorCodeScanner.ScannedMessage( 1001, "a" ),
@@ -51,12 +53,12 @@ public class ErrorCodeScannerTest {
     }
 
     @Test
-    public void collectsCodesFromMethodValidatorsAndResponses() throws NoSuchMethodException {
+    public void testCollectsCodesFromMethodValidatorsAndResponses() throws NoSuchMethodException {
         assertThat( scanner.errorCodes( method( "web" ) ) ).containsExactly( 400, 401, 403, 404 );
     }
 
     @Test
-    public void skipsSuccessCodesAndNonConstantCodes() throws NoSuchMethodException {
+    public void testSkipsSuccessCodesAndNonConstantCodes() throws NoSuchMethodException {
         assertThat( scanner.errorCodes( method( "builders" ) ) ).containsExactly( 403, 404 );
         assertThat( scanner.errorCodes( method( "okOnly" ) ) ).isEmpty();
         assertThat( scanner.errorCodes( method( "nonConstant" ) ) ).isEmpty();

@@ -96,7 +96,7 @@ Each validation message is also scanned. The `application/json` media type of ev
 
 Rules:
 
-- The message code is optional. A literal `Integer` code (`Integer.valueOf` of an `int` constant, or `null`) is recorded; a computed one makes the message skipped with a warning.
+- The message code is optional. A literal `int` code is recorded; a computed one makes the message skipped with a warning.
 - A text that is not a literal is shown as the placeholder `<runtime message>`.
 - Messages from the endpoint and from its interceptors are merged per status code. Duplicates are dropped.
 - Messages added through lists (`error(List)`, `errors(List)`, `pairs(...)`, `errors(Integer, List)`) are not listed, since their count is unknown at scan time. The status code is still reported.
