@@ -26,6 +26,7 @@ package oap.ws.openapi;
 
 import oap.ws.Response;
 import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.ValidationMessage;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
@@ -49,10 +50,17 @@ public class ErrorCodeScannerTest {
 
         assertThat( responses.get( 400 ) ).containsExactly(
             new ErrorCodeScanner.ScannedMessage( 1_000_001, "a" ),
-            new ErrorCodeScanner.ScannedMessage( 1_000_002, null ),
+            new ErrorCodeScanner.ScannedMessage( null, null ),
             new ErrorCodeScanner.ScannedMessage( 1_000_003, "item ${id}" ),
             new ErrorCodeScanner.ScannedMessage( null, "ctx ${id}" ) );
         assertThat( responses.get( 404 ) ).isEmpty();
+    }
+
+    @Test
+    public void testCollectsEnumMessages() throws NoSuchMethodException {
+        SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "enumMessages" ) );
+
+        assertThat( responses.get( 400 ) ).containsExactly( new ErrorCodeScanner.ScannedMessage( 1_000_010, "name is required" ) );
     }
 
     @Test
@@ -84,11 +92,39 @@ public class ErrorCodeScannerTest {
 
         public ValidationErrors messages( String param ) {
             return ValidationErrors.empty()
-                .statusCode( 400 ).error( 1_000_001, "a" ).endCode()
-                .statusCode( 400 ).error( 1_000_002, "a" + param ).endCode()
-                .statusCode( 400 ).error( 1_000_003, "item ${id}", Map.of( "id", param ) ).endCode()
+                .statusCode( 400 ).error( Err.A ).endCode()
+                .statusCode( 400 ).error( "a" + param, Map.of() ).endCode()
+                .statusCode( 400 ).error( Err.B ).endCode()
                 .statusCode( 400 ).error( "ctx ${id}", Map.of( "id", param ) ).endCode()
                 .statusCode( 404 ).errors( 1_000_003, List.of( "gone" ) ).endCode();
+        }
+
+        public ValidationErrors enumMessages( String param ) {
+            return ValidationErrors.empty().statusCode( 400 ).error( Err.NAME ).endCode();
+        }
+
+        public enum Err implements ValidationMessage {
+            A( 1_000_001, "a" ),
+            B( 1_000_003, "item ${id}" ),
+            NAME( 1_000_010, "name is required" );
+
+            private final int code;
+            private final String message;
+
+            Err( int code, String message ) {
+                this.code = code;
+                this.message = message;
+            }
+
+            @Override
+            public int code() {
+                return code;
+            }
+
+            @Override
+            public String message() {
+                return message;
+            }
         }
 
         public Response builders( String param ) {

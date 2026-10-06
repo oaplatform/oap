@@ -75,6 +75,9 @@ Scanned code: the endpoint method, the methods named in `@WsValidate` (on the me
 | `oap.ws.Response` constructor or `withStatusCode( int )` | `new Response( 409 )` | `409` |
 | `oap.ws.Response.build401()` / `build403()` / `build404()` | `Response.build403().build()` | `401` / `403` / `404` |
 | `oap.http.Response` constructor | `new oap.http.Response( url, 409, … )` | `409` |
+| `statusCode( 400 ).error( E.X )` where `E` is a `ValidationMessage` enum | `NAME_REQUIRED( 1_000_010, "name is required" )` | `400`, message `1000010` / `"name is required"` |
+
+An enum constant's code and text come from its constructor arguments `(int code, String message)`, read from the enum's static initializer. They must be literals; otherwise the message is skipped with a warning.
 
 Rules:
 
@@ -90,16 +93,16 @@ Each validation message is also scanned. The `application/json` media type of ev
 
 | Code in scanned code | Example message |
 |---|---|
-| `statusCode( 400 ).error( 1_000_001, "a" )` | `{ "code": 1000001, "message": "a" }` |
+| `statusCode( 400 ).error( E.X )`, `E.X( 1_000_001, "a" )` | `{ "code": 1000001, "message": "a" }` |
 | `statusCode( 400 ).error( "a" )` | `{ "message": "a" }` (no `code`) |
-| `statusCode( 400 ).error( 1_000_002, "item " + id )` | `{ "code": 1000002, "message": "<runtime message>" }` |
-| `statusCode( 404 ).error( 1_000_004, "item ${id} not found", Map.of( "id", id ) )` | `{ "code": 1000004, "message": "item ${id} not found" }` |
+| `statusCode( 400 ).error( 1_000_002, "item " + id, Map.of() )` | `{ "code": 1000002, "message": "<runtime message>" }` |
+| `statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) )` | `{ "message": "item ${id} not found" }` |
 
 Rules:
 
-- The message code is optional. A literal `int` code is recorded; a computed one makes the message skipped with a warning. Public codes must be above `1_000_000`, so every scanned code is above that limit.
+- A message has a code only when it is an enum constant (`ValidationMessage`). The code and text are literals in the constant's constructor; otherwise the message is skipped with a warning. Public codes must be above `1_000_000`.
 - A text that is not a literal is shown as the placeholder `<runtime message>`.
-- Formatted messages (`error( text, Map )` / `error( code, text, Map )`) show their template text, with the `${name}` placeholders as written, since the rendered text is only known at runtime.
+- Formatted messages (`error( text, Map )`) show their template text, with the `${name}` placeholders as written, since the rendered text is only known at runtime.
 - Messages from the endpoint and from its interceptors are merged per status code. Duplicates are dropped.
 - Messages in an example are sorted by code, ascending. Messages without a code come last; ties are sorted by text.
 - Messages added through lists (`error(List)`, `errors(List)`, `pairs(...)`, `errors(Integer, List)`) are not listed, since their count is unknown at scan time. The status code is still reported.

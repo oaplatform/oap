@@ -33,6 +33,7 @@ import oap.ws.WsParam;
 import oap.ws.sso.WsSecurity;
 import oap.ws.sso.interceptor.JWTSecurityInterceptor;
 import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.ValidationMessage;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -157,8 +158,6 @@ public class OpenapiErrorResponseTest {
     }
 
     public static class Fixture {
-        public static final int ERROR_CODE_1 = 1_001_023;
-
         @WsMethod( path = "/validated", method = GET )
         @WsValidate( "validateCode" )
         public Response validated() {
@@ -182,8 +181,30 @@ public class OpenapiErrorResponseTest {
         private void validateC( int c ) {
             for( int i = 10; i < 100; i++ ) {
                 if( c > i ) {
-                    ValidationErrors.empty().statusCode( BAD_REQUEST ).error( ERROR_CODE_1, "${c} - v", Map.of( "c", c ) ).endCode().throwIfInvalid();
+                    ValidationErrors.empty().statusCode( BAD_REQUEST ).error( InnerError.C ).endCode().throwIfInvalid();
                 }
+            }
+        }
+
+        public enum InnerError implements ValidationMessage {
+            C( 1_001_023, "${c} - v" );
+
+            private final int code;
+            private final String message;
+
+            InnerError( int code, String message ) {
+                this.code = code;
+                this.message = message;
+            }
+
+            @Override
+            public int code() {
+                return code;
+            }
+
+            @Override
+            public String message() {
+                return message;
             }
         }
 

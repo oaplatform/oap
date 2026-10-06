@@ -36,6 +36,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -53,6 +54,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -70,12 +72,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * up to {@link #MAX_DEPTH} levels.
  * {@code Response.build401()}, {@code build403()} and {@code build404()} always yield their status code.
  * <p>
- * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( code, text )} on
- * {@link ValidationErrorsBuilder} add a message to status {@code x}. The message code is optional: without one it is
- * {@code null}, with one it must be a literal. The text is kept when it is a literal, otherwise it is {@code null}.
- * Formatted messages ({@code error( text, Map )} / {@code error( code, text, Map )}) keep their template text
+ * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( text, args )} on
+ * {@link ValidationErrorsBuilder} add a message with no code to status {@code x}. The text is kept when it is a literal,
+ * otherwise it is {@code null}. Formatted messages ({@code error( text, Map )}) keep their template text
  * (for example {@code ${name}} placeholders), since the rendered text is only known at runtime.
+ * {@code statusCode( x ).error( E.X )} takes its code and text from the enum constant (see below).
  * Messages added through lists are not listed, since their count is unknown.
+ * A {@link oap.ws.validate.ValidationMessage} enum constant ({@code error( E.X )}) gives its code and text from the
+ * constant's constructor arguments {@code (int code, String message)}, read from the enum's {@code <clinit>}.
  * <p>
  * Limits: a code held in a local variable or computed at runtime is not resolved and is logged as a warning.
  */
@@ -88,8 +92,8 @@ public class ErrorCodeScanner {
     private static final String CONSTRUCTOR = "<init>";
     private static final String STATUS_CODE = "statusCode";
     private static final String ERROR = "error";
-    private static final String MESSAGE_DESC_PREFIX = "(ILjava/lang/String;";
     private static final String PLAIN_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;";
+    private static final String VALIDATION_MESSAGE_DESC_PREFIX = "(Loap/ws/validate/ValidationMessage;";
     private static final int MIN_ERROR_CODE = 400;
     static final int MAX_DEPTH = 5;
     private static final Set<String> CODE_OWNERS = Set.of(
@@ -99,6 +103,7 @@ public class ErrorCodeScanner {
         Type.getInternalName( oap.http.Response.class ) );
 
     private final Map<Class<?>, ClassNode> classNodes = new ConcurrentHashMap<>();
+    private final Map<String, Optional<ScannedMessage>> enumMessages = new ConcurrentHashMap<>();
 
     /**
      * A message of an error response: its message code (may be {@code null}) and its text (may be {@code null}
@@ -229,7 +234,7 @@ public class ErrorCodeScanner {
     private static boolean isMessage( MethodInsnNode invoke ) {
         return Type.getInternalName( ValidationErrorsBuilder.class ).equals( invoke.owner )
             && ERROR.equals( invoke.name )
-            && ( invoke.desc.startsWith( MESSAGE_DESC_PREFIX ) || invoke.desc.startsWith( PLAIN_MESSAGE_DESC_PREFIX ) );
+            && ( invoke.desc.startsWith( PLAIN_MESSAGE_DESC_PREFIX ) || invoke.desc.startsWith( VALIDATION_MESSAGE_DESC_PREFIX ) );
     }
 
     private void collectMessage( MethodInsnNode invoke, Frame<SourceValue> frame, Body body, Class<?> owner,
@@ -244,21 +249,86 @@ public class ErrorCodeScanner {
         }
         if( statusCode < MIN_ERROR_CODE ) return;
 
-        boolean withCode = invoke.desc.startsWith( MESSAGE_DESC_PREFIX );
-        Integer messageCode = null;
-        if( withCode ) {
-            messageCode = constantValue( frame.getStack( top - argc ) );
-            if( messageCode == null ) {
-                log.warn( "Non-constant message code in {}, skipped", owner.getName() );
+        if( invoke.desc.startsWith( VALIDATION_MESSAGE_DESC_PREFIX ) ) {
+            AbstractInsnNode producer = single( frame.getStack( top - argc ) );
+            if( !( producer instanceof FieldInsnNode constant ) || constant.getOpcode() != Opcodes.GETSTATIC ) {
+                log.warn( "Validation message in {} is not an enum constant, skipped", owner.getName() );
                 return;
+            }
+            enumMessage( constant.owner, constant.name, owner ).ifPresent( message -> status( results, statusCode ).add( message ) );
+            return;
+        }
+
+        AbstractInsnNode textProducer = single( frame.getStack( top - argc ) );
+        String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+
+        status( results, statusCode ).add( new ScannedMessage( null, text ) );
+    }
+
+    /** The code and text of the enum constant {@code enumOwner.field}, read once from its constructor arguments. */
+    private Optional<ScannedMessage> enumMessage( String enumOwner, String field, Class<?> scanned ) {
+        return enumMessages.computeIfAbsent( enumOwner + "." + field, key -> readEnumMessage( enumOwner, field, scanned ) );
+    }
+
+    /** Finds the constructor call that builds the constant and stores it in {@code field} in the enum's {@code <clinit>}. */
+    private Optional<ScannedMessage> readEnumMessage( String enumOwner, String field, Class<?> scanned ) {
+        Class<?> enumClass = resolve( enumOwner, scanned.getClassLoader() );
+        ClassNode classNode = enumClass == null ? null : classNode( enumClass );
+        MethodNode clinit = classNode == null ? null : findMethod( classNode, "<clinit>", "()V" );
+        if( clinit == null ) {
+            log.warn( "Enum {} is not readable, constant {} skipped", enumOwner, field );
+            return Optional.empty();
+        }
+
+        Frame<SourceValue>[] frames;
+        try {
+            frames = new Analyzer<>( new SourceInterpreter() ).analyze( classNode.name, clinit );
+        } catch( AnalyzerException e ) {
+            log.warn( "Cannot analyze <clinit> of {}", enumOwner, e );
+            return Optional.empty();
+        }
+
+        AbstractInsnNode[] instructions = clinit.instructions.toArray();
+        Frame<SourceValue> constructor = null;
+        String constructorDesc = null;
+        for( int i = 0; i < instructions.length; i++ ) {
+            if( frames[i] == null ) continue;
+            AbstractInsnNode insn = instructions[i];
+            if( insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKESPECIAL
+                && CONSTRUCTOR.equals( call.name ) && enumOwner.equals( call.owner ) ) {
+                constructor = frames[i];
+                constructorDesc = call.desc;
+            } else if( insn instanceof FieldInsnNode put && put.getOpcode() == Opcodes.PUTSTATIC
+                && enumOwner.equals( put.owner ) && field.equals( put.name ) ) {
+                if( constructor == null ) return Optional.empty();
+                return Optional.ofNullable( enumConstructorMessage( constructor, constructorDesc, enumOwner, field ) );
             }
         }
 
-        int textIndex = withCode ? 1 : 0;
-        AbstractInsnNode textProducer = single( frame.getStack( top - argc + textIndex ) );
-        String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+        log.warn( "Enum constant {}.{} not found in <clinit>, skipped", enumOwner, field );
+        return Optional.empty();
+    }
 
-        status( results, statusCode ).add( new ScannedMessage( messageCode, text ) );
+    /**
+     * Code and text from the constructor arguments of an enum constant. The descriptor starts with the implicit
+     * {@code (String name, int ordinal)}; the declared {@code (int code, String message)} follow.
+     */
+    private static ScannedMessage enumConstructorMessage( Frame<SourceValue> frame, String desc, String enumOwner, String field ) {
+        Type[] args = Type.getArgumentTypes( desc );
+        if( args.length < 4 || args[2].getSort() != Type.INT || !"Ljava/lang/String;".equals( args[3].getDescriptor() ) ) {
+            log.warn( "Enum constant {}.{} constructor {} is not (int, String), skipped", enumOwner, field, desc );
+            return null;
+        }
+
+        int top = frame.getStackSize();
+        Integer code = constantValue( frame.getStack( top - args.length + 2 ) );
+        if( code == null ) {
+            log.warn( "Non-constant code in enum constant {}.{}, skipped", enumOwner, field );
+            return null;
+        }
+        AbstractInsnNode textProducer = single( frame.getStack( top - args.length + 3 ) );
+        String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+        return new ScannedMessage( code, text );
     }
 
     /** The literal status code of the {@code statusCode( int )} call that produced the receiver, or null. */

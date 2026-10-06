@@ -449,9 +449,20 @@ public Response patch(
 ```java
 ValidationErrors.empty().statusCode( 400 ).error( "name must not be null" ).endCode();      // 400
 ValidationErrors.empty().statusCode( 404 ).error( "product not found" ).endCode();           // 404
-ValidationErrors.empty().statusCode( 400 ).error( 1_000_001, "name must not be null" ).endCode(); // 400, message code 1_000_001
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, message code 1_000_010 (enum, see below)
 ValidationErrors.empty().statusCode( 400 ).errors( 1_000_002, List.of( "a", "b" ) ).endCode();    // one message code for all
-ValidationErrors.empty().statusCode( 400 ).pairs( List.of( Pair.__( 1_000_003, "c" ) ) ).endCode(); // one pair per message
+ValidationErrors.empty().statusCode( 400 ).pairs( List.of( ProductError.X ) ).endCode(); // one ValidationMessage per message
+```
+
+A message defined once, as an enum constant, implements `ValidationMessage` and is passed as a whole. Its code and text come from the constant:
+
+```java
+public enum ProductError implements ValidationMessage {
+    NAME_REQUIRED( 1_000_010, "name is required" );
+    // constructor, code() and message() omitted
+}
+
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, code 1_000_010
 ```
 
 The message code is optional (use the variants without it). A validation failure responds with the messages, each with its code when set:
@@ -469,7 +480,7 @@ Messages can be formatted from a map. Placeholders are `${name}` and are resolve
 
 ```java
 ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) ).endCode();          // no code
-ValidationErrors.empty().statusCode( 404 ).error( 1_000_004, "item ${id} not found", Map.of( "id", id ) ).endCode();   // code 1_000_004
+ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) ).endCode();          // no code, template is not shown in the code
 ```
 
 The rendered text is only known at runtime, so the OpenAPI generator shows the template text with its `${name}` placeholders (see [oap-ws-openapi](../oap-ws-openapi/README.md#messages-in-examples)).

@@ -40,7 +40,6 @@ import oap.ws.sso.WsSecurity;
 import java.util.Objects;
 import java.util.Optional;
 
-import static oap.http.Http.StatusCode.FORBIDDEN;
 import static oap.ws.sso.SSO.ISSUER;
 import static oap.ws.sso.SSO.SESSION_USER_KEY;
 import static oap.ws.sso.WsSecurity.SYSTEM;
@@ -77,7 +76,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         };
 
         if( realm.isEmpty() ) {
-            return Optional.of( new Response( FORBIDDEN, "realm is not passed" ) );
+            return Optional.of( Response.build403().message( "realm is not passed" ).build() );
         }
 
         String realmString = realm.get();

@@ -58,41 +58,41 @@ public class ValidationErrorsBuilderTest {
     }
 
     @Test
-    public void testErrorFormatsArgumentsWithMessageCode() {
+    public void testValidationMessageConstantKeepsCodeAndText() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( 1_000_004, "item ${id} not found", Map.of( "id", "y" ) ).endCode();
+            .statusCode( BAD_REQUEST ).error( Message.LARGE ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_004, "item y not found" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_020, "too large" ) );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.SMALL ) )
+            .isInstanceOf( IllegalArgumentException.class );
     }
 
     @Test
     public void testMessageCodesAreKept() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( 1_000_001, "missing" ).endCode()
+            .statusCode( NOT_FOUND ).error( Message.MISSING ).endCode()
             .statusCode( NOT_FOUND ).errors( 1_000_002, List.of( "gone" ) ).endCode()
-            .statusCode( NOT_FOUND ).pairs( List.of( Pair.__( 1_000_003, "x" ) ) ).endCode();
+            .statusCode( NOT_FOUND ).pairs( List.of( Message.X ) ).endCode();
 
         assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_001, "missing" ), Pair.__( 1_000_002, "gone" ), Pair.__( 1_000_003, "x" ) );
     }
 
     @Test
     public void testPublicCodeMustBeAboveLimit() {
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( 1001, "small" ) )
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.SMALL ) )
             .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( 1_000_000, "limit" ) )
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.LIMIT ) )
             .isInstanceOf( IllegalArgumentException.class );
         assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).errors( 1, List.of( "a" ) ) )
             .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( 1, "a", Map.of() ) )
-            .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).pairs( List.of( Pair.__( 1, "a" ) ) ) )
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).pairs( List.of( Message.SMALL ) ) )
             .isInstanceOf( IllegalArgumentException.class );
     }
 
     @Test
-    public void testPublicPairsAllowNullCode() {
+    public void testPlainErrorHasNoCode() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( BAD_REQUEST ).pairs( List.of( Pair.__( null, "no code" ) ) ).endCode();
+            .statusCode( BAD_REQUEST ).error( "no code" ).endCode();
 
         assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( null, "no code" ) );
     }
@@ -115,6 +115,32 @@ public class ValidationErrorsBuilderTest {
             .statusCode( NOT_FOUND ).internalError( 2, "fmt ${id}", Map.of( "id", "x" ) ).endCode();
 
         assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1001, "missing" ), Pair.__( 1_000_000, "limit" ), Pair.__( 2, "fmt x" ) );
+    }
+
+    private enum Message implements ValidationMessage {
+        LARGE( 1_000_020, "too large" ),
+        SMALL( 5, "too small" ),
+        MISSING( 1_000_001, "missing" ),
+        X( 1_000_003, "x" ),
+        LIMIT( 1_000_000, "limit" );
+
+        private final int code;
+        private final String message;
+
+        Message( int code, String message ) {
+            this.code = code;
+            this.message = message;
+        }
+
+        @Override
+        public int code() {
+            return code;
+        }
+
+        @Override
+        public String message() {
+            return message;
+        }
     }
 
     @Test

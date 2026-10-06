@@ -3,7 +3,8 @@ package oap.ws;
 import java.io.Serial;
 import java.io.Serializable;
 import oap.ws.validate.ValidationErrors;
-import oap.util.Pair;
+import oap.ws.validate.ValidationErrorsBuilder;
+import oap.ws.validate.ValidationMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,14 @@ public class ErrorResponseBuilder implements Serializable {
     }
 
     public ValidationErrors toValidationErrors() {
-        return ValidationErrors.empty().statusCode( statusCode ).pairs( messages.stream().map( m -> Pair.__( m.code, m.message ) ).toList() ).endCode();
+        ValidationErrorsBuilder builder = ValidationErrors.empty().statusCode( statusCode );
+        for( ErrorResponse.Message m : messages ) {
+            builder = m.code == null ? builder.error( m.message ) : builder.error( new CodedMessage( m.code, m.message ) );
+        }
+        return builder.endCode();
+    }
+
+    /** A message with a code, as a {@link ValidationMessage}. */
+    private record CodedMessage( int code, String message ) implements ValidationMessage {
     }
 }
