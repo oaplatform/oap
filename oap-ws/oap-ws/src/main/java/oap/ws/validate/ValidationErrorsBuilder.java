@@ -63,6 +63,16 @@ public final class ValidationErrorsBuilder {
     }
 
     /**
+     * Adds the message of a {@link ValidationMessage} formatted with {@code args}, with its code, which must be above
+     * {@link #MAX_INTERNAL_CODE}. Placeholders are {@code ${name}}, resolved from {@code args}.
+     *
+     * @throws IllegalArgumentException if the code is not above {@link #MAX_INTERNAL_CODE}
+     */
+    public ValidationErrorsBuilder error( ValidationMessage message, Map<String, Object> args ) {
+        return pairs( List.of( new CodedMessage( message.code(), format( message.message(), args ) ) ) );
+    }
+
+    /**
      * Adds messages with no message code.
      */
     public ValidationErrorsBuilder errors( List<String> messages ) {
@@ -86,7 +96,7 @@ public final class ValidationErrorsBuilder {
     public ValidationErrorsBuilder pairs( List<ValidationMessage> messages ) {
         for( ValidationMessage message : messages ) {
             if( message.code() <= MAX_INTERNAL_CODE )
-                throw new IllegalArgumentException( "message code must be above " + MAX_INTERNAL_CODE + ": " + message.code() );
+                throw new IllegalArgumentException( s( "message code must be above ${MAX_INTERNAL_CODE}: ${message.code()}" ) );
         }
         return add( messages.stream().map( message -> __( message.code(), message.message() ) ).toList() );
     }

@@ -463,6 +463,7 @@ public enum ProductError implements ValidationMessage {
 }
 
 ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, code 1_000_010
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED, Map.of( "name", name ) ).endCode(); // template with ${name}, formatted
 ```
 
 The message code is optional (use the variants without it). A validation failure responds with the messages, each with its code when set:

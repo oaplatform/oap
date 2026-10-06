@@ -68,6 +68,16 @@ public class ValidationErrorsBuilderTest {
     }
 
     @Test
+    public void testValidationMessageFormatsArguments() {
+        ValidationErrors errors = ValidationErrors.empty()
+            .statusCode( NOT_FOUND ).error( Message.T, Map.of( "id", "y" ) ).endCode();
+
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_005, "item y" ) );
+        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.SMALL, Map.of() ) )
+            .isInstanceOf( IllegalArgumentException.class );
+    }
+
+    @Test
     public void testMessageCodesAreKept() {
         ValidationErrors errors = ValidationErrors.empty()
             .statusCode( NOT_FOUND ).error( Message.MISSING ).endCode()
@@ -122,6 +132,7 @@ public class ValidationErrorsBuilderTest {
         SMALL( 5, "too small" ),
         MISSING( 1_000_001, "missing" ),
         X( 1_000_003, "x" ),
+        T( 1_000_005, "item ${id}" ),
         LIMIT( 1_000_000, "limit" );
 
         private final int code;
