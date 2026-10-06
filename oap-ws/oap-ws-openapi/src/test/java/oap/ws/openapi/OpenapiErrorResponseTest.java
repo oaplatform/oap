@@ -27,9 +27,11 @@ package oap.ws.openapi;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
-import oap.http.server.nio.HttpServerExchange.HttpMethod;
 import oap.ws.Response;
 import oap.ws.WsMethod;
+import oap.ws.WsParam;
+import oap.ws.sso.WsSecurity;
+import oap.ws.sso.interceptor.JWTSecurityInterceptor;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.BeforeClass;
@@ -38,88 +40,16 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+import static oap.http.Http.StatusCode.BAD_REQUEST;
+import static oap.http.Http.StatusCode.CONFLICT;
+import static oap.http.Http.StatusCode.FORBIDDEN;
+import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
+import static oap.ws.WsParam.From.QUERY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class OpenapiErrorResponseTest {
     private OpenAPI api;
-
-    @BeforeClass
-    public void generate() {
-        OpenapiGenerator generator = new OpenapiGenerator( "title", "description" );
-        generator.processWebservice( Fixture.class, "ctx" );
-        api = generator.build();
-    }
-
-    @Test
-    public void validationErrorsFromMethodValidatorAreReported() {
-        ApiResponses responses = responses( "validated" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "400" );
-        assertJsonError( responses.get( "400" ), "Bad Request" );
-    }
-
-    @Test
-    public void validationErrorsFromMethodBodyAreReported() {
-        ApiResponses responses = responses( "validationBody" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "403" );
-        assertJsonError( responses.get( "403" ), "Forbidden" );
-    }
-
-    @Test
-    public void voidMethodKeepsErrorResponsesFromValidator() {
-        ApiResponses responses = responses( "voidWithError" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "403" );
-        assertJsonError( responses.get( "403" ), "Forbidden" );
-    }
-
-    @Test
-    public void build401IsReferencedAsUnauthorizedComponent() {
-        ApiResponses responses = responses( "unauthorized" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "401" );
-        assertThat( responses.get( "401" ).get$ref() ).isEqualTo( "#/components/responses/UnauthorizedError" );
-    }
-
-    @Test
-    public void build403IsReported() {
-        ApiResponses responses = responses( "forbidden" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "403" );
-        assertJsonError( responses.get( "403" ), "Forbidden" );
-    }
-
-    @Test
-    public void build404IsReported() {
-        ApiResponses responses = responses( "missing" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "404" );
-        assertJsonError( responses.get( "404" ), "Not Found" );
-    }
-
-    @Test
-    public void httpResponseCodeIsReported() {
-        ApiResponses responses = responses( "upstream" );
-
-        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "409" );
-        assertJsonError( responses.get( "409" ), "Conflict" );
-    }
-
-    @Test
-    public void errorResponseExampleCarriesMessages() {
-        assertThat( responses( "validated" ).get( "400" ).getContent().get( "application/json" ).getExample() )
-            .isEqualTo( Map.of( "messages", List.of( Map.of( "message", "bad code" ) ) ) );
-    }
-
-    @Test
-    public void methodWithoutErrorSourcesHasOnlySuccess() {
-        assertThat( responses( "success" ).keySet() ).containsExactly( "200" );
-    }
-
-    private ApiResponses responses( String name ) {
-        return api.getPaths().get( "/ctx/" + name ).getGet().getResponses();
-    }
 
     private static void assertJsonError( ApiResponse response, String description ) {
         assertThat( response.getDescription() ).isEqualTo( description );
@@ -127,58 +57,168 @@ public class OpenapiErrorResponseTest {
             .isEqualTo( "#/components/schemas/ErrorResponse" );
     }
 
+    @BeforeClass
+    public void testGenerate() {
+        OpenapiGenerator generator = new OpenapiGenerator( "title", "description" );
+        generator.processWebservice( Fixture.class, "ctx" );
+        api = generator.build();
+    }
+
+    @Test
+    public void testValidationErrorsFromMethodValidatorAreReported() {
+        ApiResponses responses = responses( "validated" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "400" );
+        assertJsonError( responses.get( "400" ), "Bad Request" );
+    }
+
+    @Test
+    public void testValidationErrorsFromMethodBodyAreReported() {
+        ApiResponses responses = responses( "validationBody" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "403" );
+        assertJsonError( responses.get( "403" ), "Forbidden" );
+    }
+
+    @Test
+    public void testVoidMethodKeepsErrorResponsesFromValidator() {
+        ApiResponses responses = responses( "voidWithError" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "403" );
+        assertJsonError( responses.get( "403" ), "Forbidden" );
+    }
+
+    @Test
+    public void testBuild401IsReferencedAsUnauthorizedComponent() {
+        ApiResponses responses = responses( "unauthorized" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "401" );
+        assertThat( responses.get( "401" ).get$ref() ).isEqualTo( "#/components/responses/UnauthorizedError" );
+    }
+
+    @Test
+    public void testBuild403IsReported() {
+        ApiResponses responses = responses( "forbidden" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "403" );
+        assertJsonError( responses.get( "403" ), "Forbidden" );
+    }
+
+    @Test
+    public void testBuild404IsReported() {
+        ApiResponses responses = responses( "missing" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "404" );
+        assertJsonError( responses.get( "404" ), "Not Found" );
+    }
+
+    @Test
+    public void testHttpResponseCodeIsReported() {
+        ApiResponses responses = responses( "upstream" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "409" );
+        assertJsonError( responses.get( "409" ), "Conflict" );
+    }
+
+    @Test
+    public void testErrorResponseExampleCarriesMessages() {
+        assertThat( responses( "validated" ).get( "400" ).getContent().get( "application/json" ).getExample() )
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "message", "bad code" ) ) ) );
+    }
+
+    @Test
+    public void testMethodWithoutErrorSourcesHasOnlySuccess() {
+        assertThat( responses( "success" ).keySet() ).containsExactly( "200" );
+    }
+
+    @Test
+    public void testInnerValidationReportsStatusCodeCodeAndMessage() {
+        OpenapiGenerator generator = new OpenapiGenerator( "title", "description" );
+        generator.processWebservice( Fixture.class, "ctx", List.of( JWTSecurityInterceptor.class ) );
+        api = generator.build();
+
+        ApiResponses responses = api.getPaths().get( "/ctx/validateMethods" ).getGet().getResponses();
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
+        assertJsonError( responses.get( "400" ), "Bad Request" );
+        assertThat( responses.get( "400" ).getContent().get( "application/json" ).getExample() )
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "code", 1023, "message", "${c} - v" ) ) ) );
+    }
+
+    private ApiResponses responses( String name ) {
+        return api.getPaths().get( s( "/ctx/${name}" ) ).getGet().getResponses();
+    }
+
     public static class Fixture {
-        @WsMethod( path = "/validated", method = HttpMethod.GET )
+        public static final int ERROR_CODE_1 = 1023;
+
+        @WsMethod( path = "/validated", method = GET )
         @WsValidate( "validateCode" )
         public Response validated() {
             return Response.ok();
         }
 
-        @WsMethod( path = "/validationBody", method = HttpMethod.GET )
+        @WsMethod( path = "/validationBody", method = GET )
         public Response validationBody() {
-            ValidationErrors.empty().statusCode( 403 ).errors( List.of( "denied" ) ).endCode().throwIfInvalid();
+            ValidationErrors.empty().statusCode( FORBIDDEN ).errors( List.of( "denied" ) ).endCode().throwIfInvalid();
             return Response.ok();
         }
 
-        @WsMethod( path = "/voidWithError", method = HttpMethod.GET )
+        @WsMethod( path = "/validateMethods", method = GET )
+        @WsSecurity( permissions = "a:test" )
+        public void testInnerValidation( @WsParam( from = QUERY ) int c ) {
+            if( c > 1 ) {
+                validateC( c );
+            }
+        }
+
+        private void validateC( int c ) {
+            for( int i = 10; i < 100; i++ ) {
+                if( c > i ) {
+                    ValidationErrors.empty().statusCode( BAD_REQUEST ).error( ERROR_CODE_1, "${c} - v", Map.of( "c", c ) ).endCode().throwIfInvalid();
+                }
+            }
+        }
+
+        @WsMethod( path = "/voidWithError", method = GET )
         @WsValidate( "validateForbidden" )
         public void voidWithError() {
         }
 
-        @WsMethod( path = "/unauthorized", method = HttpMethod.GET )
+        @WsMethod( path = "/unauthorized", method = GET )
         public Response unauthorized() {
             return Response.build401().message( "no token" ).build();
         }
 
-        @WsMethod( path = "/forbidden", method = HttpMethod.GET )
+        @WsMethod( path = "/forbidden", method = GET )
         public Response forbidden() {
             return Response.build403().message( "no access" ).build();
         }
 
-        @WsMethod( path = "/missing", method = HttpMethod.GET )
+        @WsMethod( path = "/missing", method = GET )
         public Response missing() {
             return Response.build404().message( "no item" ).build();
         }
 
-        @WsMethod( path = "/upstream", method = HttpMethod.GET )
+        @WsMethod( path = "/upstream", method = GET )
         public void upstream() {
             // the constructed response is discarded; only its literal status code matters to the scanner
-            new oap.http.Response( "http://upstream", 409, "Conflict", List.of() );
+            new oap.http.Response( "http://upstream", CONFLICT, "Conflict", List.of() );
         }
 
-        @WsMethod( path = "/success", method = HttpMethod.GET )
+        @WsMethod( path = "/success", method = GET )
         public Response success() {
             return Response.ok();
         }
 
         @OpenApiIgnore
         public ValidationErrors validateCode() {
-            return ValidationErrors.empty().statusCode( 400 ).error( "bad code" ).endCode();
+            return ValidationErrors.empty().statusCode( BAD_REQUEST ).error( "bad code" ).endCode();
         }
 
         @OpenApiIgnore
         public ValidationErrors validateForbidden() {
-            return ValidationErrors.empty().statusCode( 403 ).errors( List.of( "denied" ) ).endCode();
+            return ValidationErrors.empty().statusCode( FORBIDDEN ).errors( List.of( "denied" ) ).endCode();
         }
     }
 }

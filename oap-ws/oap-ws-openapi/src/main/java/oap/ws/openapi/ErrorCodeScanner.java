@@ -72,8 +72,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( code, text )} on
  * {@link ValidationErrorsBuilder} add a message to status {@code x}. The message code is optional: without one it is
  * {@code null}, with one it must be a literal. The text is kept when it is a literal, otherwise it is {@code null}.
- * Formatted messages ({@code error( text, Map )} / {@code error( code, text, Map )}) have a {@code null} text, since
- * the text is built at runtime.
+ * Formatted messages ({@code error( text, Map )} / {@code error( code, text, Map )}) keep their template text
+ * (for example {@code ${name}} placeholders), since the rendered text is only known at runtime.
  * Messages added through lists are not listed, since their count is unknown.
  * <p>
  * Limits: a code held in a local variable or computed at runtime is not resolved and is logged as a warning.
@@ -253,14 +253,9 @@ public class ErrorCodeScanner {
             }
         }
 
-        // only the fixed-arity variants have a literal text; formatted (varargs) messages keep a placeholder
         int textIndex = withCode ? 1 : 0;
-        boolean fixedArity = argc == ( withCode ? 2 : 1 );
-        String text = null;
-        if( fixedArity ) {
-            AbstractInsnNode textProducer = single( frame.getStack( top - argc + textIndex ) );
-            text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
-        }
+        AbstractInsnNode textProducer = single( frame.getStack( top - argc + textIndex ) );
+        String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
 
         status( results, statusCode ).add( new ScannedMessage( messageCode, text ) );
     }

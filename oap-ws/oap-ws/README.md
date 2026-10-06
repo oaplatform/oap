@@ -467,7 +467,7 @@ ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of
 ValidationErrors.empty().statusCode( 404 ).error( 1004, "item ${id} not found", Map.of( "id", id ) ).endCode();   // code 1004
 ```
 
-The text is only known at runtime, so the OpenAPI generator shows a placeholder for it (see [oap-ws-openapi](../oap-ws-openapi/README.md#messages-in-examples)).
+The rendered text is only known at runtime, so the OpenAPI generator shows the template text with its `${name}` placeholders (see [oap-ws-openapi](../oap-ws-openapi/README.md#messages-in-examples)).
 
 `resolvedCode()` and `resolvedErrors()` pick one code for the response:
 

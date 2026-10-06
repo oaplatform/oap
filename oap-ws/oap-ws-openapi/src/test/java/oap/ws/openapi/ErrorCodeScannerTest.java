@@ -50,8 +50,8 @@ public class ErrorCodeScannerTest {
         assertThat( responses.get( 400 ) ).containsExactly(
             new ErrorCodeScanner.ScannedMessage( 1001, "a" ),
             new ErrorCodeScanner.ScannedMessage( 1002, null ),
-            new ErrorCodeScanner.ScannedMessage( 1003, null ),
-            new ErrorCodeScanner.ScannedMessage( null, null ) );
+            new ErrorCodeScanner.ScannedMessage( 1003, "item ${id}" ),
+            new ErrorCodeScanner.ScannedMessage( null, "ctx ${id}" ) );
         assertThat( responses.get( 404 ) ).isEmpty();
     }
 
