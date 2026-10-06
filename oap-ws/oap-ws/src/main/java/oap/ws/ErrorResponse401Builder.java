@@ -19,7 +19,7 @@ public class ErrorResponse401Builder {
         return this;
     }
 
-    public ErrorResponse401Builder message( int code, String message ) {
+    public ErrorResponse401Builder message( String code, String message ) {
         builder.message( code, message );
         return this;
     }

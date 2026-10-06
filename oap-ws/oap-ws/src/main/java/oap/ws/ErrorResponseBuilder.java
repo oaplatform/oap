@@ -4,7 +4,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.ValidationErrorsBuilder;
-import oap.ws.validate.ValidationMessage;
+import oap.validation.ValidationMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +32,7 @@ public class ErrorResponseBuilder implements Serializable {
         return this;
     }
 
-    public ErrorResponseBuilder message( int code, String message ) {
-        messages.add( new ErrorResponse.Message( code, message ) );
-        return this;
-    }
-
-    public ErrorResponseBuilder message( Integer code, String message ) {
+    public ErrorResponseBuilder message( String code, String message ) {
         messages.add( new ErrorResponse.Message( code, message ) );
         return this;
     }
@@ -55,6 +50,6 @@ public class ErrorResponseBuilder implements Serializable {
     }
 
     /** A message with a code, as a {@link ValidationMessage}. */
-    private record CodedMessage( int code, String message ) implements ValidationMessage {
+    private record CodedMessage( String code, String message ) implements ValidationMessage {
     }
 }

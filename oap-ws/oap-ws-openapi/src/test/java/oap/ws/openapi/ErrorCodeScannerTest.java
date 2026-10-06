@@ -26,7 +26,7 @@ package oap.ws.openapi;
 
 import oap.ws.Response;
 import oap.ws.validate.ValidationErrors;
-import oap.ws.validate.ValidationMessage;
+import oap.validation.ValidationMessage;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
@@ -49,9 +49,9 @@ public class ErrorCodeScannerTest {
         SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "messages" ) );
 
         assertThat( responses.get( 400 ) ).containsExactly(
-            new ErrorCodeScanner.ScannedMessage( 1_000_001, "a" ),
+            new ErrorCodeScanner.ScannedMessage( "1000001", "a" ),
             new ErrorCodeScanner.ScannedMessage( null, null ),
-            new ErrorCodeScanner.ScannedMessage( 1_000_003, "item ${id}" ),
+            new ErrorCodeScanner.ScannedMessage( "1000003", "item ${id}" ),
             new ErrorCodeScanner.ScannedMessage( null, "ctx ${id}" ) );
         assertThat( responses.get( 404 ) ).isEmpty();
     }
@@ -60,7 +60,7 @@ public class ErrorCodeScannerTest {
     public void testCollectsEnumMessages() throws NoSuchMethodException {
         SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "enumMessages" ) );
 
-        assertThat( responses.get( 400 ) ).containsExactly( new ErrorCodeScanner.ScannedMessage( 1_000_010, "name is required" ) );
+        assertThat( responses.get( 400 ) ).containsExactly( new ErrorCodeScanner.ScannedMessage( "1000010", "name is required" ) );
     }
 
     @Test
@@ -96,7 +96,7 @@ public class ErrorCodeScannerTest {
                 .statusCode( 400 ).error( "a" + param, Map.of() ).endCode()
                 .statusCode( 400 ).error( Err.B ).endCode()
                 .statusCode( 400 ).error( "ctx ${id}", Map.of( "id", param ) ).endCode()
-                .statusCode( 404 ).errors( 1_000_003, List.of( "gone" ) ).endCode();
+                .statusCode( 404 ).errors( "1000003", List.of( "gone" ) ).endCode();
         }
 
         public ValidationErrors enumMessages( String param ) {
@@ -104,20 +104,20 @@ public class ErrorCodeScannerTest {
         }
 
         public enum Err implements ValidationMessage {
-            A( 1_000_001, "a" ),
-            B( 1_000_003, "item ${id}" ),
-            NAME( 1_000_010, "name is required" );
+            A( "1000001", "a" ),
+            B( "1000003", "item ${id}" ),
+            NAME( "1000010", "name is required" );
 
-            private final int code;
+            private final String code;
             private final String message;
 
-            Err( int code, String message ) {
+            Err( String code, String message ) {
                 this.code = code;
                 this.message = message;
             }
 
             @Override
-            public int code() {
+            public String code() {
                 return code;
             }
 

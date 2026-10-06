@@ -58,7 +58,7 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
 
     public static List<JsonSchemaError> typeFailed( JsonValidatorProperties properties, AbstractSchemaAST<?> schema, Object value ) {
         String actualType = getType( value );
-        return Lists.of( properties.error( schema, JsonSchemaValidatorErrors.TYPE,
+        return Lists.of( properties.error( schema, JsonMessage.TYPE,
             Map.of( "actualType", actualType, "schemaType", schema.common.schemaType ) ) );
     }
 

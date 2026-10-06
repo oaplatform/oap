@@ -1,7 +1,7 @@
 package oap.ws.openapi.testng;
 
 import oap.json.Binder;
-import oap.ws.validate.ValidationMessage;
+import oap.validation.ValidationMessage;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,7 +31,7 @@ public final class OpenapiAsserts {
 
     /**
      * Error messages of all operations in the openapi document, one {@code {code, message}} map per occurrence;
-     * {@code code} is a {@code Long}.
+     * {@code code} is a {@code String}.
      */
     @SuppressWarnings( "unchecked" )
     public static List<Map<String, Object>> errorMessages( String openapiJson ) {
@@ -61,13 +61,13 @@ public final class OpenapiAsserts {
 
     private static Map<String, Object> normalize( Map<String, Object> message ) {
         Map<String, Object> result = new LinkedHashMap<>();
-        if( message.get( "code" ) instanceof Number code ) result.put( "code", code.longValue() );
+        if( message.containsKey( "code" ) ) result.put( "code", message.get( "code" ) );
         result.put( "message", message.get( "message" ) );
         return result;
     }
 
     private static Map<String, Object> key( ValidationMessage message ) {
-        return Map.of( "code", ( long ) message.code(), "message", message.message() );
+        return Map.of( "code", message.code(), "message", message.message() );
     }
 
     public static final class OpenapiAssertion {

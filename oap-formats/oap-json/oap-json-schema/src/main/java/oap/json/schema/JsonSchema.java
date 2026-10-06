@@ -164,7 +164,7 @@ public class JsonSchema {
         }
 
         if( value == null && !properties.ignoreRequiredDefault && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, value, properties.path, properties.prefixPath ) ) {
-            return Lists.of( properties.error( schema, JsonSchemaValidatorErrors.REQUIRED, Map.of() ) );
+            return Lists.of( properties.error( schema, JsonMessage.REQUIRED, Map.of() ) );
         } else if( value == null ) {
             return Lists.empty();
         } else {
@@ -175,11 +175,11 @@ public class JsonSchema {
                     log.trace( "evaluating json-path '{}' with value '{}' to contain '{}'", properties.path, applied, value );
                     return !applied.contains( value );
                 } )
-                .ifPresent( e -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.ENUM,
+                .ifPresent( e -> errors.add( properties.error( schema, JsonMessage.ENUM,
                     Map.of( "value", String.valueOf( value ), "enumeration", e.apply( properties.rootJson, properties.path ).toString() ) ) ) );
             schema.common.constValue
                 .filter( c -> !Objects.equals( c, value ) )
-                .ifPresent( c -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.CONST, Map.of( "constValue", String.valueOf( c ) ) ) ) );
+                .ifPresent( c -> errors.add( properties.error( schema, JsonMessage.CONST, Map.of( "constValue", String.valueOf( c ) ) ) ) );
 
             if( !schema.conditional.isEmpty() ) {
                 JsonValidatorProperties branchProperties = properties.withoutAdditionalProperties();
@@ -198,19 +198,19 @@ public class JsonSchema {
 
                 if( !schema.conditional.anyOf.isEmpty()
                     && schema.conditional.anyOf.stream().noneMatch( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ) ) {
-                    errors.add( properties.error( JsonSchemaValidatorErrors.ANY_OF, Map.of() ) );
+                    errors.add( properties.error( JsonMessage.ANY_OF, Map.of() ) );
                 }
 
                 if( !schema.conditional.oneOf.isEmpty() ) {
                     long matched = schema.conditional.oneOf.stream().filter( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ).count();
                     if( matched != 1 ) {
-                        errors.add( properties.error( JsonSchemaValidatorErrors.ONE_OF, Map.of( "matched", matched ) ) );
+                        errors.add( properties.error( JsonMessage.ONE_OF, Map.of( "matched", matched ) ) );
                     }
                 }
 
                 schema.conditional.notSchema.ifPresent( notAst -> {
                     if( properties.validator.apply( branchProperties, notAst, value ).isEmpty() ) {
-                        errors.add( properties.error( JsonSchemaValidatorErrors.NOT, Map.of() ) );
+                        errors.add( properties.error( JsonMessage.NOT, Map.of() ) );
                     }
                 } );
             }

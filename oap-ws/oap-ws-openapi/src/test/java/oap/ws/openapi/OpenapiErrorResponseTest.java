@@ -33,7 +33,7 @@ import oap.ws.WsParam;
 import oap.ws.sso.WsSecurity;
 import oap.ws.sso.interceptor.JWTSecurityInterceptor;
 import oap.ws.validate.ValidationErrors;
-import oap.ws.validate.ValidationMessage;
+import oap.validation.ValidationMessage;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -145,7 +145,7 @@ public class OpenapiErrorResponseTest {
         assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
         assertJsonError( responses.get( "400" ), "Bad Request" );
         assertThat( responses.get( "400" ).getContent().get( "application/json" ).getExample() )
-            .isEqualTo( Map.of( "messages", List.of( Map.of( "code", 1_001_023, "message", "${c} - v" ) ) ) );
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "code", "1001023", "message", "${c} - v" ) ) ) );
 
         assertThat( responses2.keySet() ).containsExactlyInAnyOrder( "200", "400", "401", "403" );
         assertJsonError( responses2.get( "400" ), "Bad Request" );
@@ -187,18 +187,18 @@ public class OpenapiErrorResponseTest {
         }
 
         public enum InnerError implements ValidationMessage {
-            C( 1_001_023, "${c} - v" );
+            C( "1001023", "${c} - v" );
 
-            private final int code;
+            private final String code;
             private final String message;
 
-            InnerError( int code, String message ) {
+            InnerError( String code, String message ) {
                 this.code = code;
                 this.message = message;
             }
 
             @Override
-            public int code() {
+            public String code() {
                 return code;
             }
 

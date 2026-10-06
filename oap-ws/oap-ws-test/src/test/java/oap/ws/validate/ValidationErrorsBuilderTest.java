@@ -2,6 +2,7 @@ package oap.ws.validate;
 
 import oap.util.Pair;
 import oap.json.Binder;
+import oap.validation.ValidationMessage;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -14,7 +15,6 @@ import static oap.http.Http.StatusCode.NOT_FOUND;
 import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.http.Http.StatusCode.UNPROCESSABLE_ENTITY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ValidationErrorsBuilderTest {
     @Test
@@ -62,9 +62,7 @@ public class ValidationErrorsBuilderTest {
         ValidationErrors errors = ValidationErrors.empty()
             .statusCode( BAD_REQUEST ).error( Message.LARGE ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_020, "too large" ) );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.SMALL ) )
-            .isInstanceOf( IllegalArgumentException.class );
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( "1000020", "too large" ) );
     }
 
     @Test
@@ -72,31 +70,17 @@ public class ValidationErrorsBuilderTest {
         ValidationErrors errors = ValidationErrors.empty()
             .statusCode( NOT_FOUND ).error( Message.T, Map.of( "id", "y" ) ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_005, "item y" ) );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.SMALL, Map.of() ) )
-            .isInstanceOf( IllegalArgumentException.class );
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( "1000005", "item y" ) );
     }
 
     @Test
     public void testMessageCodesAreKept() {
         ValidationErrors errors = ValidationErrors.empty()
             .statusCode( NOT_FOUND ).error( Message.MISSING ).endCode()
-            .statusCode( NOT_FOUND ).errors( 1_000_002, List.of( "gone" ) ).endCode()
+            .statusCode( NOT_FOUND ).errors( "1000002", List.of( "gone" ) ).endCode()
             .statusCode( NOT_FOUND ).pairs( List.of( Message.X ) ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1_000_001, "missing" ), Pair.__( 1_000_002, "gone" ), Pair.__( 1_000_003, "x" ) );
-    }
-
-    @Test
-    public void testPublicCodeMustBeAboveLimit() {
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.SMALL ) )
-            .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).error( Message.LIMIT ) )
-            .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).errors( 1, List.of( "a" ) ) )
-            .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).pairs( List.of( Message.SMALL ) ) )
-            .isInstanceOf( IllegalArgumentException.class );
+        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( "1000001", "missing" ), Pair.__( "1000002", "gone" ), Pair.__( "1000003", "x" ) );
     }
 
     @Test
@@ -107,44 +91,22 @@ public class ValidationErrorsBuilderTest {
         assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( null, "no code" ) );
     }
 
-    @Test
-    public void testInternalCodeMustBeAtMostLimit() {
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).internalError( 1_000_001, "big" ) )
-            .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).internalErrors( 1_000_001, List.of( "a" ) ) )
-            .isInstanceOf( IllegalArgumentException.class );
-        assertThatThrownBy( () -> ValidationErrors.empty().statusCode( BAD_REQUEST ).internalError( 1_000_001, "big", Map.of() ) )
-            .isInstanceOf( IllegalArgumentException.class );
-    }
-
-    @Test
-    public void testInternalCodesUpToLimitAreKept() {
-        ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).internalError( 1001, "missing" ).endCode()
-            .statusCode( NOT_FOUND ).internalErrors( 1_000_000, List.of( "limit" ) ).endCode()
-            .statusCode( NOT_FOUND ).internalError( 2, "fmt ${id}", Map.of( "id", "x" ) ).endCode();
-
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( 1001, "missing" ), Pair.__( 1_000_000, "limit" ), Pair.__( 2, "fmt x" ) );
-    }
-
     private enum Message implements ValidationMessage {
-        LARGE( 1_000_020, "too large" ),
-        SMALL( 5, "too small" ),
-        MISSING( 1_000_001, "missing" ),
-        X( 1_000_003, "x" ),
-        T( 1_000_005, "item ${id}" ),
-        LIMIT( 1_000_000, "limit" );
+        LARGE( "1000020", "too large" ),
+        MISSING( "1000001", "missing" ),
+        X( "1000003", "x" ),
+        T( "1000005", "item ${id}" );
 
-        private final int code;
+        private final String code;
         private final String message;
 
-        Message( int code, String message ) {
+        Message( String code, String message ) {
             this.code = code;
             this.message = message;
         }
 
         @Override
-        public int code() {
+        public String code() {
             return code;
         }
 
@@ -163,7 +125,7 @@ public class ValidationErrorsBuilderTest {
 
     @Test
     public void testErrorResponseRoundTrip() {
-        ValidationErrors.ErrorResponse body = ValidationErrors.ErrorResponse.of( List.of( Pair.__( 1001, "x" ), Pair.__( null, "y" ) ) );
+        ValidationErrors.ErrorResponse body = ValidationErrors.ErrorResponse.of( List.of( Pair.__( "1001", "x" ), Pair.__( null, "y" ) ) );
 
         String json = Binder.json.marshal( body );
 

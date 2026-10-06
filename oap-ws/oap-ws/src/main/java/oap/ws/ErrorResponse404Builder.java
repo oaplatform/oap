@@ -18,7 +18,7 @@ public class ErrorResponse404Builder {
         return this;
     }
 
-    public ErrorResponse404Builder message( int code, String message ) {
+    public ErrorResponse404Builder message( String code, String message ) {
         builder.message( code, message );
         return this;
     }

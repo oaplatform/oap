@@ -35,11 +35,11 @@ import java.util.Map;
 @EqualsAndHashCode
 @ToString
 public final class JsonSchemaError {
-    public final int code;
+    public final String code;
     public final String message;
     public final Map<String, Object> args;
 
-    public JsonSchemaError( int code, String message, Map<String, Object> args ) {
+    public JsonSchemaError( String code, String message, Map<String, Object> args ) {
         this.code = code;
         this.message = message;
         this.args = args;

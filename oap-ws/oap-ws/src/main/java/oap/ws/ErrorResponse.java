@@ -33,11 +33,11 @@ public class ErrorResponse implements Serializable {
         private static final long serialVersionUID = 6019283746510293847L;
 
         @JsonInclude( JsonInclude.Include.NON_NULL )
-        public final Integer code;
+        public final String code;
         public final String message;
 
         @JsonCreator
-        public Message( @JsonProperty( "code" ) Integer code, @JsonProperty( "message" ) String message ) {
+        public Message( @JsonProperty( "code" ) String code, @JsonProperty( "message" ) String message ) {
             this.code = code;
             this.message = message;
         }

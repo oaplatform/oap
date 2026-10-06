@@ -26,7 +26,7 @@ package oap.json.schema.validator.array;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidatorErrors;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
@@ -47,10 +47,10 @@ public class ArrayJsonValidator extends AbstractJsonSchemaValidator<ArraySchemaA
         List<JsonSchemaError> errors = new ArrayList<>();
 
         schema.minItems.filter( minItems -> arrayValue.size() < minItems )
-            .ifPresent( minItems -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.MIN_ITEMS, Map.of( "value", arrayValue.toString(), "minItems", minItems ) ) ) );
+            .ifPresent( minItems -> errors.add( properties.error( schema, JsonMessage.MIN_ITEMS, Map.of( "value", arrayValue.toString(), "minItems", minItems ) ) ) );
 
         schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
-            .ifPresent( maxItems -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.MAX_ITEMS, Map.of( "value", arrayValue.toString(), "maxItems", maxItems ) ) ) );
+            .ifPresent( maxItems -> errors.add( properties.error( schema, JsonMessage.MAX_ITEMS, Map.of( "value", arrayValue.toString(), "maxItems", maxItems ) ) ) );
 
         for( int i = 0; i < arrayValue.size(); i++ ) {
             var validatorProperties = properties

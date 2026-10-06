@@ -33,7 +33,7 @@ import oap.json.schema.BooleanReference;
 import oap.json.schema.JsonPath;
 import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidatorErrors;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaPath;
 import oap.util.Lists;
@@ -101,7 +101,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 .collect( toList() );
             if( children.isEmpty() )
                 return Result.failure( Lists.of(
-                    properties.error( JsonSchemaValidatorErrors.DICTIONARY_NO_MATCH, Map.of( "value", String.valueOf( parentValue ), "ids", printIds( cd.successValue ) ) )
+                    properties.error( JsonMessage.DICTIONARY_NO_MATCH, Map.of( "value", String.valueOf( parentValue ), "ids", printIds( cd.successValue ) ) )
                 ) );
 
             cDict.addAll( children );
@@ -116,7 +116,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
         try {
             dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
         } catch( final DictionaryNotFoundError e ) {
-            return Lists.of( properties.error( JsonSchemaValidatorErrors.DICTIONARY_NOT_FOUND, Collections.singletonMap( "name", schema.name ) ) );
+            return Lists.of( properties.error( JsonMessage.DICTIONARY_NOT_FOUND, Collections.singletonMap( "name", schema.name ) ) );
         }
 
         final List<JsonSchemaError> errors = new ArrayList<>();
@@ -127,7 +127,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 if( !successes.isEmpty()
                     && successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
 
-                    errors.addAll( Lists.of( properties.error( JsonSchemaValidatorErrors.DICTIONARY_NO_MATCH, Map.of( "value", String.valueOf( value ), "ids", printIds( successes ) ) ) ) );
+                    errors.addAll( Lists.of( properties.error( JsonMessage.DICTIONARY_NO_MATCH, Map.of( "value", String.valueOf( value ), "ids", printIds( successes ) ) ) ) );
                 }
             } );
 

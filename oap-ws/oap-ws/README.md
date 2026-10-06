@@ -449,8 +449,8 @@ public Response patch(
 ```java
 ValidationErrors.empty().statusCode( 400 ).error( "name must not be null" ).endCode();      // 400
 ValidationErrors.empty().statusCode( 404 ).error( "product not found" ).endCode();           // 404
-ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, message code 1_000_010 (enum, see below)
-ValidationErrors.empty().statusCode( 400 ).errors( 1_000_002, List.of( "a", "b" ) ).endCode();    // one message code for all
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, message code "1000010" (enum, see below)
+ValidationErrors.empty().statusCode( 400 ).errors( "1000002", List.of( "a", "b" ) ).endCode();    // one message code for all
 ValidationErrors.empty().statusCode( 400 ).pairs( List.of( ProductError.X ) ).endCode(); // one ValidationMessage per message
 ```
 
@@ -458,23 +458,20 @@ A message defined once, as an enum constant, implements `ValidationMessage` and 
 
 ```java
 public enum ProductError implements ValidationMessage {
-    NAME_REQUIRED( 1_000_010, "name is required" );
+    NAME_REQUIRED( "1000010", "name is required" );
     // constructor, code() and message() omitted
 }
 
-ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, code 1_000_010
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, code "1000010"
 ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED, Map.of( "name", name ) ).endCode(); // template with ${name}, formatted
 ```
 
 The message code is optional (use the variants without it). A validation failure responds with the messages, each with its code when set:
 
-Message codes are split into two ranges:
-
-- Public methods (`error`, `errors`, `pairs`) accept only codes above `1_000_000` (`ValidationErrorsBuilder.MAX_INTERNAL_CODE`). A code at or below the limit throws `IllegalArgumentException`. A `null` code (no code) is always allowed.
-- Codes up to `1_000_000` are for package-internal messages only. They use the package-level `internalError` / `internalErrors` methods, which reject codes above the limit.
+Message codes are `String`s. A message with no code uses the variants without a code (`error( text )`, `errors( list )`).
 
 ```json
-{ "messages": [ { "code": 1000001, "message": "name must not be null" }, { "message": "product not found" } ] }
+{ "messages": [ { "code": "1000001", "message": "name must not be null" }, { "message": "product not found" } ] }
 ```
 
 Messages can be formatted from a map. Placeholders are `${name}` and are resolved by the oap template engine at runtime:

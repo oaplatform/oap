@@ -26,7 +26,7 @@ package oap.json.schema.validator.string;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidatorErrors;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
@@ -48,15 +48,15 @@ public class StringJsonValidator extends AbstractJsonSchemaValidator<StringSchem
 
         schema.minLength
             .filter( minLength -> strValue.length() < minLength )
-            .ifPresent( minLength -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.MIN_LENGTH, Map.of( "value", strValue, "minLength", minLength ) ) ) );
+            .ifPresent( minLength -> errors.add( properties.error( schema, JsonMessage.MIN_LENGTH, Map.of( "value", strValue, "minLength", minLength ) ) ) );
 
         schema.maxLength
             .filter( maxLength -> strValue.length() > maxLength )
-            .ifPresent( maxLength -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.MAX_LENGTH, Map.of( "value", strValue, "maxLength", maxLength ) ) ) );
+            .ifPresent( maxLength -> errors.add( properties.error( schema, JsonMessage.MAX_LENGTH, Map.of( "value", strValue, "maxLength", maxLength ) ) ) );
 
         schema.pattern
             .filter( pattern -> !pattern.matcher( strValue ).matches() )
-            .ifPresent( pattern -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.PATTERN, Map.of( "value", strValue, "pattern", pattern.pattern() ) ) ) );
+            .ifPresent( pattern -> errors.add( properties.error( schema, JsonMessage.PATTERN, Map.of( "value", strValue, "pattern", pattern.pattern() ) ) ) );
 
         return errors;
     }

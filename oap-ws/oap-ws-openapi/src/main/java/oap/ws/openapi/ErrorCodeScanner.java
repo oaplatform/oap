@@ -78,13 +78,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * (for example {@code ${name}} placeholders), since the rendered text is only known at runtime.
  * {@code statusCode( x ).error( E.X )} takes its code and text from the enum constant (see below).
  * Messages added through lists are not listed, since their count is unknown.
- * A {@link oap.ws.validate.ValidationMessage} enum constant ({@code error( E.X )}) gives its code and text from the
- * constant's constructor arguments {@code (int code, String message)}, read from the enum's {@code <clinit>}.
+ * A {@link oap.validation.ValidationMessage} enum constant ({@code error( E.X )}) gives its code and text from the
+ * constant's constructor arguments {@code (String code, String message)}, read from the enum's {@code <clinit>}.
  * <p>
  * Limits: a code held in a local variable or computed at runtime is not resolved and is logged as a warning.
  */
 @Slf4j
 public class ErrorCodeScanner {
+    static final int MAX_DEPTH = 5;
     private static final Map<String, Integer> ERROR_BUILDERS = Map.of(
         "build401", 401,
         "build403", 403,
@@ -93,9 +94,8 @@ public class ErrorCodeScanner {
     private static final String STATUS_CODE = "statusCode";
     private static final String ERROR = "error";
     private static final String PLAIN_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;";
-    private static final String VALIDATION_MESSAGE_DESC_PREFIX = "(Loap/ws/validate/ValidationMessage;";
+    private static final String VALIDATION_MESSAGE_DESC_PREFIX = "(Loap/validation/ValidationMessage;";
     private static final int MIN_ERROR_CODE = 400;
-    static final int MAX_DEPTH = 5;
     private static final Set<String> CODE_OWNERS = Set.of(
         Type.getInternalName( ValidationErrors.class ),
         Type.getInternalName( WsClientException.class ),
@@ -105,11 +105,105 @@ public class ErrorCodeScanner {
     private final Map<Class<?>, ClassNode> classNodes = new ConcurrentHashMap<>();
     private final Map<String, Optional<ScannedMessage>> enumMessages = new ConcurrentHashMap<>();
 
+    private static List<String> validatorNames( java.lang.reflect.Method method ) {
+        List<String> names = new ArrayList<>();
+        WsValidate onMethod = method.getAnnotation( WsValidate.class );
+        if( onMethod != null ) names.addAll( List.of( onMethod.value() ) );
+        for( var parameter : method.getParameters() ) {
+            WsValidate onParameter = parameter.getAnnotation( WsValidate.class );
+            if( onParameter != null ) names.addAll( List.of( onParameter.value() ) );
+        }
+        return names;
+    }
+
+    private static Set<ScannedMessage> status( Map<Integer, Set<ScannedMessage>> results, int code ) {
+        return results.computeIfAbsent( code, c -> new LinkedHashSet<>() );
+    }
+
+    private static boolean isMessage( MethodInsnNode invoke ) {
+        return Type.getInternalName( ValidationErrorsBuilder.class ).equals( invoke.owner )
+            && ERROR.equals( invoke.name )
+            && ( invoke.desc.startsWith( PLAIN_MESSAGE_DESC_PREFIX ) || invoke.desc.startsWith( VALIDATION_MESSAGE_DESC_PREFIX ) );
+    }
+
     /**
-     * A message of an error response: its message code (may be {@code null}) and its text (may be {@code null}
-     * when the text is not a literal).
+     * Code and text from the constructor arguments of an enum constant. The descriptor starts with the implicit
+     * {@code (String name, int ordinal)}; the declared {@code (String code, String message)} follow.
      */
-    public record ScannedMessage( Integer code, String text ) {
+    private static ScannedMessage enumConstructorMessage( Frame<SourceValue> frame, String desc, String enumOwner, String field ) {
+        Type[] args = Type.getArgumentTypes( desc );
+        if( args.length < 4 || !"Ljava/lang/String;".equals( args[2].getDescriptor() ) || !"Ljava/lang/String;".equals( args[3].getDescriptor() ) ) {
+            log.warn( "Enum constant {}.{} constructor {} is not (String, String), skipped", enumOwner, field, desc );
+            return null;
+        }
+
+        int top = frame.getStackSize();
+        AbstractInsnNode codeProducer = single( frame.getStack( top - args.length + 2 ) );
+        String code = codeProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+        if( code == null ) {
+            log.warn( "Non-literal code in enum constant {}.{}, skipped", enumOwner, field );
+            return null;
+        }
+        AbstractInsnNode textProducer = single( frame.getStack( top - args.length + 3 ) );
+        String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+        return new ScannedMessage( code, text );
+    }
+
+    /**
+     * The literal status code of the {@code statusCode( int )} call that produced the receiver, or null.
+     */
+    private static Integer statusCodeOf( SourceValue receiver, Body body ) {
+        AbstractInsnNode producer = single( receiver );
+        if( !( producer instanceof MethodInsnNode call ) || !STATUS_CODE.equals( call.name )
+            || !Type.getInternalName( ValidationErrors.class ).equals( call.owner ) ) return null;
+
+        Frame<SourceValue> frame = frameOf( call, body );
+        if( frame == null ) return null;
+        return constantValue( frame.getStack( frame.getStackSize() - 1 ) );
+    }
+
+    private static Frame<SourceValue> frameOf( AbstractInsnNode insn, Body body ) {
+        for( int i = 0; i < body.instructions().length; i++ ) {
+            if( body.instructions()[i] == insn ) return body.frames()[i];
+        }
+        return null;
+    }
+
+    private static AbstractInsnNode single( SourceValue value ) {
+        return value.insns.size() == 1 ? value.insns.iterator().next() : null;
+    }
+
+    private static Integer constantValue( SourceValue value ) {
+        if( value.insns.size() != 1 ) return null;
+        AbstractInsnNode insn = value.insns.iterator().next();
+        int opcode = insn.getOpcode();
+        if( opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5 ) return opcode - Opcodes.ICONST_0;
+        if( ( opcode == Opcodes.BIPUSH || opcode == Opcodes.SIPUSH ) && insn instanceof IntInsnNode intInsn )
+            return intInsn.operand;
+        if( insn instanceof LdcInsnNode ldc && ldc.cst instanceof Integer constant ) return constant;
+        return null;
+    }
+
+    private static boolean followable( Class<?> target, Class<?> scanned ) {
+        return target == Response.class
+            || target == oap.http.Response.class
+            || target != Object.class && target.isAssignableFrom( scanned )
+            || target.getPackageName().equals( scanned.getPackageName() );
+    }
+
+    private static Class<?> resolve( String internalName, ClassLoader loader ) {
+        try {
+            return Class.forName( internalName.replace( '/', '.' ), false, loader );
+        } catch( ClassNotFoundException | LinkageError e ) {
+            return null;
+        }
+    }
+
+    private static MethodNode findMethod( ClassNode classNode, String name, String desc ) {
+        for( MethodNode method : classNode.methods ) {
+            if( method.name.equals( name ) && method.desc.equals( desc ) ) return method;
+        }
+        return null;
     }
 
     /**
@@ -141,21 +235,6 @@ public class ErrorCodeScanner {
         }
 
         return results;
-    }
-
-    private static List<String> validatorNames( java.lang.reflect.Method method ) {
-        List<String> names = new ArrayList<>();
-        WsValidate onMethod = method.getAnnotation( WsValidate.class );
-        if( onMethod != null ) names.addAll( List.of( onMethod.value() ) );
-        for( var parameter : method.getParameters() ) {
-            WsValidate onParameter = parameter.getAnnotation( WsValidate.class );
-            if( onParameter != null ) names.addAll( List.of( onParameter.value() ) );
-        }
-        return names;
-    }
-
-    /** The analysed body of one method: frame and instruction at the same index. */
-    private record Body( Frame<SourceValue>[] frames, AbstractInsnNode[] instructions ) {
     }
 
     private void scanMethod( Class<?> owner, Class<?> scanned, String name, String desc,
@@ -207,10 +286,6 @@ public class ErrorCodeScanner {
         }
     }
 
-    private static Set<ScannedMessage> status( Map<Integer, Set<ScannedMessage>> results, int code ) {
-        return results.computeIfAbsent( code, c -> new LinkedHashSet<>() );
-    }
-
     private void collectCode( MethodInsnNode invoke, Frame<SourceValue> frame, Class<?> owner, Map<Integer, Set<ScannedMessage>> results ) {
         Type[] args = Type.getArgumentTypes( invoke.desc );
         int codeIndex = -1;
@@ -229,12 +304,6 @@ public class ErrorCodeScanner {
             return;
         }
         if( code >= MIN_ERROR_CODE ) status( results, code );
-    }
-
-    private static boolean isMessage( MethodInsnNode invoke ) {
-        return Type.getInternalName( ValidationErrorsBuilder.class ).equals( invoke.owner )
-            && ERROR.equals( invoke.name )
-            && ( invoke.desc.startsWith( PLAIN_MESSAGE_DESC_PREFIX ) || invoke.desc.startsWith( VALIDATION_MESSAGE_DESC_PREFIX ) );
     }
 
     private void collectMessage( MethodInsnNode invoke, Frame<SourceValue> frame, Body body, Class<?> owner,
@@ -265,12 +334,16 @@ public class ErrorCodeScanner {
         status( results, statusCode ).add( new ScannedMessage( null, text ) );
     }
 
-    /** The code and text of the enum constant {@code enumOwner.field}, read once from its constructor arguments. */
+    /**
+     * The code and text of the enum constant {@code enumOwner.field}, read once from its constructor arguments.
+     */
     private Optional<ScannedMessage> enumMessage( String enumOwner, String field, Class<?> scanned ) {
         return enumMessages.computeIfAbsent( enumOwner + "." + field, key -> readEnumMessage( enumOwner, field, scanned ) );
     }
 
-    /** Finds the constructor call that builds the constant and stores it in {@code field} in the enum's {@code <clinit>}. */
+    /**
+     * Finds the constructor call that builds the constant and stores it in {@code field} in the enum's {@code <clinit>}.
+     */
     private Optional<ScannedMessage> readEnumMessage( String enumOwner, String field, Class<?> scanned ) {
         Class<?> enumClass = resolve( enumOwner, scanned.getClassLoader() );
         ClassNode classNode = enumClass == null ? null : classNode( enumClass );
@@ -309,76 +382,6 @@ public class ErrorCodeScanner {
         return Optional.empty();
     }
 
-    /**
-     * Code and text from the constructor arguments of an enum constant. The descriptor starts with the implicit
-     * {@code (String name, int ordinal)}; the declared {@code (int code, String message)} follow.
-     */
-    private static ScannedMessage enumConstructorMessage( Frame<SourceValue> frame, String desc, String enumOwner, String field ) {
-        Type[] args = Type.getArgumentTypes( desc );
-        if( args.length < 4 || args[2].getSort() != Type.INT || !"Ljava/lang/String;".equals( args[3].getDescriptor() ) ) {
-            log.warn( "Enum constant {}.{} constructor {} is not (int, String), skipped", enumOwner, field, desc );
-            return null;
-        }
-
-        int top = frame.getStackSize();
-        Integer code = constantValue( frame.getStack( top - args.length + 2 ) );
-        if( code == null ) {
-            log.warn( "Non-constant code in enum constant {}.{}, skipped", enumOwner, field );
-            return null;
-        }
-        AbstractInsnNode textProducer = single( frame.getStack( top - args.length + 3 ) );
-        String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
-        return new ScannedMessage( code, text );
-    }
-
-    /** The literal status code of the {@code statusCode( int )} call that produced the receiver, or null. */
-    private static Integer statusCodeOf( SourceValue receiver, Body body ) {
-        AbstractInsnNode producer = single( receiver );
-        if( !( producer instanceof MethodInsnNode call ) || !STATUS_CODE.equals( call.name )
-            || !Type.getInternalName( ValidationErrors.class ).equals( call.owner ) ) return null;
-
-        Frame<SourceValue> frame = frameOf( call, body );
-        if( frame == null ) return null;
-        return constantValue( frame.getStack( frame.getStackSize() - 1 ) );
-    }
-
-    private static Frame<SourceValue> frameOf( AbstractInsnNode insn, Body body ) {
-        for( int i = 0; i < body.instructions().length; i++ ) {
-            if( body.instructions()[i] == insn ) return body.frames()[i];
-        }
-        return null;
-    }
-
-    private static AbstractInsnNode single( SourceValue value ) {
-        return value.insns.size() == 1 ? value.insns.iterator().next() : null;
-    }
-
-    private static Integer constantValue( SourceValue value ) {
-        if( value.insns.size() != 1 ) return null;
-        AbstractInsnNode insn = value.insns.iterator().next();
-        int opcode = insn.getOpcode();
-        if( opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5 ) return opcode - Opcodes.ICONST_0;
-        if( ( opcode == Opcodes.BIPUSH || opcode == Opcodes.SIPUSH ) && insn instanceof IntInsnNode intInsn )
-            return intInsn.operand;
-        if( insn instanceof LdcInsnNode ldc && ldc.cst instanceof Integer constant ) return constant;
-        return null;
-    }
-
-    private static boolean followable( Class<?> target, Class<?> scanned ) {
-        return target == Response.class
-            || target == oap.http.Response.class
-            || target != Object.class && target.isAssignableFrom( scanned )
-            || target.getPackageName().equals( scanned.getPackageName() );
-    }
-
-    private static Class<?> resolve( String internalName, ClassLoader loader ) {
-        try {
-            return Class.forName( internalName.replace( '/', '.' ), false, loader );
-        } catch( ClassNotFoundException | LinkageError e ) {
-            return null;
-        }
-    }
-
     private ClassNode classNode( Class<?> clazz ) {
         ClassNode cached = classNodes.get( clazz );
         if( cached != null ) return cached;
@@ -398,10 +401,16 @@ public class ErrorCodeScanner {
         }
     }
 
-    private static MethodNode findMethod( ClassNode classNode, String name, String desc ) {
-        for( MethodNode method : classNode.methods ) {
-            if( method.name.equals( name ) && method.desc.equals( desc ) ) return method;
-        }
-        return null;
+    /**
+     * A message of an error response: its message code (may be {@code null}) and its text (may be {@code null}
+     * when the text is not a literal).
+     */
+    public record ScannedMessage( String code, String text ) {
+    }
+
+    /**
+     * The analysed body of one method: frame and instruction at the same index.
+     */
+    private record Body( Frame<SourceValue>[] frames, AbstractInsnNode[] instructions ) {
     }
 }

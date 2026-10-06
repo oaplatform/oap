@@ -189,32 +189,32 @@ This match is by key name only (not "must be inside `properties`"), so a branch 
 
 ## Error codes and messages
 
-Every validation failure is a `JsonSchemaError { code, message, args }`. `message` is a template with `${name}` placeholders, and `args` holds the values. The codes are fixed and unique, starting at 1000 (`JsonSchemaValidatorErrors`):
+Every validation failure is a `JsonSchemaError { code, message, args }`. `message` is a template with `${name}` placeholders, and `args` holds the values. The codes are fixed and unique, starting at 100 (`JsonMessage`):
 
 | Code | Keyword | Template |
 |---|---|---|
-| 1000 | `type` | `instance type is ${actualType}, but allowed type is ${schemaType}` |
-| 1001 | `minLength` | `string ${value} is shorter than minLength ${minLength}` |
-| 1002 | `maxLength` | `string ${value} is longer than maxLength ${maxLength}` |
-| 1003 | `pattern` | `string ${value} does not match specified regex ${pattern}` |
-| 1004 | `minimum` | `number ${value} is lower than the required minimum ${minimum}` |
-| 1005 | `maximum` | `number ${value} is greater than the required maximum ${maximum}` |
-| 1006 | `minimum` (exclusive) | `number ${value} is not strictly greater than the required minimum ${minimum}` |
-| 1007 | `maximum` (exclusive) | `number ${value} is not strictly lower than the required maximum ${maximum}` |
-| 1008 | `minItems` | `array ${value} has less than minItems elements ${minItems}` |
-| 1009 | `maxItems` | `array ${value} has more than maxItems elements ${maxItems}` |
-| 1010 | `required` | `required property is missing` |
-| 1011 | `additionalProperties` | `additional properties are not permitted ${additionalProperties}` |
-| 1012 | `date` | `${error}` (the parser message) |
-| 1013 | — | `dictionary ${name} not found` |
-| 1014 | — | `instance of '${value}' does not match any member resolve the enumeration ${ids}` |
-| 1015 | `enum` | `instance of '${value}' does not match any member resolve the enumeration ${enumeration}` |
-| 1016 | `const` | `instance does not equal const value '${constValue}'` |
-| 1017 | — | `instance does not match any schema in anyOf` |
-| 1018 | — | `instance must match exactly one schema in oneOf, matched ${matched}` |
-| 1019 | — | `instance must not be valid against the schema in not` |
+| 100 | `type` | `instance type is ${actualType}, but allowed type is ${schemaType}` |
+| 101 | `minLength` | `string ${value} is shorter than minLength ${minLength}` |
+| 102 | `maxLength` | `string ${value} is longer than maxLength ${maxLength}` |
+| 103 | `pattern` | `string ${value} does not match specified regex ${pattern}` |
+| 104 | `minimum` | `number ${value} is lower than the required minimum ${minimum}` |
+| 105 | `maximum` | `number ${value} is greater than the required maximum ${maximum}` |
+| 106 | `minimum` (exclusive) | `number ${value} is not strictly greater than the required minimum ${minimum}` |
+| 107 | `maximum` (exclusive) | `number ${value} is not strictly lower than the required maximum ${maximum}` |
+| 108 | `minItems` | `array ${value} has less than minItems elements ${minItems}` |
+| 109 | `maxItems` | `array ${value} has more than maxItems elements ${maxItems}` |
+| 110 | `required` | `required property is missing` |
+| 111 | `additionalProperties` | `additional properties are not permitted ${additionalProperties}` |
+| 112 | `date` | `${error}` (the parser message) |
+| 113 | — | `dictionary ${name} not found` |
+| 114 | — | `instance of '${value}' does not match any member resolve the enumeration ${ids}` |
+| 115 | `enum` | `instance of '${value}' does not match any member resolve the enumeration ${enumeration}` |
+| 116 | `const` | `instance does not equal const value '${constValue}'` |
+| 117 | — | `instance does not match any schema in anyOf` |
+| 118 | — | `instance must match exactly one schema in oneOf, matched ${matched}` |
+| 119 | — | `instance must not be valid against the schema in not` |
 
-A path, if any, is prefixed as `/${path}: ` in the template and bound in `args`. When the README and the enum differ, the enum wins.
+Each template starts with `${prefix}`: the `/path: ` of the failing value, or empty at the root. `JsonMessage` is an enum implementing `oap.validation.ValidationMessage`, so the web services can pass a message straight to `ValidationErrorsBuilder.error(message, args)`. Codes are strings with a `JSON-` prefix (`"JSON-100"`…`"JSON-119"`).
 
 Any schema node may carry an `errorMessage` object to override the built-in message for one or more failing keywords, ajv-errors style:
 

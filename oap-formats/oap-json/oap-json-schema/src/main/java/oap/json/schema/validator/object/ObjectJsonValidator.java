@@ -28,7 +28,7 @@ import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.AbstractSchemaAST;
 import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidatorErrors;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaPath;
 import oap.util.Stream;
@@ -97,7 +97,7 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             && !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
             && !additionalProperties.isEmpty() ) {
 
-            errors.add( properties.error( schema, JsonSchemaValidatorErrors.ADDITIONAL_PROPERTIES_NOT_PERMITTED, Map.of( "additionalProperties", additionalProperties.toString() ) ) );
+            errors.add( properties.error( schema, JsonMessage.ADDITIONAL_PROPERTIES_NOT_PERMITTED, Map.of( "additionalProperties", additionalProperties.toString() ) ) );
         }
 
         return errors;

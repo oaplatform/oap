@@ -83,19 +83,15 @@ public class JsonValidatorProperties {
     }
 
 
-    /** The error of {@code keyword} with its message template; the path (if any) is prefixed to the template. */
-    public JsonSchemaError error( JsonSchemaValidatorErrors keyword, Map<String, Object> args ) {
+    /** The error of {@code keyword} with its message template; the path (if any) is bound to the template's prefix. */
+    public JsonSchemaError error( JsonMessage keyword, Map<String, Object> args ) {
         Map<String, Object> values = new LinkedHashMap<>( args );
-        String template = keyword.template;
-        if( path.isPresent() ) {
-            values.put( "path", path.get() );
-            template = "/${path}: " + template;
-        }
-        return new JsonSchemaError( keyword.code, template, values );
+        values.put( JsonMessage.PREFIX, path.map( p -> "/" + p + ": " ).orElse( "" ) );
+        return new JsonSchemaError( keyword.code(), keyword.message(), values );
     }
 
-    /** As {@link #error(JsonSchemaValidatorErrors, Map)}, but a custom {@code errorMessage} of the schema replaces the template. */
-    public JsonSchemaError error( AbstractSchemaAST schema, JsonSchemaValidatorErrors keyword, Map<String, Object> args ) {
+    /** As {@link #error(JsonMessage, Map)}, but a custom {@code errorMessage} of the schema replaces the template. */
+    public JsonSchemaError error( AbstractSchemaAST schema, JsonMessage keyword, Map<String, Object> args ) {
         Optional<String> custom = keyword.keyword == null ? Optional.empty() : schema.common.errorMessage( keyword.keyword );
         if( custom.isEmpty() ) return error( keyword, args );
 
@@ -103,12 +99,12 @@ public class JsonValidatorProperties {
         fmtArgs[0] = path.orElse( "" );
         for( int i = 0; i < keyword.placeholders().size(); i++ )
             fmtArgs[i + 1] = args.get( keyword.placeholders().get( i ) );
-        return new JsonSchemaError( keyword.code, MessageFormat.format( custom.get(), fmtArgs ), Map.of() );
+        return new JsonSchemaError( keyword.code(), MessageFormat.format( custom.get(), fmtArgs ), Map.of() );
     }
 
     public JsonSchemaError requiredError( AbstractSchemaAST schema, String propertyName ) {
         Optional<String> custom = schema.common.errorMessage( "required", propertyName );
-        if( custom.isEmpty() ) return error( JsonSchemaValidatorErrors.REQUIRED, Map.of() );
-        return new JsonSchemaError( JsonSchemaValidatorErrors.REQUIRED.code, MessageFormat.format( custom.get(), path.orElse( "" ) ), Map.of() );
+        if( custom.isEmpty() ) return error( JsonMessage.REQUIRED, Map.of() );
+        return new JsonSchemaError( JsonMessage.REQUIRED.code(), MessageFormat.format( custom.get(), path.orElse( "" ) ), Map.of() );
     }
 }

@@ -28,7 +28,7 @@ import oap.json.schema.DefaultSchemaAST;
 import oap.json.schema.DefaultSchemaASTWrapper;
 import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidatorErrors;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 import oap.util.Dates;
 
@@ -51,7 +51,7 @@ public class DateJsonValidator extends AbstractJsonSchemaValidator<DefaultSchema
         final List<JsonSchemaError> errors = new ArrayList<>();
 
         Dates.parseDateWithTimeZone( dateValue )
-            .ifFailure( e -> errors.add( properties.error( schema, JsonSchemaValidatorErrors.DATE, Collections.singletonMap( "error", e.getMessage() ) ) ) );
+            .ifFailure( e -> errors.add( properties.error( schema, JsonMessage.DATE, Collections.singletonMap( "error", e.getMessage() ) ) ) );
 
         return errors;
     }
