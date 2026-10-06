@@ -35,7 +35,7 @@ public final class ValidationErrorsBuilder {
      * Adds a message formatted with {@code args}, with no message code.
      */
     public ValidationErrorsBuilder error( String message, Object... args ) {
-        return pairs( List.of( __( null, message ) ) );
+        return pairs( List.of( __( null, message.formatted( args ) ) ) );
     }
 
     /**
@@ -49,7 +49,7 @@ public final class ValidationErrorsBuilder {
      * Adds a message formatted with {@code args}, with the given message code.
      */
     public ValidationErrorsBuilder error( int code, String message, Object... args ) {
-        return error( code, String.format( message, args ) );
+        return error( code, message.formatted( args ) );
     }
 
     /**
