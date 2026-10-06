@@ -31,13 +31,12 @@ import java.util.Optional;
 
 import static oap.ws.sso.WsSecurity.SYSTEM;
 import static oap.ws.validate.ValidationErrors.empty;
-import static oap.ws.validate.ValidationErrors.error;
 
 public abstract class AbstractSecureWS {
     protected ValidationErrors validateUserLoggedIn( Optional<User> loggedUser ) {
         return loggedUser.isPresent()
             ? empty()
-            : error( Http.StatusCode.UNAUTHORIZED, "not logged in" );
+            : ValidationErrors.empty().statusCode( Http.StatusCode.UNAUTHORIZED ).error( "not logged in" ).endCode();
     }
 
     protected boolean isSystem( User loggedUser ) {

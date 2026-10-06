@@ -36,6 +36,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +107,12 @@ public class OpenapiErrorResponseTest {
     }
 
     @Test
+    public void errorResponseExampleCarriesMessages() {
+        assertThat( responses( "validated" ).get( "400" ).getContent().get( "application/json" ).getExample() )
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "message", "bad code" ) ) ) );
+    }
+
+    @Test
     public void methodWithoutErrorSourcesHasOnlySuccess() {
         assertThat( responses( "success" ).keySet() ).containsExactly( "200" );
     }
@@ -129,7 +136,7 @@ public class OpenapiErrorResponseTest {
 
         @WsMethod( path = "/validationBody", method = HttpMethod.GET )
         public Response validationBody() {
-            ValidationErrors.errors( 403, List.of( "denied" ) ).throwIfInvalid();
+            ValidationErrors.empty().statusCode( 403 ).errors( List.of( "denied" ) ).endCode().throwIfInvalid();
             return Response.ok();
         }
 
@@ -166,12 +173,12 @@ public class OpenapiErrorResponseTest {
 
         @OpenApiIgnore
         public ValidationErrors validateCode() {
-            return ValidationErrors.error( 400, "bad code" );
+            return ValidationErrors.empty().statusCode( 400 ).error( "bad code" ).endCode();
         }
 
         @OpenApiIgnore
         public ValidationErrors validateForbidden() {
-            return ValidationErrors.errors( 403, List.of( "denied" ) );
+            return ValidationErrors.empty().statusCode( 403 ).errors( List.of( "denied" ) ).endCode();
         }
     }
 }

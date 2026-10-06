@@ -75,7 +75,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
     }
 
     public ValidationErrorsAssertion containsErrors( String... errors ) {
-        assertThat( this.actual.resolvedErrors() ).contains( errors );
+        assertThat( this.actual.resolvedErrors().stream().map( p -> p._2 ).toList() ).contains( errors );
         return this;
     }
 

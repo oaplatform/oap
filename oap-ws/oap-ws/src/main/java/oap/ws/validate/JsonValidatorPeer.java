@@ -24,6 +24,7 @@
 package oap.ws.validate;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.http.Http;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonSchema;
@@ -52,7 +53,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
         try {
             Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
             JsonSchema factory = getJsonSchema( originalValues );
-            return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).errors( factory.validate( mapValue, validate.ignoreRequired() ) ).endCode();
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }

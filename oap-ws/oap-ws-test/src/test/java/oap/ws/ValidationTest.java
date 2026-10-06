@@ -67,7 +67,7 @@ public class ValidationTest extends Fixtures {
     @Test
     public void validatorMethodWithArgs() {
         assertGet( kernel.httpUrl( "/validation/service/methodWithValidatorArgs?oddParam=1" ) )
-            .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"errors\":[\"non odd param\"]}" );
+            .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"messages\":[{\"message\":\"non odd param\"}]}" );
         assertGet( kernel.httpUrl( "/validation/service/methodWithValidatorArgs?oddParam=2" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "true" );
     }

@@ -444,18 +444,27 @@ public Response patch(
 
 ### Validation errors
 
-`ValidationErrors` groups messages by HTTP status code (`HashMap<Integer, LinkedHashSet<String>>`). A validator reports an error with a code (default 400):
+`ValidationErrors` groups messages by HTTP status code (`HashMap<Integer, LinkedHashSet<Pair<Integer, String>>>`). Each message is a pair of an optional message code and the text. A validator reports an error with an HTTP status code:
 
 ```java
-ValidationErrors.error( "name must not be null" );           // 400
-ValidationErrors.error( 404, "product not found" );           // 404
+ValidationErrors.empty().statusCode( 400 ).error( "name must not be null" ).endCode();      // 400
+ValidationErrors.empty().statusCode( 404 ).error( "product not found" ).endCode();           // 404
+ValidationErrors.empty().statusCode( 400 ).error( 1001, "name must not be null" ).endCode(); // 400, message code 1001
+ValidationErrors.empty().statusCode( 400 ).errors( 1002, List.of( "a", "b" ) ).endCode();    // one message code for all
+ValidationErrors.empty().statusCode( 400 ).pairs( List.of( Pair.__( 1003, "c" ) ) ).endCode(); // one pair per message
+```
+
+The message code is optional (pass `null` or use the variants without it). A validation failure responds with the messages, each with its code when set:
+
+```json
+{ "messages": [ { "code": 1001, "message": "name must not be null" }, { "message": "product not found" } ] }
 ```
 
 `resolvedCode()` and `resolvedErrors()` pick one code for the response:
 
-1. Multiple 4xx codes are merged into 400.
-2. Multiple 5xx codes are merged into 502.
-3. Priority order: 401, 403, 400, 404, other 4xx (ascending), 502, other codes (ascending).
+1. Priority order: 401, 403, 400, 404. The first one present wins and only its messages are returned; other codes are ignored.
+2. Otherwise, multiple other 4xx codes are merged into 400 and multiple 5xx codes into 502.
+3. Then other 4xx codes (ascending), 502, other codes (ascending).
 
 `throwIfInvalid()` throws a `WsClientException` using the resolved code and that code's messages.
 

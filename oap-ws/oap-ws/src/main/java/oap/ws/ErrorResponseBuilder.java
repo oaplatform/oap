@@ -3,6 +3,7 @@ package oap.ws;
 import java.io.Serial;
 import java.io.Serializable;
 import oap.ws.validate.ValidationErrors;
+import oap.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +36,16 @@ public class ErrorResponseBuilder implements Serializable {
         return this;
     }
 
+    public ErrorResponseBuilder message( Integer code, String message ) {
+        messages.add( new ErrorResponse.Message( code, message ) );
+        return this;
+    }
+
     public ErrorResponse build() {
         return new ErrorResponse( statusCode, error, List.copyOf( messages ) );
     }
 
     public ValidationErrors toValidationErrors() {
-        return ValidationErrors.errors( statusCode, messages.stream().map( m -> m.message ).toList() );
+        return ValidationErrors.empty().statusCode( statusCode ).pairs( messages.stream().map( m -> Pair.__( m.code, m.message ) ).toList() ).endCode();
     }
 }

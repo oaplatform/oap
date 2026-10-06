@@ -41,8 +41,6 @@ import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.validate.ValidationErrors.empty;
-import static oap.ws.validate.ValidationErrors.error;
-import static oap.ws.validate.ValidationErrors.errors;
 
 public class MethodValidatorPeerMethodTest extends Fixtures {
     private final KernelFixture kernel;
@@ -67,19 +65,19 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
     @Test
     public void validationFail() {
         assertPost( kernel.httpUrl( "/mvpm/run/validation/fail" ), "test", Http.ContentType.TEXT_PLAIN )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"error1\",\"error2\"]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"message\": \"error1\"}, {\"message\": \"error2\"}]}" );
     }
 
     @Test
     public void validationFailCode() {
         assertPost( kernel.httpUrl( "/mvpm/run/validation/fail-code" ), "test", Http.ContentType.TEXT_PLAIN )
-            .respondedJson( Http.StatusCode.FORBIDDEN, "validation failed", "{\"errors\":[\"denied\"]}" );
+            .respondedJson( Http.StatusCode.FORBIDDEN, "validation failed", "{\"messages\":[{\"message\": \"denied\"}]}" );
     }
 
     @Test
     public void validationMethods() {
         assertGet( kernel.httpUrl( "/mvpm/run/validation/methods?a=a&b=5&c=c" ) )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"a\",\"a5\",\"5a\"]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\":[{\"message\": \"a\"}, {\"message\": \"a5\"}, {\"message\": \"5a\"}]}" );
     }
 
     public static class Test1WS {
@@ -116,15 +114,15 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
         }
 
         protected ValidationErrors validateA( String a ) {
-            return error( a );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( a ).endCode();
         }
 
         protected ValidationErrors validateAB( String a, int b ) {
-            return error( a + b );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( a + b ).endCode();
         }
 
         protected ValidationErrors validateBA( int b, String a ) {
-            return error( b + a );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( b + a ).endCode();
         }
 
         protected ValidationErrors validateOk( String request ) {
@@ -132,11 +130,11 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
         }
 
         protected ValidationErrors validateFail( String request ) {
-            return errors( List.of( "error1", "error2" ) );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).errors( List.of( "error1", "error2" ) ).endCode();
         }
 
         protected ValidationErrors validateFailCode( String request ) {
-            return error( Http.StatusCode.FORBIDDEN, "denied" );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.FORBIDDEN ).error( "denied" ).endCode();
         }
     }
 }

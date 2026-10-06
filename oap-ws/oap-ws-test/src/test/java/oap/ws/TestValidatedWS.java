@@ -24,6 +24,7 @@
 
 package oap.ws;
 
+import oap.http.Http;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.WsValidate;
 
@@ -71,7 +72,7 @@ public class TestValidatedWS {
     }
 
     protected ValidationErrors oddParamValidator( int oddParam ) {
-        return oddParam % 2 == 0 ? ValidationErrors.empty() : ValidationErrors.error( "non odd param" );
+        return oddParam % 2 == 0 ? ValidationErrors.empty() : ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( "non odd param" ).endCode();
     }
 
 }

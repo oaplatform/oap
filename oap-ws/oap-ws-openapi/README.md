@@ -70,7 +70,7 @@ Scanned code: the endpoint method, the methods named in `@WsValidate` (on the me
 
 | Code in scanned code | Example | Reported as |
 |---|---|---|
-| `ValidationErrors.error/errors/create( int, … )` | `ValidationErrors.error( 400, "bad" )` | `400` |
+| `ValidationErrors.statusCode( int ).error/errors/create(…)…endCode()` | `ValidationErrors.empty().statusCode( 400 ).error( "bad" ).endCode()` | `400` |
 | `new WsClientException( message, int, errors )` | `new WsClientException( "x", 403, List.of() )` | `403` |
 | `oap.ws.Response` constructor or `withStatusCode( int )` | `new Response( 409 )` | `409` |
 | `oap.ws.Response.build401()` / `build403()` / `build404()` | `Response.build403().build()` | `401` / `403` / `404` |
@@ -84,14 +84,39 @@ Rules:
 - A code that is not a literal (held in a local variable or computed at runtime) is skipped and logged as a warning.
 - A class processed under two contexts is generated once (class-name dedup), so its codes come from the first context only.
 
-Example: an endpoint with a `400` validator and an interceptor that returns `401`:
+### Messages in examples
+
+Each validation message is also scanned. The `application/json` media type of every error response (except `401`, see below) gets an `example` with the messages of that status code, in the shape of the real validation body `{"messages": [{"code", "message"}]}`:
+
+| Code in scanned code | Example message |
+|---|---|
+| `statusCode( 400 ).error( 1001, "a" )` | `{ "code": 1001, "message": "a" }` |
+| `statusCode( 400 ).error( "a" )` | `{ "message": "a" }` (no `code`) |
+| `statusCode( 400 ).error( 1002, "item " + id )` | `{ "code": 1002, "message": "<runtime message>" }` |
+
+Rules:
+
+- The message code is optional. A literal `Integer` code (`Integer.valueOf` of an `int` constant, or `null`) is recorded; a computed one makes the message skipped with a warning.
+- A text that is not a literal is shown as the placeholder `<runtime message>`.
+- Messages from the endpoint and from its interceptors are merged per status code. Duplicates are dropped.
+- Messages added through lists (`error(List)`, `errors(List)`, `pairs(...)`, `errors(Integer, List)`) are not listed, since their count is unknown at scan time. The status code is still reported.
+- The receiver must be the chained form `statusCode( x ).error(...)`. A builder held in a local variable is skipped with a warning.
+- `401` stays a `$ref` to `UnauthorizedError`, which cannot carry a per-operation example.
+- The shared `ErrorResponse` schema (`statusCode`, `error`, `messages`) does not match the validation body `{"messages": [...]}`. The examples follow the real body; the schema is unchanged.
+
+Example: an endpoint with a `400` validator (messages `1001 "a"` and a runtime text) and an interceptor that returns `401`:
 
 ```json
 "responses": {
   "200": { "description": "" },
   "400": {
     "description": "Bad Request",
-    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+    "content": {
+      "application/json": {
+        "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+        "example": { "messages": [ { "code": 1001, "message": "a" }, { "code": 1002, "message": "<runtime message>" } ] }
+      }
+    }
   },
   "401": { "$ref": "#/components/responses/UnauthorizedError" }
 }

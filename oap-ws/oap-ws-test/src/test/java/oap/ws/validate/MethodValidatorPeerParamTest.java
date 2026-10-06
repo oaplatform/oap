@@ -40,7 +40,6 @@ import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
 import static oap.ws.validate.ValidationErrors.empty;
-import static oap.ws.validate.ValidationErrors.error;
 
 public class MethodValidatorPeerParamTest extends Fixtures {
     private final KernelFixture kernel;
@@ -77,7 +76,7 @@ public class MethodValidatorPeerParamTest extends Fixtures {
     @Test
     public void validationFail() {
         assertPost( kernel.httpUrl( "/mvpp/run/validation/fail?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
-            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\": [\"error:1\", \"error:test\"]}" );
+            .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"messages\": [{\"message\": \"error:1\"}, {\"message\": \"error:test\"}]}" );
     }
 
     @Test
@@ -136,11 +135,11 @@ public class MethodValidatorPeerParamTest extends Fixtures {
         }
 
         protected ValidationErrors validateFailInt( int i ) {
-            return error( "error:" + i );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( "error:" + i ).endCode();
         }
 
         protected ValidationErrors validateFailString( String string ) {
-            return error( "error:" + string );
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( "error:" + string ).endCode();
         }
     }
 }

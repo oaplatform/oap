@@ -78,8 +78,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Collection;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static oap.ws.openapi.OpenapiSchema.prepareType;
@@ -102,6 +103,8 @@ public class OpenapiGenerator {
     private final ModelConverters converters = new ModelConverters();
     private final OpenAPI api = new OpenAPI();
     private final OpenapiSchema openapiSchema = new OpenapiSchema();
+    /** Example text of a message whose text is not a literal in the code. */
+    private static final String RUNTIME_MESSAGE = "<runtime message>";
     private final ErrorCodeScanner errorCodeScanner = new ErrorCodeScanner();
     private static final Map<Integer, String> REASON_PHRASES = Map.ofEntries(
         Map.entry( 400, "Bad Request" ),
@@ -217,7 +220,7 @@ public class OpenapiGenerator {
                 clazz.getPackage().getImplementationVersion() != null
                     ? clazz.getPackage().getImplementationVersion()
                     : Strings.UNDEFINED, wsInfo.name );
-        SortedSet<Integer> interceptorCodes = interceptorErrorCodes( interceptors );
+        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes = interceptorErrorResponses( interceptors );
         boolean atLeastOneMethodProcessed = false;
         int methodNumber = 0;
         List<WebMethodInfo> methods = wsInfo.methods( !settings.skipDeprecated );
@@ -242,20 +245,25 @@ public class OpenapiGenerator {
         return Result.PROCESSED_OK;
     }
 
-    private SortedSet<Integer> interceptorErrorCodes( Collection<Class<?>> interceptors ) {
-        SortedSet<Integer> codes = new TreeSet<>();
+    private Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorErrorResponses( Collection<Class<?>> interceptors ) {
+        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> results = new TreeMap<>();
         for( Class<?> interceptor : interceptors ) {
             try {
-                codes.addAll( errorCodeScanner.errorCodes( interceptor.getMethod( "before", InvocationContext.class ) ) );
+                merge( results, errorCodeScanner.errorResponses( interceptor.getMethod( "before", InvocationContext.class ) ) );
             } catch( NoSuchMethodException e ) {
                 log.warn( "Interceptor {} has no before(InvocationContext) method, skipped", interceptor.getName() );
             }
         }
-        return codes;
+        return results;
+    }
+
+    private static void merge( Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> target,
+                               Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> source ) {
+        source.forEach( ( code, messages ) -> target.computeIfAbsent( code, c -> new LinkedHashSet<>() ).addAll( messages ) );
     }
 
     private Operation prepareOperation( WebMethodInfo method, Tag tag, HttpServerExchange.HttpMethod httpMethod, int methodNumber,
-                                        Set<Integer> interceptorCodes ) {
+                                        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes ) {
         var params = method.parameters();
         var returnType = prepareType( method.resultType() );
 
@@ -298,7 +306,7 @@ public class OpenapiGenerator {
         return result.toString();
     }
 
-    private ApiResponses prepareResponse( Type returnType, WebMethodInfo method, Set<Integer> interceptorCodes ) {
+    private ApiResponses prepareResponse( Type returnType, WebMethodInfo method, Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes ) {
         var responses = new ApiResponses();
         ApiResponse response = new ApiResponse();
         response.description( "" );
@@ -308,17 +316,33 @@ public class OpenapiGenerator {
         return responses;
     }
 
-    private void addErrorResponses( ApiResponses responses, WebMethodInfo method, Set<Integer> interceptorCodes ) {
-        SortedSet<Integer> codes = new TreeSet<>( interceptorCodes );
-        codes.addAll( errorCodeScanner.errorCodes( method.reflectMethod() ) );
-        for( int code : codes ) {
-            responses.addApiResponse( String.valueOf( code ), code == UNAUTHORIZED
-                ? new ApiResponse().$ref( "#/components/responses/UnauthorizedError" )
-                : new ApiResponse()
-                    .description( REASON_PHRASES.getOrDefault( code, "HTTP " + code ) )
-                    .content( createContent( ContentType.APPLICATION_JSON.getMimeType(),
-                        new Schema<>().$ref( RefUtils.constructRef( "ErrorResponse" ) ) ) ) );
+    private void addErrorResponses( ApiResponses responses, WebMethodInfo method, Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes ) {
+        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> errors = new TreeMap<>();
+        merge( errors, interceptorCodes );
+        merge( errors, errorCodeScanner.errorResponses( method.reflectMethod() ) );
+        errors.forEach( ( code, messages ) -> responses.addApiResponse( String.valueOf( code ), code == UNAUTHORIZED
+            ? new ApiResponse().$ref( "#/components/responses/UnauthorizedError" )
+            : new ApiResponse()
+                .description( REASON_PHRASES.getOrDefault( code, "HTTP " + code ) )
+                .content( errorContent( messages ) ) ) );
+    }
+
+    private static Content errorContent( Set<ErrorCodeScanner.ScannedMessage> messages ) {
+        MediaType mediaType = new MediaType().schema( new Schema<>().$ref( RefUtils.constructRef( "ErrorResponse" ) ) );
+        if( !messages.isEmpty() ) mediaType.example( messagesExample( messages ) );
+        return new Content().addMediaType( ContentType.APPLICATION_JSON.getMimeType(), mediaType );
+    }
+
+    /** Example body {@code {"messages": [{"code": ..., "message": ...}]}}; {@code code} is omitted when absent. */
+    private static Map<String, Object> messagesExample( Set<ErrorCodeScanner.ScannedMessage> messages ) {
+        List<Map<String, Object>> items = new ArrayList<>();
+        for( ErrorCodeScanner.ScannedMessage message : messages ) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            if( message.code() != null ) item.put( "code", message.code() );
+            item.put( "message", message.text() != null ? message.text() : RUNTIME_MESSAGE );
+            items.add( item );
         }
+        return Map.of( "messages", items );
     }
 
     private Schema getSchemaByReturnType( Type returnType, WebMethodInfo method ) {

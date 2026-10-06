@@ -29,6 +29,7 @@ import oap.reflect.Reflect;
 import oap.ws.Response;
 import oap.ws.WsClientException;
 import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.ValidationErrorsBuilder;
 import oap.ws.validate.WsValidate;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -49,22 +50,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Finds the HTTP error codes a web method can return by reading its bytecode with ASM.
+ * Finds the HTTP error responses a web method can produce by reading its bytecode with ASM.
  * <p>
  * Scanned: the web method itself and the methods named in {@link WsValidate} (on the method and on its parameters).
  * A literal {@code int} code passed to {@link ValidationErrors}, {@link WsClientException}, {@link Response}
- * or {@code oap.http.Response}
- * is recorded when it is {@code >= 400}. Calls to methods of the scanned class hierarchy and to {@link Response}
- * are followed, up to {@link #MAX_DEPTH} levels. {@code Response.build401()}, {@code build403()} and
- * {@code build404()} always yield their status code.
+ * or {@code oap.http.Response} is an HTTP status code, recorded when it is {@code >= 400}.
+ * Calls to methods of the scanned class hierarchy and to {@link Response} are followed, up to {@link #MAX_DEPTH} levels.
+ * {@code Response.build401()}, {@code build403()} and {@code build404()} always yield their status code.
+ * <p>
+ * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( code, text )} on
+ * {@link ValidationErrorsBuilder} add a message to status {@code x}. The message code is optional: without one it is
+ * {@code null}, with one it must be a literal. The text is kept when it is a literal, otherwise it is {@code null}.
+ * Messages added through lists are not listed, since their count is unknown.
  * <p>
  * Limits: a code held in a local variable or computed at runtime is not resolved and is logged as a warning.
  */
@@ -75,6 +83,10 @@ public class ErrorCodeScanner {
         "build403", 403,
         "build404", 404 );
     private static final String CONSTRUCTOR = "<init>";
+    private static final String STATUS_CODE = "statusCode";
+    private static final String ERROR = "error";
+    private static final String MESSAGE_DESC_PREFIX = "(Ljava/lang/Integer;Ljava/lang/String;";
+    private static final String PLAIN_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;";
     private static final int MIN_ERROR_CODE = 400;
     static final int MAX_DEPTH = 5;
     private static final Set<String> CODE_OWNERS = Set.of(
@@ -86,14 +98,28 @@ public class ErrorCodeScanner {
     private final Map<Class<?>, ClassNode> classNodes = new ConcurrentHashMap<>();
 
     /**
+     * A message of an error response: its message code (may be {@code null}) and its text (may be {@code null}
+     * when the text is not a literal).
+     */
+    public record ScannedMessage( Integer code, String text ) {
+    }
+
+    /**
      * @return sorted distinct error codes ({@code >= 400}) the method can produce
      */
     public SortedSet<Integer> errorCodes( java.lang.reflect.Method method ) {
-        SortedSet<Integer> codes = new TreeSet<>();
+        return new TreeSet<>( errorResponses( method ).keySet() );
+    }
+
+    /**
+     * @return HTTP status code ({@code >= 400}) to the messages the method adds under it; a status without messages maps to an empty set
+     */
+    public SortedMap<Integer, Set<ScannedMessage>> errorResponses( java.lang.reflect.Method method ) {
+        SortedMap<Integer, Set<ScannedMessage>> results = new TreeMap<>();
         Set<String> visited = new HashSet<>();
         Class<?> scanned = method.getDeclaringClass();
 
-        scanMethod( scanned, scanned, method.getName(), Type.getMethodDescriptor( method ), 0, visited, codes );
+        scanMethod( scanned, scanned, method.getName(), Type.getMethodDescriptor( method ), 0, visited, results );
 
         for( String validatorName : validatorNames( method ) ) {
             var validator = Reflect.reflect( scanned ).method( validatorName ).map( m -> m.underlying );
@@ -103,10 +129,10 @@ public class ErrorCodeScanner {
             }
             java.lang.reflect.Method validatorMethod = validator.get();
             scanMethod( validatorMethod.getDeclaringClass(), scanned, validatorMethod.getName(),
-                Type.getMethodDescriptor( validatorMethod ), 0, visited, codes );
+                Type.getMethodDescriptor( validatorMethod ), 0, visited, results );
         }
 
-        return codes;
+        return results;
     }
 
     private static List<String> validatorNames( java.lang.reflect.Method method ) {
@@ -120,8 +146,12 @@ public class ErrorCodeScanner {
         return names;
     }
 
+    /** The analysed body of one method: frame and instruction at the same index. */
+    private record Body( Frame<SourceValue>[] frames, AbstractInsnNode[] instructions ) {
+    }
+
     private void scanMethod( Class<?> owner, Class<?> scanned, String name, String desc,
-                             int depth, Set<String> visited, Set<Integer> codes ) {
+                             int depth, Set<String> visited, Map<Integer, Set<ScannedMessage>> results ) {
         if( depth > MAX_DEPTH || owner == null || owner == Object.class
             || !visited.add( owner.getName() + "#" + name + desc ) ) return;
 
@@ -130,7 +160,7 @@ public class ErrorCodeScanner {
 
         MethodNode methodNode = findMethod( classNode, name, desc );
         if( methodNode == null ) {
-            scanMethod( owner.getSuperclass(), scanned, name, desc, depth, visited, codes );
+            scanMethod( owner.getSuperclass(), scanned, name, desc, depth, visited, results );
             return;
         }
         if( methodNode.instructions.size() == 0 ) return;
@@ -143,32 +173,37 @@ public class ErrorCodeScanner {
             return;
         }
 
-        AbstractInsnNode[] instructions = methodNode.instructions.toArray();
-        for( int i = 0; i < instructions.length; i++ ) {
-            if( instructions[i] instanceof MethodInsnNode invoke && frames[i] != null ) {
-                scanInvoke( invoke, frames[i], owner, scanned, depth, visited, codes );
+        Body body = new Body( frames, methodNode.instructions.toArray() );
+        for( int i = 0; i < body.instructions().length; i++ ) {
+            if( body.instructions()[i] instanceof MethodInsnNode invoke && frames[i] != null ) {
+                scanInvoke( invoke, frames[i], body, owner, scanned, depth, visited, results );
             }
         }
     }
 
-    private void scanInvoke( MethodInsnNode invoke, Frame<SourceValue> frame, Class<?> owner, Class<?> scanned,
-                             int depth, Set<String> visited, Set<Integer> codes ) {
+    private void scanInvoke( MethodInsnNode invoke, Frame<SourceValue> frame, Body body, Class<?> owner, Class<?> scanned,
+                             int depth, Set<String> visited, Map<Integer, Set<ScannedMessage>> results ) {
         Integer builderCode = Type.getInternalName( Response.class ).equals( invoke.owner )
             ? ERROR_BUILDERS.get( invoke.name ) : null;
         if( builderCode != null ) {
-            codes.add( builderCode );
+            status( results, builderCode );
             return;
         }
-        if( CODE_OWNERS.contains( invoke.owner ) ) collectCode( invoke, frame, owner, codes );
+        if( CODE_OWNERS.contains( invoke.owner ) ) collectCode( invoke, frame, owner, results );
+        if( isMessage( invoke ) ) collectMessage( invoke, frame, body, owner, results );
         if( CONSTRUCTOR.equals( invoke.name ) ) return;
 
         Class<?> target = resolve( invoke.owner, scanned.getClassLoader() );
         if( target != null && followable( target, scanned ) ) {
-            scanMethod( target, scanned, invoke.name, invoke.desc, depth + 1, visited, codes );
+            scanMethod( target, scanned, invoke.name, invoke.desc, depth + 1, visited, results );
         }
     }
 
-    private void collectCode( MethodInsnNode invoke, Frame<SourceValue> frame, Class<?> owner, Set<Integer> codes ) {
+    private static Set<ScannedMessage> status( Map<Integer, Set<ScannedMessage>> results, int code ) {
+        return results.computeIfAbsent( code, c -> new LinkedHashSet<>() );
+    }
+
+    private void collectCode( MethodInsnNode invoke, Frame<SourceValue> frame, Class<?> owner, Map<Integer, Set<ScannedMessage>> results ) {
         Type[] args = Type.getArgumentTypes( invoke.desc );
         int codeIndex = -1;
         for( int i = 0; i < args.length; i++ ) {
@@ -185,7 +220,86 @@ public class ErrorCodeScanner {
             log.warn( "Non-constant error code passed to {}.{} in {}, skipped", invoke.owner, invoke.name, owner.getName() );
             return;
         }
-        if( code >= MIN_ERROR_CODE ) codes.add( code );
+        if( code >= MIN_ERROR_CODE ) status( results, code );
+    }
+
+    private static boolean isMessage( MethodInsnNode invoke ) {
+        return Type.getInternalName( ValidationErrorsBuilder.class ).equals( invoke.owner )
+            && ERROR.equals( invoke.name )
+            && ( invoke.desc.startsWith( MESSAGE_DESC_PREFIX ) || invoke.desc.startsWith( PLAIN_MESSAGE_DESC_PREFIX ) );
+    }
+
+    private void collectMessage( MethodInsnNode invoke, Frame<SourceValue> frame, Body body, Class<?> owner,
+                                 Map<Integer, Set<ScannedMessage>> results ) {
+        int argc = Type.getArgumentTypes( invoke.desc ).length;
+        int top = frame.getStackSize();
+
+        Integer statusCode = statusCodeOf( frame.getStack( top - argc - 1 ), body );
+        if( statusCode == null ) {
+            log.warn( "Message in {} is not added to a literal statusCode(...), skipped", owner.getName() );
+            return;
+        }
+        if( statusCode < MIN_ERROR_CODE ) return;
+
+        boolean withCode = invoke.desc.startsWith( MESSAGE_DESC_PREFIX );
+        Integer messageCode = null;
+        if( withCode ) {
+            AbstractInsnNode codeProducer = single( frame.getStack( top - argc ) );
+            if( codeProducer == null ) {
+                log.warn( "Message code in {} is not traceable, skipped", owner.getName() );
+                return;
+            }
+            if( codeProducer.getOpcode() != Opcodes.ACONST_NULL ) {
+                messageCode = boxedIntConstant( codeProducer, body );
+                if( messageCode == null ) {
+                    log.warn( "Non-constant message code in {}, skipped", owner.getName() );
+                    return;
+                }
+            }
+        }
+
+        // only the fixed-arity variants have a literal text; formatted (varargs) messages keep a placeholder
+        int textIndex = withCode ? 1 : 0;
+        boolean fixedArity = argc == ( withCode ? 2 : 1 );
+        String text = null;
+        if( fixedArity ) {
+            AbstractInsnNode textProducer = single( frame.getStack( top - argc + textIndex ) );
+            text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+        }
+
+        status( results, statusCode ).add( new ScannedMessage( messageCode, text ) );
+    }
+
+    /** The literal status code of the {@code statusCode( int )} call that produced the receiver, or null. */
+    private static Integer statusCodeOf( SourceValue receiver, Body body ) {
+        AbstractInsnNode producer = single( receiver );
+        if( !( producer instanceof MethodInsnNode call ) || !STATUS_CODE.equals( call.name )
+            || !Type.getInternalName( ValidationErrors.class ).equals( call.owner ) ) return null;
+
+        Frame<SourceValue> frame = frameOf( call, body );
+        if( frame == null ) return null;
+        return constantValue( frame.getStack( frame.getStackSize() - 1 ) );
+    }
+
+    /** The int constant of {@code Integer.valueOf( int )} that produced the boxed value, or null. */
+    private static Integer boxedIntConstant( AbstractInsnNode producer, Body body ) {
+        if( !( producer instanceof MethodInsnNode call ) || !"valueOf".equals( call.name )
+            || !Type.getInternalName( Integer.class ).equals( call.owner ) ) return null;
+
+        Frame<SourceValue> frame = frameOf( call, body );
+        if( frame == null ) return null;
+        return constantValue( frame.getStack( frame.getStackSize() - 1 ) );
+    }
+
+    private static Frame<SourceValue> frameOf( AbstractInsnNode insn, Body body ) {
+        for( int i = 0; i < body.instructions().length; i++ ) {
+            if( body.instructions()[i] == insn ) return body.frames()[i];
+        }
+        return null;
+    }
+
+    private static AbstractInsnNode single( SourceValue value ) {
+        return value.insns.size() == 1 ? value.insns.iterator().next() : null;
     }
 
     private static Integer constantValue( SourceValue value ) {

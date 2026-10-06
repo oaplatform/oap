@@ -22,6 +22,6 @@ public class AccountWS extends AbstractSecureWS {
 
 ### `validateUserLoggedIn( Optional<User> loggedUser )`
 
-Returns `ValidationErrors.empty()` when the user is present, or `ValidationErrors.error( 401, "not logged in" )` when the `Optional` is empty.
+Returns `ValidationErrors.empty()` when the user is present, or `ValidationErrors.empty().statusCode( 401 ).error( "not logged in" ).endCode()` when the `Optional` is empty.
 
-`throwIfInvalid()` throws a `WsClientException` with the code chosen by `resolvedCode()`. `ValidationErrors.error( 401, … )` takes priority over other codes, as described in `oap-ws/oap-ws/README.md` under "Validation errors".
+`throwIfInvalid()` throws a `WsClientException` with the code chosen by `resolvedCode()`. `ValidationErrors.empty().statusCode( 401 ).error( … ).endCode()` takes priority over other codes, as described in `oap-ws/oap-ws/README.md` under "Validation errors".

@@ -35,7 +35,6 @@ import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
 import static oap.ws.WsParam.From.SESSION;
-import static oap.ws.validate.ValidationErrors.error;
 
 @Slf4j
 public class McpWS extends AbstractSecureWS {
@@ -125,7 +124,7 @@ public class McpWS extends AbstractSecureWS {
 
     public ValidationErrors systemAdminRole( Optional<User> loggedUser ) {
         if( loggedUser.isEmpty() || !isSystem( loggedUser.get() ) ) {
-            return error( FORBIDDEN, "Only System ADMIN can access to this api" );
+            return ValidationErrors.empty().statusCode( FORBIDDEN ).error( "Only System ADMIN can access to this api" ).endCode();
         } else return ValidationErrors.empty();
     }
 }

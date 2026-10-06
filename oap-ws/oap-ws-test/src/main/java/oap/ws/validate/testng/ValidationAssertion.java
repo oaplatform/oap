@@ -44,7 +44,7 @@ public final class ValidationAssertion {
     }
 
     public ValidationAssertion hasErrors( String... errors ) {
-        assertThat( this.errors.errors ).contains( errors );
+        assertThat( this.errors.messages.stream().map( m -> m.message ).toList() ).contains( errors );
         return this;
     }
 }

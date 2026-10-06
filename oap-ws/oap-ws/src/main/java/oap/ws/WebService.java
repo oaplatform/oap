@@ -113,7 +113,7 @@ public class WebService implements HttpHandler {
     }
 
     private void buildErrorResponse( HttpServerExchange exchange, ValidationErrors validationErrors ) {
-        exchange.responseJson( validationErrors.resolvedCode(), "validation failed", new ValidationErrors.ErrorResponse( validationErrors.resolvedErrors() ) );
+        exchange.responseJson( validationErrors.resolvedCode(), "validation failed", ValidationErrors.ErrorResponse.of( validationErrors.resolvedErrors() ) );
     }
 
 

@@ -29,6 +29,8 @@ import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ErrorCodeScannerTest {
@@ -36,6 +38,16 @@ public class ErrorCodeScannerTest {
 
     private static java.lang.reflect.Method method( String name ) throws NoSuchMethodException {
         return Fixture.class.getMethod( name, String.class );
+    }
+
+    @Test
+    public void collectsMessageCodesAndTexts() throws NoSuchMethodException {
+        var responses = scanner.errorResponses( method( "messages" ) );
+
+        assertThat( responses.get( 400 ) ).containsExactly(
+            new ErrorCodeScanner.ScannedMessage( 1001, "a" ),
+            new ErrorCodeScanner.ScannedMessage( 1002, null ) );
+        assertThat( responses.get( 404 ) ).isEmpty();
     }
 
     @Test
@@ -65,6 +77,13 @@ public class ErrorCodeScannerTest {
             return Response.ok();
         }
 
+        public ValidationErrors messages( String param ) {
+            return ValidationErrors.empty()
+                .statusCode( 400 ).error( 1001, "a" ).endCode()
+                .statusCode( 400 ).error( 1002, "a" + param ).endCode()
+                .statusCode( 404 ).errors( 1003, List.of( "gone" ) ).endCode();
+        }
+
         public Response builders( String param ) {
             if( "forbidden".equals( param ) ) return Response.build403().message( "no access" ).build();
             return Response.build404().build();
@@ -76,11 +95,11 @@ public class ErrorCodeScannerTest {
         }
 
         public ValidationErrors validateCode( String value ) {
-            return ValidationErrors.error( 400, "bad code" );
+            return ValidationErrors.empty().statusCode( 400 ).error( "bad code" ).endCode();
         }
 
         public ValidationErrors validateParam( String value ) {
-            return ValidationErrors.error( value.length(), "non-constant code" );
+            return ValidationErrors.empty().statusCode( value.length() ).error( "non-constant code" ).endCode();
         }
     }
 }
