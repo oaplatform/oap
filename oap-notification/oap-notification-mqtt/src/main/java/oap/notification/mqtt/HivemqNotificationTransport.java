@@ -112,7 +112,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
                 .topic( topic )
                 .qos( convertQos( qos ) )
                 .retain( retain )
-                .payload( Binder.json.marshal( notification ).getBytes() )
+                .payload( notification.message )
                 .send()
                 .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
                 .join();
@@ -159,7 +159,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
                 log.trace( "[{}] topic {} payload {}", identifier, mqtt5Publish.getTopic(),
                     payloadAsBytes.length > 0 ? new String( payloadAsBytes ) : "<EMPTY>" );
 
-                Notification notification = Binder.json.unmarshal( Notification.class, payloadAsBytes );
+                Notification notification = new Notification( payloadAsBytes );
                 String topic = mqtt5Publish.getTopic().toString();
                 Qos qos = convertQos( mqtt5Publish.getQos() );
                 boolean retain = mqtt5Publish.isRetain();
