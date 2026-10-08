@@ -47,7 +47,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{}" );
         assertOk( schema, "{'a': 'test'}" );
         assertFailure( schema, "{'a': 10}",
-            "/a: instance type is number, but allowed type is string" );
+            "instance type is number, but allowed type is string" );
     }
 
     @Test
@@ -69,7 +69,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{}" );
         assertOk( schema, "{'a': {'a': 'test'}}" );
         assertFailure( schema, "{'a': {'a': true}}",
-            "/a/a: instance type is boolean, but allowed type is string" );
+            "instance type is boolean, but allowed type is string" );
     }
 
     @Test
@@ -106,7 +106,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
             + "}";
 
         assertOk( schema, "{}" );
-        assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );
+        assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "additional properties are not permitted [c]" );
     }
 
     @Test
@@ -132,21 +132,21 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     public void requiredArrayMissing() {
         String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
 
-        assertFailure( schema, "{}", "/a: required property is missing" );
+        assertFailure( schema, "{}", "required property is missing" );
     }
 
     @Test
     public void requiredArrayNullValue() {
         String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
 
-        assertFailure( schema, "{'a': null}", "/a: required property is missing" );
+        assertFailure( schema, "{'a': null}", "required property is missing" );
     }
 
     @Test
     public void requiredArrayMultiple() {
         String schema = "{type: object, properties: {a: {type: string}, b: {type: string}}, required: [a, b]}";
 
-        assertFailure( schema, "{'a': 'x'}", "/b: required property is missing" );
+        assertFailure( schema, "{'a': 'x'}", "required property is missing" );
     }
 
     @Test
@@ -160,7 +160,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     public void requiredArrayDoesNotCollideWithPerFieldRequired() {
         String schema = "{type: object, properties: {a: {type: string, required: true}, b: {type: string}}, required: [b]}";
 
-        assertFailure( schema, "{}", INSTANCE, "/a: required property is missing", "/b: required property is missing" );
+        assertFailure( schema, "{}", INSTANCE, "required property is missing", "required property is missing" );
     }
 
     @Test
@@ -185,7 +185,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
             + "else: {type: object, properties: {postalCode: {type: string}}}"
             + "}";
 
-        assertFailure( schema, "{'country': 'US'}", "/postalCode: required property is missing" );
+        assertFailure( schema, "{'country': 'US'}", "required property is missing" );
     }
 
     @Test
@@ -198,7 +198,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
             + "else: {type: object, properties: {postalCode: {type: string}}, required: [postalCode]}"
             + "}";
 
-        assertFailure( schema, "{'country': 'CA'}", "/postalCode: required property is missing" );
+        assertFailure( schema, "{'country': 'CA'}", "required property is missing" );
     }
 
     @Test
@@ -244,7 +244,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
             + "allOf: [ {type: object, properties: {a: {type: string}}, required: [a]}, {type: object, properties: {b: {type: string}}, required: [b]} ]"
             + "}";
 
-        assertFailure( schema, "{'a': 'x'}", "/b: required property is missing" );
+        assertFailure( schema, "{'a': 'x'}", "required property is missing" );
     }
 
     @Test
@@ -368,10 +368,10 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
             }""";
 
         assertOk( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, false );
-        assertFailure( schema1, "{'field1': {'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, "/field1/enabled: required property is missing" );
-        assertFailure( schema1, "{'field1': {'enabled': true, 'c': 1, 'a': 2 }}", _ -> schema2, "/field1/type: required property is missing" );
-        assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1 }}", _ -> schema2, "/field1/a: required property is missing" );
-        assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'a': 2 }}", _ -> schema2, "/field1/c: required property is missing" );
+        assertFailure( schema1, "{'field1': {'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, "required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'c': 1, 'a': 2 }}", _ -> schema2, "required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1 }}", _ -> schema2, "required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'a': 2 }}", _ -> schema2, "required property is missing" );
     }
 
     @Test
@@ -394,6 +394,6 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
             + "}";
 
         assertOk( schema, "{'a': true}" );
-        assertFailure( schema, "{'a': 'nope'}", "/a: instance does not equal const value 'true'" );
+        assertFailure( schema, "{'a': 'nope'}", "instance does not equal const value 'true'" );
     }
 }

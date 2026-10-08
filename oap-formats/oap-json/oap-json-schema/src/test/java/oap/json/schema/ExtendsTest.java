@@ -46,7 +46,7 @@ public class ExtendsTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'a': 'test'}", url -> schema2, false );
         assertFailure( schema, "{'a': 1}",
-            url -> schema2, "/a: instance type is number, but allowed type is string"
+            url -> schema2, "instance type is number, but allowed type is string"
         );
     }
 
@@ -183,6 +183,6 @@ public class ExtendsTest extends AbstractSchemaTest {
         assertOk( schema, "{'o': [{'a11':'test'}]}", func, false );
         assertOk( schema, "{'o': [{'a21':'test'}]}", func, false );
 
-        assertFailure( schema, "{'o': [{'unknown':'test'}]}", func, "/o/0: additional properties are not permitted [unknown]" );
+        assertFailure( schema, "{'o': [{'unknown':'test'}]}", func, "additional properties are not permitted [unknown]" );
     }
 }

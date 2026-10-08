@@ -1,8 +1,8 @@
 package oap.ws.validate;
 
-import oap.util.Pair;
 import oap.json.Binder;
 import oap.validation.ValidationMessage;
+import oap.ws.ErrorResponse;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -21,10 +21,10 @@ public class ValidationErrorsBuilderTest {
     public void testChainedStatusCodesForbiddenWinsOverBadRequest() {
         ValidationErrors errors = ValidationErrors.empty()
             .statusCode( BAD_REQUEST ).error( "a" ).endCode()
-            .statusCode( FORBIDDEN ).errors( List.of( "b" ) ).endCode();
+            .statusCode( FORBIDDEN ).error( "b" ).endCode();
 
         assertThat( errors.resolvedCode() ).isEqualTo( FORBIDDEN );
-        assertThat( errors.resolvedErrors().stream().map( p -> p._2 ).toList() ).containsExactlyInAnyOrder( "b" );
+        assertThat( errors.resolvedErrors().stream().map( m -> m.message ).toList() ).containsExactlyInAnyOrder( "b" );
     }
 
     @Test
@@ -34,7 +34,7 @@ public class ValidationErrorsBuilderTest {
             .statusCode( UNPROCESSABLE_ENTITY ).error( "b" ).endCode();
 
         assertThat( errors.resolvedCode() ).isEqualTo( BAD_REQUEST );
-        assertThat( errors.resolvedErrors().stream().map( p -> p._2 ).toList() ).containsExactlyInAnyOrder( "a", "b" );
+        assertThat( errors.resolvedErrors().stream().map( m -> m.message ).toList() ).containsExactlyInAnyOrder( "a", "b" );
     }
 
     @Test
@@ -45,42 +45,45 @@ public class ValidationErrorsBuilderTest {
             .statusCode( UNAUTHORIZED ).error( "no token" ).endCode();
 
         assertThat( errors.resolvedCode() ).isEqualTo( UNAUTHORIZED );
-        assertThat( errors.resolvedErrors().stream().map( p -> p._2 ).toList() ).containsExactly( "no token" );
+        assertThat( errors.resolvedErrors().stream().map( m -> m.message ).toList() ).containsExactly( "no token" );
     }
 
     @Test
     public void testErrorFormatsArguments() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( "item ${id} not found", Map.of( "id", "x" ) ).endCode();
+            .statusCode( NOT_FOUND ).error( null, "item ${id} not found", Map.of( "id", "x" ), null ).endCode();
 
         assertThat( errors.resolvedCode() ).isEqualTo( NOT_FOUND );
-        assertThat( errors.resolvedErrors().stream().map( p -> p._2 ).toList() ).containsExactly( "item x not found" );
+        assertThat( errors.resolvedErrors().stream().map( m -> m.message ).toList() ).containsExactly( "item x not found" );
     }
 
     @Test
     public void testValidationMessageConstantKeepsCodeAndText() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( BAD_REQUEST ).error( Message.LARGE ).endCode();
+            .statusCode( BAD_REQUEST ).error( Message.LARGE, null ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( "1000020", "too large" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly( new ErrorResponse.Message( "1000020", "too large" ) );
     }
 
     @Test
     public void testValidationMessageFormatsArguments() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( Message.T, Map.of( "id", "y" ) ).endCode();
+            .statusCode( NOT_FOUND ).error( Message.T, Map.of( "id", "y" ), null ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( "1000005", "item y" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly( new ErrorResponse.Message( "1000005", "item y" ) );
     }
 
     @Test
     public void testMessageCodesAreKept() {
         ValidationErrors errors = ValidationErrors.empty()
-            .statusCode( NOT_FOUND ).error( Message.MISSING ).endCode()
-            .statusCode( NOT_FOUND ).errors( "1000002", List.of( "gone" ) ).endCode()
-            .statusCode( NOT_FOUND ).pairs( List.of( Message.X ) ).endCode();
+            .statusCode( NOT_FOUND ).error( Message.MISSING, null ).endCode()
+            .statusCode( NOT_FOUND ).error( "1000002", "gone", Map.of(), null ).endCode()
+            .statusCode( NOT_FOUND ).error( Message.X, null ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( "1000001", "missing" ), Pair.__( "1000002", "gone" ), Pair.__( "1000003", "x" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly(
+            new ErrorResponse.Message( "1000001", "missing" ),
+            new ErrorResponse.Message( "1000002", "gone" ),
+            new ErrorResponse.Message( "1000003", "x" ) );
     }
 
     @Test
@@ -88,7 +91,7 @@ public class ValidationErrorsBuilderTest {
         ValidationErrors errors = ValidationErrors.empty()
             .statusCode( BAD_REQUEST ).error( "no code" ).endCode();
 
-        assertThat( errors.resolvedErrors() ).containsExactly( Pair.__( null, "no code" ) );
+        assertThat( errors.resolvedErrors() ).containsExactly( new ErrorResponse.Message( null, "no code" ) );
     }
 
     private enum Message implements ValidationMessage {
@@ -125,7 +128,8 @@ public class ValidationErrorsBuilderTest {
 
     @Test
     public void testErrorResponseRoundTrip() {
-        ValidationErrors.ErrorResponse body = ValidationErrors.ErrorResponse.of( List.of( Pair.__( "1001", "x" ), Pair.__( null, "y" ) ) );
+        ValidationErrors.ErrorResponse body = ValidationErrors.ErrorResponse.of(
+            List.of( new ErrorResponse.Message( "1001", "x" ), new ErrorResponse.Message( null, "y" ) ) );
 
         String json = Binder.json.marshal( body );
 

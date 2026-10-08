@@ -84,7 +84,7 @@ public class ConditionalSchemaTest extends AbstractSchemaTest {
             }""";
 
         assertOk( schema, "{'test': {'a':0, 'b':3} }" );
-        assertFailure( schema, "{'test': {'a':0, 'b':4} }", "/test/a: number 0 is lower than the required minimum 1" );
-        assertFailure( schema, "{'test': {'a':11, 'b':4} }", "/test/a: number 11 is greater than the required maximum 10" );
+        assertFailure( schema, "{'test': {'a':0, 'b':4} }", "number 0 is lower than the required minimum 1" );
+        assertFailure( schema, "{'test': {'a':11, 'b':4} }", "number 11 is greater than the required maximum 10" );
     }
 }

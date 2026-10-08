@@ -35,11 +35,18 @@ public class ErrorResponse implements Serializable {
         @JsonInclude( JsonInclude.Include.NON_NULL )
         public final String code;
         public final String message;
+        @JsonInclude( JsonInclude.Include.NON_NULL )
+        public final String path;
+
+        public Message( String code, String message ) {
+            this( code, message, null );
+        }
 
         @JsonCreator
-        public Message( @JsonProperty( "code" ) String code, @JsonProperty( "message" ) String message ) {
+        public Message( @JsonProperty( "code" ) String code, @JsonProperty( "message" ) String message, @JsonProperty( "path" ) String path ) {
             this.code = code;
             this.message = message;
+            this.path = path;
         }
     }
 }

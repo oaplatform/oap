@@ -73,8 +73,8 @@ public class SchemaEnabledTest extends AbstractSchemaTest {
         assertOk( schema, "[{}]" );
         assertOk( schema, "[{'v1':'10'}]" );
         assertOk( schema, "[{'v1':'test','v2':'ok'}]" );
-        assertFailure( schema, "[{'v1':'test','v2':'ok'},{'v1':'test2','v2':'ok'}]", "/1: additional properties are not permitted [v2]" );
-        assertFailure( schema, "[{'v2':'20'}]", "/0: additional properties are not permitted [v2]" );
-        assertFailure( schema, "[{'v1':'?', 'v2':'20'}]", "/0: additional properties are not permitted [v2]" );
+        assertFailure( schema, "[{'v1':'test','v2':'ok'},{'v1':'test2','v2':'ok'}]", "additional properties are not permitted [v2]" );
+        assertFailure( schema, "[{'v2':'20'}]", "additional properties are not permitted [v2]" );
+        assertFailure( schema, "[{'v1':'?', 'v2':'20'}]", "additional properties are not permitted [v2]" );
     }
 }

@@ -37,7 +37,7 @@ public class ArraySchemaTest extends AbstractSchemaTest {
         assertOk( schema, "[]" );
         assertOk( schema, "null" );
         assertFailure( schema, "[true, \"20\"]",
-            "/1: instance type is string, but allowed type is boolean" );
+            "instance type is string, but allowed type is boolean" );
     }
 
     @Test
@@ -47,7 +47,7 @@ public class ArraySchemaTest extends AbstractSchemaTest {
         assertOk( schema, "[\"1\"]" );
         assertOk( schema, "[]" );
         assertOk( schema, "null" );
-        assertFailure( schema, "[null, \"20\"]", "/0: required property is missing" );
+        assertFailure( schema, "[null, \"20\"]", "required property is missing" );
     }
 
     @Test
@@ -65,8 +65,8 @@ public class ArraySchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'a':[true, false, false]}" );
         assertOk( schema, "{'a':[true, false]}" );
-        assertFailure( schema, "{'a':[true]}", "/a: array [true] has less than minItems elements 2" );
-        assertFailure( schema, "{'a':[]}", "/a: array [] has less than minItems elements 2" );
+        assertFailure( schema, "{'a':[true]}", "array [true] has less than minItems elements 2" );
+        assertFailure( schema, "{'a':[]}", "array [] has less than minItems elements 2" );
     }
 
     @Test
@@ -84,7 +84,7 @@ public class ArraySchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'a':[]}" );
         assertOk( schema, "{'a':[true, false]}" );
-        assertFailure( schema, "{'a':[true, true, true]}", "/a: array [true, true, true] has more than maxItems elements 2" );
+        assertFailure( schema, "{'a':[true, true, true]}", "array [true, true, true] has more than maxItems elements 2" );
     }
 
     @Test
@@ -107,6 +107,6 @@ public class ArraySchemaTest extends AbstractSchemaTest {
             + "}"
             + "}";
 
-        assertFailure( schema, "[{'test':[{'a':1}]}]", "/0/test/0/a: instance type is number, but allowed type is string" );
+        assertFailure( schema, "[{'test':[{'a':1}]}]", "instance type is number, but allowed type is string" );
     }
 }

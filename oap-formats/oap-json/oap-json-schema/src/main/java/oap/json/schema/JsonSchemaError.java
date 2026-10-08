@@ -29,8 +29,8 @@ import lombok.ToString;
 import java.util.Map;
 
 /**
- * One validation failure: a message code, a message template with {@code ${name}} placeholders, and the values
- * for the placeholders.
+ * One validation failure: a message code, a message template with {@code ${name}} placeholders, the values
+ * for the placeholders, and the JSON path of the failing value ({@code null} at the root).
  */
 @EqualsAndHashCode
 @ToString
@@ -38,10 +38,12 @@ public final class JsonSchemaError {
     public final String code;
     public final String message;
     public final Map<String, Object> args;
+    public final String path;
 
-    public JsonSchemaError( String code, String message, Map<String, Object> args ) {
+    public JsonSchemaError( String code, String message, Map<String, Object> args, String path ) {
         this.code = code;
         this.message = message;
         this.args = args;
+        this.path = path;
     }
 }

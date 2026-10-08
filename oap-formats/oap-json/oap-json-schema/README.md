@@ -189,7 +189,7 @@ This match is by key name only (not "must be inside `properties`"), so a branch 
 
 ## Error codes and messages
 
-Every validation failure is a `JsonSchemaError { code, message, args }`. `message` is a template with `${name}` placeholders, and `args` holds the values. The codes are fixed and unique, starting at 100 (`JsonMessage`):
+Every validation failure is a `JsonSchemaError { code, message, args, path }`. `message` is a template with `${name}` placeholders, `args` holds the values, and `path` is the JSON path of the failing value (`null` at the root — see below). The codes are fixed and unique, starting at 100 (`JsonMessage`):
 
 | Code | Keyword | Template |
 |---|---|---|
@@ -214,7 +214,7 @@ Every validation failure is a `JsonSchemaError { code, message, args }`. `messag
 | 118 | — | `instance must match exactly one schema in oneOf, matched ${matched}` |
 | 119 | — | `instance must not be valid against the schema in not` |
 
-Each template starts with `${prefix}`: the `/path: ` of the failing value, or empty at the root. `JsonMessage` is an enum implementing `oap.validation.ValidationMessage`, so the web services can pass a message straight to `ValidationErrorsBuilder.error(message, args)`. Codes are strings with a `JSON-` prefix (`"JSON-100"`…`"JSON-119"`).
+The path of the failing value is on `JsonSchemaError.path` (and, on the web services, `ErrorResponse.Message.path`), not baked into the template — a nested array/object error has e.g. `path = "a/0/b"`, no leading slash. `JsonMessage` is an enum implementing `oap.validation.ValidationMessage`, so the web services can pass a message straight to `ValidationErrorsBuilder.error(message, args)`. Codes are strings with a `JSON-` prefix (`"JSON-100"`…`"JSON-119"`).
 
 Any schema node may carry an `errorMessage` object to override the built-in message for one or more failing keywords, ajv-errors style:
 
@@ -232,7 +232,7 @@ Any schema node may carry an `errorMessage` object to override the built-in mess
 }
 ```
 
-A custom message **fully replaces** the default text — there's no automatic `/path: ` prefix. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root); remember to escape literal single quotes as `''`. The following `{1}`, `{2}`, … are the values of the default template's placeholders, in template order (e.g. `type` passes the actual and allowed type). A custom message keeps the code of its keyword.
+A custom message **fully replaces** the default text. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root) — reference it explicitly if the custom text should mention it, since (like the default templates) it isn't added automatically; remember to escape literal single quotes as `''`. The following `{1}`, `{2}`, … are the values of the default template's placeholders, in template order (e.g. `type` passes the actual and allowed type). A custom message keeps the code of its keyword, and its `JsonSchemaError` also carries `path`.
 
 ```hocon
 {

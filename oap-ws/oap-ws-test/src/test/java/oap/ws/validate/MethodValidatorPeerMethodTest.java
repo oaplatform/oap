@@ -32,8 +32,6 @@ import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import org.testng.annotations.Test;
 
-import java.util.List;
-
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
 import static oap.http.test.HttpAsserts.assertGet;
@@ -130,7 +128,7 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
         }
 
         protected ValidationErrors validateFail( String request ) {
-            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).errors( List.of( "error1", "error2" ) ).endCode();
+            return ValidationErrors.empty().statusCode( Http.StatusCode.BAD_REQUEST ).error( "error1" ).error( "error2" ).endCode();
         }
 
         protected ValidationErrors validateFailCode( String request ) {

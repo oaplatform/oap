@@ -8,6 +8,7 @@ import oap.validation.ValidationMessage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ErrorResponseBuilder implements Serializable {
     @Serial
@@ -41,6 +42,12 @@ public class ErrorResponseBuilder implements Serializable {
         return message( message.code(), message.message() );
     }
 
+    /** Adds the message as-is, preserving its {@code path}. */
+    public ErrorResponseBuilder message( ErrorResponse.Message message ) {
+        messages.add( message );
+        return this;
+    }
+
     public ErrorResponse build() {
         return new ErrorResponse( statusCode, error, List.copyOf( messages ) );
     }
@@ -48,12 +55,8 @@ public class ErrorResponseBuilder implements Serializable {
     public ValidationErrors toValidationErrors() {
         ValidationErrorsBuilder builder = ValidationErrors.empty().statusCode( statusCode );
         for( ErrorResponse.Message m : messages ) {
-            builder = m.code == null ? builder.error( m.message ) : builder.error( new CodedMessage( m.code, m.message ) );
+            builder = m.code == null ? builder.error( m.message ) : builder.error( m.code, m.message, Map.of(), m.path );
         }
         return builder.endCode();
-    }
-
-    /** A message with a code, as a {@link ValidationMessage}. */
-    private record CodedMessage( String code, String message ) implements ValidationMessage {
     }
 }

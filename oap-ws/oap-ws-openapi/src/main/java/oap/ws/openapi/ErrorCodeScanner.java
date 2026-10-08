@@ -72,14 +72,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * up to {@link #MAX_DEPTH} levels.
  * {@code Response.build401()}, {@code build403()} and {@code build404()} always yield their status code.
  * <p>
- * Messages: {@code statusCode( x ).error( text )} and {@code statusCode( x ).error( text, args )} on
- * {@link ValidationErrorsBuilder} add a message with no code to status {@code x}. The text is kept when it is a literal,
- * otherwise it is {@code null}. Formatted messages ({@code error( text, Map )}) keep their template text
- * (for example {@code ${name}} placeholders), since the rendered text is only known at runtime.
- * {@code statusCode( x ).error( E.X )} takes its code and text from the enum constant (see below).
- * Messages added through lists are not listed, since their count is unknown.
- * A {@link oap.validation.ValidationMessage} enum constant ({@code error( E.X )}) gives its code and text from the
- * constant's constructor arguments {@code (String code, String message)}, read from the enum's {@code <clinit>}.
+ * Messages: {@code statusCode( x ).error( text )} on {@link ValidationErrorsBuilder} adds a message with no code to
+ * status {@code x}. {@code error( code, text, args, path )} adds one with a literal code and template; {@code path}
+ * is runtime data and is not read. The text is kept when it is a literal, otherwise it is {@code null}.
+ * {@code error( E.X, path )} / {@code error( E.X, args, path )} take the code and text from the enum constant
+ * {@code E.X} (see below); {@code path} is likewise not read.
+ * A {@link oap.validation.ValidationMessage} enum constant gives its code and text from the constant's constructor
+ * arguments {@code (String code, String message)}, read from the enum's {@code <clinit>}.
  * <p>
  * Limits: a code held in a local variable or computed at runtime is not resolved and is logged as a warning.
  */
@@ -93,7 +92,8 @@ public class ErrorCodeScanner {
     private static final String CONSTRUCTOR = "<init>";
     private static final String STATUS_CODE = "statusCode";
     private static final String ERROR = "error";
-    private static final String PLAIN_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;";
+    private static final String PLAIN_MESSAGE_DESC = "(Ljava/lang/String;)Loap/ws/validate/ValidationErrorsBuilder;";
+    private static final String CODED_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;";
     private static final String VALIDATION_MESSAGE_DESC_PREFIX = "(Loap/validation/ValidationMessage;";
     private static final int MIN_ERROR_CODE = 400;
     private static final Set<String> CODE_OWNERS = Set.of(
@@ -123,7 +123,9 @@ public class ErrorCodeScanner {
     private static boolean isMessage( MethodInsnNode invoke ) {
         return Type.getInternalName( ValidationErrorsBuilder.class ).equals( invoke.owner )
             && ERROR.equals( invoke.name )
-            && ( invoke.desc.startsWith( PLAIN_MESSAGE_DESC_PREFIX ) || invoke.desc.startsWith( VALIDATION_MESSAGE_DESC_PREFIX ) );
+            && ( invoke.desc.equals( PLAIN_MESSAGE_DESC )
+            || invoke.desc.startsWith( VALIDATION_MESSAGE_DESC_PREFIX )
+            || invoke.desc.startsWith( CODED_MESSAGE_DESC_PREFIX ) );
     }
 
     /**
@@ -328,10 +330,20 @@ public class ErrorCodeScanner {
             return;
         }
 
-        AbstractInsnNode textProducer = single( frame.getStack( top - argc ) );
+        // error( text ): text is the only argument. error( code, text, args, path ): code then text.
+        boolean coded = invoke.desc.startsWith( CODED_MESSAGE_DESC_PREFIX );
+        int textIndex = coded ? 1 : 0;
+
+        String code = null;
+        if( coded ) {
+            AbstractInsnNode codeProducer = single( frame.getStack( top - argc ) );
+            code = codeProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
+        }
+
+        AbstractInsnNode textProducer = single( frame.getStack( top - argc + textIndex ) );
         String text = textProducer instanceof LdcInsnNode ldc && ldc.cst instanceof String literal ? literal : null;
 
-        status( results, statusCode ).add( new ScannedMessage( null, text ) );
+        status( results, statusCode ).add( new ScannedMessage( code, text ) );
     }
 
     /**

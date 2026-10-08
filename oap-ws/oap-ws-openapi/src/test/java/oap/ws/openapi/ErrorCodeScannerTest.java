@@ -30,7 +30,6 @@ import oap.validation.ValidationMessage;
 import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -53,7 +52,6 @@ public class ErrorCodeScannerTest {
             new ErrorCodeScanner.ScannedMessage( null, null ),
             new ErrorCodeScanner.ScannedMessage( "1000003", "item ${id}" ),
             new ErrorCodeScanner.ScannedMessage( null, "ctx ${id}" ) );
-        assertThat( responses.get( 404 ) ).isEmpty();
     }
 
     @Test
@@ -92,15 +90,14 @@ public class ErrorCodeScannerTest {
 
         public ValidationErrors messages( String param ) {
             return ValidationErrors.empty()
-                .statusCode( 400 ).error( Err.A ).endCode()
-                .statusCode( 400 ).error( "a" + param, Map.of() ).endCode()
-                .statusCode( 400 ).error( Err.B ).endCode()
-                .statusCode( 400 ).error( "ctx ${id}", Map.of( "id", param ) ).endCode()
-                .statusCode( 404 ).errors( "1000003", List.of( "gone" ) ).endCode();
+                .statusCode( 400 ).error( Err.A, null ).endCode()
+                .statusCode( 400 ).error( null, "a" + param, Map.of(), null ).endCode()
+                .statusCode( 400 ).error( Err.B, null ).endCode()
+                .statusCode( 400 ).error( null, "ctx ${id}", Map.of( "id", param ), null ).endCode();
         }
 
         public ValidationErrors enumMessages( String param ) {
-            return ValidationErrors.empty().statusCode( 400 ).error( Err.NAME ).endCode();
+            return ValidationErrors.empty().statusCode( 400 ).error( Err.NAME, null ).endCode();
         }
 
         public enum Err implements ValidationMessage {

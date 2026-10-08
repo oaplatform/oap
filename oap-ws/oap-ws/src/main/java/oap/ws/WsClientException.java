@@ -3,8 +3,6 @@ package oap.ws;
 import java.util.Collection;
 import java.util.List;
 
-import oap.util.Pair;
-
 import static oap.http.Http.StatusCode.BAD_REQUEST;
 
 public class WsClientException extends WsException {
@@ -17,11 +15,11 @@ public class WsClientException extends WsException {
         errors.forEach( errorResponse::message );
     }
 
-    public WsClientException( String message, int httpStatusCode, List<Pair<String, String>> errors ) {
+    public WsClientException( String message, int httpStatusCode, List<ErrorResponse.Message> errors ) {
         super( message );
 
         this.errorResponse = new ErrorResponseBuilder().statusCode( httpStatusCode ).error( message );
-        errors.forEach( e -> this.errorResponse.message( e._1, e._2 ) );
+        errors.forEach( this.errorResponse::message );
     }
 
     public WsClientException( String message, List<String> errors ) {

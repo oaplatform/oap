@@ -166,7 +166,7 @@ public class OpenapiErrorResponseTest {
 
         @WsMethod( path = "/validationBody", method = GET )
         public Response validationBody() {
-            ValidationErrors.empty().statusCode( FORBIDDEN ).errors( List.of( "denied" ) ).endCode().throwIfInvalid();
+            ValidationErrors.empty().statusCode( FORBIDDEN ).error( "denied" ).endCode().throwIfInvalid();
             return Response.ok();
         }
 
@@ -181,7 +181,7 @@ public class OpenapiErrorResponseTest {
         private void validateC( int c ) {
             for( int i = 10; i < 100; i++ ) {
                 if( c > i ) {
-                    ValidationErrors.empty().statusCode( BAD_REQUEST ).error( InnerError.C ).endCode().throwIfInvalid();
+                    ValidationErrors.empty().statusCode( BAD_REQUEST ).error( InnerError.C, null ).endCode().throwIfInvalid();
                 }
             }
         }
@@ -246,7 +246,7 @@ public class OpenapiErrorResponseTest {
 
         @OpenApiIgnore
         public ValidationErrors validateForbidden() {
-            return ValidationErrors.empty().statusCode( FORBIDDEN ).errors( List.of( "denied" ) ).endCode();
+            return ValidationErrors.empty().statusCode( FORBIDDEN ).error( "denied" ).endCode();
         }
     }
 

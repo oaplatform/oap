@@ -5,11 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Http;
-import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonSchemaError;
 import oap.reflect.Reflection;
 import oap.util.Mergeable;
-import oap.util.Pair;
 import oap.ws.WsClientException;
 
 import java.io.Serializable;
@@ -31,9 +29,9 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     private static final List<Integer> PRIORITY_CODES = List.of( UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND );
 
     /**
-     * HTTP status code to messages; each message is a pair of (message code, message).
+     * HTTP status code to messages.
      */
-    public final HashMap<Integer, LinkedHashSet<Pair<String, String>>> messages = new HashMap<>();
+    public final HashMap<Integer, LinkedHashSet<oap.ws.ErrorResponse.Message>> messages = new HashMap<>();
 
     private ValidationErrors() {
     }
@@ -43,11 +41,11 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     }
 
     /**
-     * JSON schema failures as a {@code BAD_REQUEST}; each error keeps its JSON message code and args.
+     * JSON schema failures as a {@code BAD_REQUEST}; each error keeps its code, message and JSON path.
      */
     static ValidationErrors jsonSchemaErrors( List<JsonSchemaError> errors ) {
         ValidationErrorsBuilder builder = empty().statusCode( BAD_REQUEST );
-        for( JsonSchemaError error : errors ) builder = builder.error( JsonMessage.of( error.code ), error.args );
+        for( JsonSchemaError error : errors ) builder = builder.error( error.code, error.message, error.args, error.path );
         return builder.endCode();
     }
 
@@ -84,7 +82,7 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
 
     public ValidationErrors throwIfInvalid() throws WsClientException {
         if( failed() ) {
-            List<Pair<String, String>> messages = resolvedErrors();
+            List<oap.ws.ErrorResponse.Message> messages = resolvedErrors();
             int code = resolvedCode();
             String reason = Http.StatusCode.getReason( code );
             throw new WsClientException( reason, code, messages );
@@ -108,9 +106,9 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     }
 
     /**
-     * Messages (message code, message) of the resolved status code.
+     * Messages of the resolved status code.
      */
-    public List<Pair<String, String>> resolvedErrors() {
+    public List<oap.ws.ErrorResponse.Message> resolvedErrors() {
         return List.copyOf( messages.getOrDefault( resolvedCode(), new LinkedHashSet<>() ) );
     }
 
@@ -118,7 +116,7 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
         return messages.isEmpty();
     }
 
-    void add( int httpStatusCode, Collection<Pair<String, String>> messages ) {
+    void add( int httpStatusCode, Collection<oap.ws.ErrorResponse.Message> messages ) {
         if( messages.isEmpty() ) return;
         this.messages.computeIfAbsent( httpStatusCode, c -> new LinkedHashSet<>() ).addAll( messages );
     }
@@ -136,13 +134,13 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     }
 
     private void mergeCodes( List<Integer> codes, int target ) {
-        LinkedHashSet<Pair<String, String>> merged = new LinkedHashSet<>();
+        LinkedHashSet<oap.ws.ErrorResponse.Message> merged = new LinkedHashSet<>();
         for( int code : codes ) merged.addAll( messages.remove( code ) );
         add( target, merged );
     }
 
     /**
-     * Validation failure body: {@code {"messages": [{"code": ..., "message": ...}]}}.
+     * Validation failure body: {@code {"messages": [{"code": ..., "message": ..., "path": ...}]}}.
      */
     @EqualsAndHashCode
     @ToString
@@ -154,10 +152,8 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
             this.messages.addAll( messages );
         }
 
-        public static ErrorResponse of( Collection<Pair<String, String>> messages ) {
-            return new ErrorResponse( messages.stream()
-                .map( m -> new oap.ws.ErrorResponse.Message( m._1, m._2 ) )
-                .toList() );
+        public static ErrorResponse of( Collection<oap.ws.ErrorResponse.Message> messages ) {
+            return new ErrorResponse( messages );
         }
     }
 }
