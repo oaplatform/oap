@@ -24,6 +24,7 @@
 
 package oap.ws.openapi;
 
+import external.validation.ExternalValidators;
 import oap.ws.Response;
 import oap.ws.validate.ValidationErrors;
 import oap.validation.ValidationMessage;
@@ -67,6 +68,13 @@ public class ErrorCodeScannerTest {
     }
 
     @Test
+    public void testFollowsStaticCallIntoExternalPackage() throws NoSuchMethodException {
+        SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "external" ) );
+
+        assertThat( responses.get( 400 ) ).containsExactly( new ErrorCodeScanner.ScannedMessage( null, "payload too large" ) );
+    }
+
+    @Test
     public void testSkipsSuccessCodesAndNonConstantCodes() throws NoSuchMethodException {
         assertThat( scanner.errorCodes( method( "builders" ) ) ).containsExactly( 403, 404 );
         assertThat( scanner.errorCodes( method( "okOnly" ) ) ).isEmpty();
@@ -98,6 +106,10 @@ public class ErrorCodeScannerTest {
 
         public ValidationErrors enumMessages( String param ) {
             return ValidationErrors.empty().statusCode( 400 ).error( Err.NAME, null ).endCode();
+        }
+
+        public ValidationErrors external( String param ) {
+            return ExternalValidators.tooLarge();
         }
 
         public enum Err implements ValidationMessage {
