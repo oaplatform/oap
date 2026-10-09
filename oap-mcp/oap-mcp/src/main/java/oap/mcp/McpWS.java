@@ -44,10 +44,11 @@ public class McpWS extends AbstractSecureWS {
         this.mcpService = mcpService;
     }
 
-    @WsMethod( path = "/sse", method = GET )
+    @WsMethod( path = "/sse", method = GET, description = "Opens a Server-Sent Events stream for an MCP session." )
     @WsSecurity( permissions = { "admin:mcp" } )
     @WsValidate( { "systemAdminRole" } )
-    public Response sse( @WsParam( from = SESSION ) Optional<User> loggedUser ) {
+    public Response sse( @WsParam( from = SESSION, description = "Authenticated user from the session." )
+                         Optional<User> loggedUser ) {
         String sessionId = Cuid.UNIQUE.next();
 
         log.debug( "new sse sessionId {} loggedUser {}", sessionId, loggedUser.get().getEmail() );
@@ -76,12 +77,15 @@ public class McpWS extends AbstractSecureWS {
             .withBody( body, true );
     }
 
-    @WsMethod( path = "/message", method = POST, raw = true )
+    @WsMethod( path = "/message", method = POST, raw = true, description = "Dispatches an MCP protocol message for an existing SSE session." )
     @WsSecurity( permissions = { "admin:mcp" } )
     @WsValidate( { "systemAdminRole" } )
-    public Response message( @WsParam( from = QUERY, name = "sessionId" ) Optional<String> sessionIdOpt,
-                             @WsParam( from = BODY ) String body,
-                             @WsParam( from = SESSION ) Optional<User> loggedUser ) {
+    public Response message( @WsParam( from = QUERY, name = "sessionId", description = "MCP session id." )
+                             Optional<String> sessionIdOpt,
+                             @WsParam( from = BODY, description = "Raw MCP JSON-RPC message body." )
+                             String body,
+                             @WsParam( from = SESSION, description = "Authenticated user from the session." )
+                             Optional<User> loggedUser ) {
 
         log.debug( "MCP message session {} body {} loggedUser {}", sessionIdOpt, body, loggedUser.get().getEmail() );
 

@@ -17,7 +17,7 @@ public class PnioWS {
         this.pnioHttpHandler = pnioHttpHandler;
     }
 
-    @WsMethod( method = GET, path = "/" )
+    @WsMethod( method = GET, path = "/", description = "Returns the current PNIO exchange queue and thread pool statistics." )
     public PnioView queue() {
         PnioView pnioView = new PnioView();
 

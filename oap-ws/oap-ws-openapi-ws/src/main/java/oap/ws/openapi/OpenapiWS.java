@@ -60,7 +60,8 @@ public class OpenapiWS {
      */
     @WsMethod( path = "/", method = GET, description = "Generates OpenAPI 3.0 json document" )
     @WsValidate( { "isValid" } )
-    public OpenAPI openapi( @WsParam Optional<Boolean> skipDeprecated ) {
+    public OpenAPI openapi( @WsParam( description = "Omit deprecated operations; defaults to true." )
+                            Optional<Boolean> skipDeprecated ) {
         return openapi.generateOpenApi( skipDeprecated.orElse( true ), port );
     }
 

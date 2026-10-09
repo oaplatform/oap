@@ -31,11 +31,13 @@ import oap.ws.WebServices;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class Openapi {
 
     private final WebServices webServices;
+    private final ConcurrentHashMap<CacheKey, OpenAPI> cache = new ConcurrentHashMap<>();
     public ApiInfo info;
 
     public Openapi( WebServices webServices ) {
@@ -54,7 +56,15 @@ public class Openapi {
         return generateOpenApi( skipDeprecated, Optional.empty() );
     }
 
+    /**
+     * Builds the OpenAPI document for the given arguments once per {@code (skipDeprecated, port)} pair and caches
+     * it: the bound services don't change after kernel boot, so the bytecode/annotation scan never needs to repeat.
+     */
     public OpenAPI generateOpenApi( boolean skipDeprecated, Optional<String> port ) {
+        return cache.computeIfAbsent( new CacheKey( skipDeprecated, port ), key -> build( skipDeprecated, port ) );
+    }
+
+    private OpenAPI build( boolean skipDeprecated, Optional<String> port ) {
         OpenapiGenerator openapiGenerator = new OpenapiGenerator(
             info.title,
             info.description,
@@ -72,5 +82,8 @@ public class Openapi {
         return webServices.interceptors.getOrDefault( context, List.of() ).stream()
             .<Class<?>>map( Object::getClass )
             .toList();
+    }
+
+    private record CacheKey( boolean skipDeprecated, Optional<String> port ) {
     }
 }

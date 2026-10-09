@@ -35,6 +35,7 @@ import oap.util.Lists;
 import oap.ws.Response;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
+import oap.ws.WsParam;
 import oap.ws.openapi.OpenApiIgnore;
 import org.joda.time.DateTime;
 
@@ -70,7 +71,8 @@ public class ApiWS {
     }
 
     @WsMethod( produces = "text/plain", path = "/", method = GET, description = "Generates description of WS method with parameters and result" )
-    public String api( Optional<Boolean> deprecated ) {
+    public String api( @WsParam( description = "Include deprecated methods and fields; defaults to true." )
+                       Optional<Boolean> deprecated ) {
         boolean withDeprecated = deprecated.orElse( true );
         String result = "# SERVICES " + "#".repeat( 69 ) + "\n";
         Types types = new Types();

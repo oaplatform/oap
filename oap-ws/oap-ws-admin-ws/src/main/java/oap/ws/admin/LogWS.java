@@ -47,8 +47,9 @@ import static oap.ws.WsParam.From.QUERY;
 
 @Slf4j
 public class LogWS {
-    @WsMethod( path = "/", method = GET )
-    public Map<String, String> getAll( @WsParam( from = QUERY ) Optional<String> all ) {
+    @WsMethod( path = "/", method = GET, description = "Lists logger names with their configured levels." )
+    public Map<String, String> getAll( @WsParam( from = QUERY, description = "Include loggers with an inherited (effective) level, not just those with an explicit level set." )
+                                       Optional<String> all ) {
         log.debug( "get all, all={}", all );
 
         boolean includeAll = all.map( v -> v.equalsIgnoreCase( "true" ) || v.equalsIgnoreCase( "yes" ) ).orElse( false );
@@ -66,7 +67,7 @@ public class LogWS {
         return map;
     }
 
-    @WsMethod( path = "/reset", method = GET )
+    @WsMethod( path = "/reset", method = GET, description = "Resets logging configuration from logback.xml." )
     public void reset() {
         log.debug( "reset" );
 
@@ -85,10 +86,12 @@ public class LogWS {
         StatusPrinter.printInCaseOfErrorsOrWarnings( loggerContext );
     }
 
-    @WsMethod( path = "/{level}/{packageName}" )
+    @WsMethod( path = "/{level}/{packageName}", description = "Sets the log level for the given package." )
     public void setLevel(
-        @WsParam( from = PATH ) String level,
-        @WsParam( from = PATH ) String packageName
+        @WsParam( from = PATH, description = "Log level to set (e.g. DEBUG, INFO)." )
+        String level,
+        @WsParam( from = PATH, description = "Package or logger name to set the level for." )
+        String packageName
     ) {
         log.debug( "set {} for {}", level, packageName );
 

@@ -12,8 +12,9 @@ import java.util.Map;
 import static oap.ws.WsParam.From.QUERY;
 
 public class SchemaWS {
-    @WsMethod( path = "/" )
-    public Response getSchema( @WsParam( from = QUERY ) String path ) {
+    @WsMethod( path = "/", description = "Returns the JSON schema registered at the given path." )
+    public Response getSchema( @WsParam( from = QUERY, description = "Resource path of the schema to fetch." )
+                               String path ) {
         String json = ResourceSchemaStorage.INSTANCE.get( path );
 
         return new Response( Http.StatusCode.OK )

@@ -47,14 +47,20 @@ public class FileWS {
         this.bucketManager = bucketManager;
     }
 
-    @WsMethod( method = POST, path = "/", produces = "text/plain" )
-    public String upload( @WsParam( from = BODY ) @WsValidateJson( schema = DATA_SCHEMA ) Data data, Optional<String> bucket ) {
+    @WsMethod( method = POST, path = "/", produces = "text/plain", description = "Uploads data to bucket storage." )
+    public String upload( @WsParam( from = BODY, description = "Data to upload." )
+                          @WsValidateJson( schema = DATA_SCHEMA ) Data data,
+                          @WsParam( description = "Bucket to upload into; defaults to the configured default bucket." )
+                          Optional<String> bucket ) {
         return bucket.map( b -> bucketManager.put( b, data ) )
             .orElseGet( () -> bucketManager.put( data ) );
     }
 
-    @WsMethod( method = GET, path = "/" )
-    public Response download( @WsParam( from = QUERY ) String path, Optional<String> bucket ) {
+    @WsMethod( method = GET, path = "/", description = "Downloads data from bucket storage." )
+    public Response download( @WsParam( from = QUERY, description = "Path of the data to download." )
+                              String path,
+                              @WsParam( description = "Bucket to download from; defaults to the configured default bucket." )
+                              Optional<String> bucket ) {
         byte[] bytes = bucket.map( b -> bucketManager.get( b, path ) )
             .orElseGet( () -> bucketManager.get( path ) )
             .orElse( null );
