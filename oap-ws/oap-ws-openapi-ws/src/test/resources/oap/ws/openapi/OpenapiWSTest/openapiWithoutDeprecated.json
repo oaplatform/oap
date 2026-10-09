@@ -4117,6 +4117,7 @@
         "description" : "Generates OpenAPI 3.0 json document",
         "operationId" : "openapi_GET",
         "parameters" : [ {
+          "description" : "Omit deprecated operations; defaults to true.",
           "in" : "query",
           "name" : "skipDeprecated",
           "required" : false,
