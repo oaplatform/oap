@@ -14,6 +14,8 @@ public abstract class AbstractEvent extends AbstractProperties implements Serial
     @Serial
     private static final long serialVersionUID = -8524075652105735488L;
 
+    public final int version = 1;
+
     public final String name;
     public String templateName;
     public String fromAddress;
