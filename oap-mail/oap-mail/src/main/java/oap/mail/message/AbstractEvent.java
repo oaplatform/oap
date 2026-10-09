@@ -5,7 +5,9 @@ import oap.json.AbstractProperties;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @ToString
 public abstract class AbstractEvent extends AbstractProperties implements Serializable {
@@ -17,6 +19,7 @@ public abstract class AbstractEvent extends AbstractProperties implements Serial
     public final int version = 1;
 
     public final String name;
+    public final Set<NotificationType> types = new HashSet<>();
     public String templateName;
     public String fromAddress;
     public String fromPersonal;
@@ -24,7 +27,11 @@ public abstract class AbstractEvent extends AbstractProperties implements Serial
     public List<String> toAddresses;
     public String toPersonal;
 
-    protected AbstractEvent( String name ) {
+    protected AbstractEvent( Set<NotificationType> types, String name ) {
         this.name = name;
+
+        if( types != null ) {
+            this.types.addAll( types );
+        }
     }
 }
