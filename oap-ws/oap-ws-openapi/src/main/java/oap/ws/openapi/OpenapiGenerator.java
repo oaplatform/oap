@@ -321,11 +321,27 @@ public class OpenapiGenerator {
         Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> errors = new TreeMap<>();
         merge( errors, interceptorCodes );
         merge( errors, errorCodeScanner.errorResponses( method.reflectMethod() ) );
-        errors.forEach( ( code, messages ) -> responses.addApiResponse( String.valueOf( code ), code == UNAUTHORIZED
+        errors.forEach( ( code, messages ) -> responses.addApiResponse( String.valueOf( code ), code == UNAUTHORIZED && messages.isEmpty()
             ? new ApiResponse().$ref( "#/components/responses/UnauthorizedError" )
-            : new ApiResponse()
-                .description( REASON_PHRASES.getOrDefault( code, "HTTP " + code ) )
-                .content( errorContent( messages ) ) ) );
+            : errorResponse( code, messages ) ) );
+    }
+
+    /**
+     * Local response for a scanned error code. {@code 401} with no scanned messages is reported as a {@code $ref} to
+     * the shared {@code UnauthorizedError} component instead (see caller); this builds the per-operation response
+     * used otherwise, re-adding the {@code WWW-Authenticate} header for {@code 401} since it is no longer inherited
+     * from that shared component.
+     */
+    private ApiResponse errorResponse( int code, Set<ErrorCodeScanner.ScannedMessage> messages ) {
+        ApiResponse response = new ApiResponse()
+            .description( REASON_PHRASES.getOrDefault( code, "HTTP " + code ) )
+            .content( errorContent( messages ) );
+        if( code == UNAUTHORIZED ) {
+            response.addHeaderObject( "WWW-Authenticate", new Header()
+                .description( "Defines the authentication method that should be used." )
+                .schema( new StringSchema() ) );
+        }
+        return response;
     }
 
     private static Content errorContent( Set<ErrorCodeScanner.ScannedMessage> messages ) {

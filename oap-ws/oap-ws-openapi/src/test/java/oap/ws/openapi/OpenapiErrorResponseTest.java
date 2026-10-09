@@ -45,6 +45,7 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 import static oap.http.Http.StatusCode.BAD_REQUEST;
 import static oap.http.Http.StatusCode.CONFLICT;
 import static oap.http.Http.StatusCode.FORBIDDEN;
+import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.ws.WsParam.From.QUERY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,6 +96,19 @@ public class OpenapiErrorResponseTest {
 
         assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "401" );
         assertThat( responses.get( "401" ).get$ref() ).isEqualTo( "#/components/responses/UnauthorizedError" );
+    }
+
+    @Test
+    public void testBuild401WithMessagesUsesLocalSchema() {
+        ApiResponses responses = responses( "unauthorizedWithMessage" );
+
+        assertThat( responses.keySet() ).containsExactlyInAnyOrder( "200", "401" );
+        ApiResponse response = responses.get( "401" );
+        assertThat( response.get$ref() ).isNull();
+        assertJsonError( response, "Unauthorized" );
+        assertThat( response.getHeaders() ).containsOnlyKeys( "WWW-Authenticate" );
+        assertThat( response.getContent().get( "application/json" ).getExample() )
+            .isEqualTo( Map.of( "messages", List.of( Map.of( "message", "token expired" ) ) ) );
     }
 
     @Test
@@ -216,6 +230,12 @@ public class OpenapiErrorResponseTest {
         @WsMethod( path = "/unauthorized", method = GET )
         public Response unauthorized() {
             return Response.build401().message( "no token" ).build();
+        }
+
+        @WsMethod( path = "/unauthorizedWithMessage", method = GET )
+        public Response unauthorizedWithMessage() {
+            ValidationErrors.empty().statusCode( UNAUTHORIZED ).error( "token expired" ).endCode().throwIfInvalid();
+            return Response.ok();
         }
 
         @WsMethod( path = "/forbidden", method = GET )

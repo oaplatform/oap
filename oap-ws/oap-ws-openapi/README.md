@@ -82,14 +82,14 @@ An enum constant's code and text come from its constructor arguments `(String co
 Rules:
 
 - Only codes `>= 400` are reported. `200`, `204` and `302` from `Response.ok()`, `noContent()` and `redirect()` are dropped.
-- `401` points to the shared `UnauthorizedError` response component (it carries the `WWW-Authenticate` header). Other codes use `application/json` with the `ErrorResponse` schema. The description is the reason phrase (`400 Bad Request`, `403 Forbidden`, …); codes without a known phrase show `HTTP <code>`.
+- `401` points to the shared `UnauthorizedError` response component (it carries the `WWW-Authenticate` header) *only when no messages were scanned for it*. When messages are found, `401` gets a local response like every other code, with the `WWW-Authenticate` header added back locally. Other codes use `application/json` with the `ErrorResponse` schema. The description is the reason phrase (`400 Bad Request`, `403 Forbidden`, …); codes without a known phrase show `HTTP <code>`.
 - Helper methods called from the scanned code are followed up to 5 levels deep, within the endpoint's class hierarchy, the classes in the same package, and the `Response` classes. Calls into other packages are not followed.
 - A code that is not a literal (held in a local variable or computed at runtime) is skipped and logged as a warning.
 - A class processed under two contexts is generated once (class-name dedup), so its codes come from the first context only.
 
 ### Messages in examples
 
-Each validation message is also scanned. The `application/json` media type of every error response (except `401`, see below) gets an `example` with the messages of that status code, in the shape of the real validation body `{"messages": [{"code", "message"}]}`:
+Each validation message is also scanned. The `application/json` media type of every error response (except `401` with no scanned messages, see below) gets an `example` with the messages of that status code, in the shape of the real validation body `{"messages": [{"code", "message"}]}`:
 
 | Code in scanned code | Example message |
 |---|---|
@@ -107,10 +107,10 @@ Rules:
 - Messages in an example are sorted by code, ascending. Messages without a code come last; ties are sorted by text.
 - Messages added through lists (`error(List)`, `errors(List)`, `pairs(...)`, `errors(Integer, List)`) are not listed, since their count is unknown at scan time. The status code is still reported.
 - The receiver must be the chained form `statusCode( x ).error(...)`. A builder held in a local variable is skipped with a warning.
-- `401` stays a `$ref` to `UnauthorizedError`, which cannot carry a per-operation example.
+- `401` stays a `$ref` to `UnauthorizedError`, which cannot carry a per-operation example, only when no messages were scanned for it. Otherwise it gets a local response and example like any other code, with the `WWW-Authenticate` header re-added.
 - The shared `ErrorResponse` schema (`statusCode`, `error`, `messages`) does not match the validation body `{"messages": [...]}`. The examples follow the real body; the schema is unchanged.
 
-Example: an endpoint with a `400` validator (messages `"1000001" "a"` and a runtime text) and an interceptor that returns `401`:
+Example: an endpoint with a `400` validator (messages `"1000001" "a"` and a runtime text) and an interceptor that returns `401` with no message (e.g. `Response.build401()`):
 
 ```json
 "responses": {
@@ -125,6 +125,26 @@ Example: an endpoint with a `400` validator (messages `"1000001" "a"` and a runt
     }
   },
   "401": { "$ref": "#/components/responses/UnauthorizedError" }
+}
+```
+
+When a `401` message is scanned instead (e.g. `statusCode( 401 ).error( "token expired" )`), it gets a local response instead of the `$ref`, with the header re-added:
+
+```json
+"401": {
+  "description": "Unauthorized",
+  "headers": {
+    "WWW-Authenticate": {
+      "description": "Defines the authentication method that should be used.",
+      "schema": { "type": "string" }
+    }
+  },
+  "content": {
+    "application/json": {
+      "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+      "example": { "messages": [ { "message": "token expired" } ] }
+    }
+  }
 }
 ```
 
