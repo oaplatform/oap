@@ -32,10 +32,10 @@ import static oap.http.test.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public final class ValidationAssertion {
-    private final ValidationErrors errors;
+    private final ValidationErrors.ErrorResponse errors;
 
     private ValidationAssertion( Response response ) {
-        errors = Binder.json.unmarshal( ValidationErrors.class, response.contentString() );
+        errors = Binder.json.unmarshal( ValidationErrors.ErrorResponse.class, response.contentString() );
     }
 
     public static ValidationAssertion assertValidation( Response response ) {
@@ -44,7 +44,7 @@ public final class ValidationAssertion {
     }
 
     public ValidationAssertion hasErrors( String... errors ) {
-        assertThat( this.errors.errors ).contains( errors );
+        assertThat( this.errors.messages.stream().map( m -> m.message ).toList() ).contains( errors );
         return this;
     }
 }

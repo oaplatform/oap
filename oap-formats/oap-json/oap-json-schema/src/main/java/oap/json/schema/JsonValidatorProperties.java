@@ -26,7 +26,9 @@ package oap.json.schema;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.function.TriFunction;
 
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -36,7 +38,7 @@ public class JsonValidatorProperties {
     public final boolean forceIgnoreAdditionalProperties;
     public final Object rootJson;
     public final AbstractSchemaAST rootSchema;
-    public final TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>>
+    public final TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<JsonSchemaError>>
         validator;
     public final Optional<String> path;
     public final Optional<String> prefixPath;
@@ -49,7 +51,7 @@ public class JsonValidatorProperties {
         boolean forceIgnoreAdditionalProperties,
         Optional<Boolean> additionalProperties,
         boolean ignoreRequiredDefault,
-        TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>> validator ) {
+        TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<JsonSchemaError>> validator ) {
         this.rootSchema = rootSchema;
         this.rootJson = rootJson;
         this.prefixPath = prefixPath;
@@ -80,26 +82,26 @@ public class JsonValidatorProperties {
     }
 
 
-    public String error( String message ) {
-        return error( path, message );
+    /** The error of {@code keyword} with its message template; the path (if any) is carried on {@link JsonSchemaError#path}. */
+    public JsonSchemaError error( JsonMessage keyword, Map<String, Object> args ) {
+        return new JsonSchemaError( keyword.code(), keyword.message(), args, path.orElse( null ) );
     }
 
-    public String error( Optional<String> path, String message ) {
-        return path.map( p -> "/" + p + ": " ).orElse( "" ) + message;
-    }
+    /** As {@link #error(JsonMessage, Map)}, but a custom {@code errorMessage} of the schema replaces the template. */
+    public JsonSchemaError error( AbstractSchemaAST schema, JsonMessage keyword, Map<String, Object> args ) {
+        Optional<String> custom = keyword.keyword == null ? Optional.empty() : schema.common.errorMessage( keyword.keyword );
+        if( custom.isEmpty() ) return error( keyword, args );
 
-    public String error( AbstractSchemaAST schema, String keyword, String defaultMessage, Object... args ) {
-        Optional<String> custom = schema.common.errorMessage( keyword );
-        if( custom.isEmpty() ) return error( defaultMessage );
-        Object[] fmtArgs = new Object[ args.length + 1 ];
+        Object[] fmtArgs = new Object[ keyword.placeholders().size() + 1 ];
         fmtArgs[0] = path.orElse( "" );
-        System.arraycopy( args, 0, fmtArgs, 1, args.length );
-        return java.text.MessageFormat.format( custom.get(), fmtArgs );
+        for( int i = 0; i < keyword.placeholders().size(); i++ )
+            fmtArgs[i + 1] = args.get( keyword.placeholders().get( i ) );
+        return new JsonSchemaError( keyword.code(), MessageFormat.format( custom.get(), fmtArgs ), Map.of(), path.orElse( null ) );
     }
 
-    public String requiredError( AbstractSchemaAST schema, String propertyName, String defaultMessage ) {
+    public JsonSchemaError requiredError( AbstractSchemaAST schema, String propertyName ) {
         Optional<String> custom = schema.common.errorMessage( "required", propertyName );
-        if( custom.isEmpty() ) return error( defaultMessage );
-        return java.text.MessageFormat.format( custom.get(), path.orElse( "" ) );
+        if( custom.isEmpty() ) return error( JsonMessage.REQUIRED, Map.of() );
+        return new JsonSchemaError( JsonMessage.REQUIRED.code(), MessageFormat.format( custom.get(), path.orElse( "" ) ), Map.of(), path.orElse( null ) );
     }
 }

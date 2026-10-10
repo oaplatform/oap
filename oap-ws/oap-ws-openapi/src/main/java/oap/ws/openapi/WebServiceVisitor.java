@@ -33,7 +33,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface WebServiceVisitor {
-    void visit( WsConfig wsService, Class<?> aClass, String basePath );
+    /**
+     * @param interceptors classes of the ws-service's interceptors, resolved from {@code ws-service.interceptors}
+     */
+    void visit( WsConfig wsService, Class<?> aClass, String basePath, List<Class<?>> interceptors );
 
     default Class<?> loadClass( Service service ) throws ClassNotFoundException {
         return Class.forName( service.implementation );

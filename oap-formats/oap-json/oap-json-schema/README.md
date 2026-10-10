@@ -1,6 +1,6 @@
 # oap-json-schema
 
-Data-driven JSON schema validation for the OAP platform. Schemas are HOCON or JSON documents; validation returns a `List<String>` of error messages — empty means valid. No annotations, no code generation.
+Data-driven JSON schema validation for the OAP platform. Schemas are HOCON or JSON documents; validation returns a `List<JsonSchemaError>` — empty means valid. Each error has a code, a message template and its args. No annotations, no code generation.
 
 ## Schema types
 
@@ -187,6 +187,35 @@ This match is by key name only (not "must be inside `properties`"), so a branch 
 
 ## Custom error messages
 
+## Error codes and messages
+
+Every validation failure is a `JsonSchemaError { code, message, args, path }`. `message` is a template with `${name}` placeholders, `args` holds the values, and `path` is the JSON path of the failing value (`null` at the root — see below). The codes are fixed and unique, starting at 100 (`JsonMessage`):
+
+| Code | Keyword | Template |
+|---|---|---|
+| 100 | `type` | `instance type is ${actualType}, but allowed type is ${schemaType}` |
+| 101 | `minLength` | `string ${value} is shorter than minLength ${minLength}` |
+| 102 | `maxLength` | `string ${value} is longer than maxLength ${maxLength}` |
+| 103 | `pattern` | `string ${value} does not match specified regex ${pattern}` |
+| 104 | `minimum` | `number ${value} is lower than the required minimum ${minimum}` |
+| 105 | `maximum` | `number ${value} is greater than the required maximum ${maximum}` |
+| 106 | `minimum` (exclusive) | `number ${value} is not strictly greater than the required minimum ${minimum}` |
+| 107 | `maximum` (exclusive) | `number ${value} is not strictly lower than the required maximum ${maximum}` |
+| 108 | `minItems` | `array ${value} has less than minItems elements ${minItems}` |
+| 109 | `maxItems` | `array ${value} has more than maxItems elements ${maxItems}` |
+| 110 | `required` | `required property is missing` |
+| 111 | `additionalProperties` | `additional properties are not permitted ${additionalProperties}` |
+| 112 | `date` | `${error}` (the parser message) |
+| 113 | — | `dictionary ${name} not found` |
+| 114 | — | `instance of '${value}' does not match any member resolve the enumeration ${ids}` |
+| 115 | `enum` | `instance of '${value}' does not match any member resolve the enumeration ${enumeration}` |
+| 116 | `const` | `instance does not equal const value '${constValue}'` |
+| 117 | — | `instance does not match any schema in anyOf` |
+| 118 | — | `instance must match exactly one schema in oneOf, matched ${matched}` |
+| 119 | — | `instance must not be valid against the schema in not` |
+
+The path of the failing value is on `JsonSchemaError.path` (and, on the web services, `ErrorResponse.Message.path`), not baked into the template — a nested array/object error has e.g. `path = "a/0/b"`, no leading slash. `JsonMessage` is an enum implementing `oap.validation.ValidationMessage`, so the web services can pass a message straight to `ValidationErrorsBuilder.error(message, args)`. Codes are strings with a `JSON-` prefix (`"JSON-100"`…`"JSON-119"`).
+
 Any schema node may carry an `errorMessage` object to override the built-in message for one or more failing keywords, ajv-errors style:
 
 ```hocon
@@ -203,7 +232,7 @@ Any schema node may carry an `errorMessage` object to override the built-in mess
 }
 ```
 
-A custom message **fully replaces** the default text — there's no automatic `/path: ` prefix. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root); remember to escape literal single quotes as `''`. Some keywords pass extra values as `{1}`, `{2}`, … (e.g. `type` passes the actual and allowed type).
+A custom message **fully replaces** the default text. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root) — reference it explicitly if the custom text should mention it, since (like the default templates) it isn't added automatically; remember to escape literal single quotes as `''`. The following `{1}`, `{2}`, … are the values of the default template's placeholders, in template order (e.g. `type` passes the actual and allowed type). A custom message keeps the code of its keyword, and its `JsonSchemaError` also carries `path`.
 
 ```hocon
 {
@@ -334,7 +363,7 @@ JsonSchema schema = JsonSchema.schemaFromString( """
 
 // Validate — returns error messages; empty list means valid
 Object json = Binder.json.unmarshal( Object.class, jsonString );
-List<String> errors = schema.validate( json, false );
+List<JsonSchemaError> errors = schema.validate( json, false );
 if( !errors.isEmpty() ) {
     // handle errors
 }
@@ -354,7 +383,7 @@ Validate only a sub-path of the schema against a value, given the full root docu
 
 ```java
 // Validate only the fields inside array items at path "lines.items"
-List<String> errors = schema.partialValidate( rootJson, partialJson, "lines.items", false );
+List<JsonSchemaError> errors = schema.partialValidate( rootJson, partialJson, "lines.items", false );
 ```
 
 ### Custom `SchemaStorage`

@@ -1,147 +1,159 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) Open Application Platform Authors
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
 package oap.ws.validate;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Http;
+import oap.json.schema.JsonSchemaError;
 import oap.reflect.Reflection;
-import oap.util.Lists;
 import oap.util.Mergeable;
 import oap.ws.WsClientException;
 
-import javax.annotation.concurrent.Immutable;
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-import static oap.util.Lists.concat;
+import static oap.http.Http.StatusCode.BAD_REQUEST;
+import static oap.http.Http.StatusCode.FORBIDDEN;
+import static oap.http.Http.StatusCode.NOT_FOUND;
+import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.ws.validate.Validators.forParameter;
 
 @ToString
 @EqualsAndHashCode
-@Immutable
 public final class ValidationErrors implements Mergeable<ValidationErrors> {
-    public static final int DEFAULT_CODE = Http.StatusCode.BAD_REQUEST;
-    public final List<String> errors;
-    public final int code;
+    private static final List<Integer> PRIORITY_CODES = List.of( UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND );
 
-    private ValidationErrors( int code, List<String> errors ) {
-        this.code = code;
-        this.errors = Lists.distinct( List.copyOf( errors ) );
+    /**
+     * HTTP status code to messages.
+     */
+    public final HashMap<Integer, LinkedHashSet<oap.ws.ErrorResponse.Message>> messages = new HashMap<>();
+
+    private ValidationErrors() {
     }
 
     public static ValidationErrors empty() {
-        return errors( List.of() );
+        return new ValidationErrors();
     }
 
-    public static ValidationErrors error( String error ) {
-        return errors( List.of( error ) );
+    /**
+     * JSON schema failures as a {@code BAD_REQUEST}; each error keeps its code, message and JSON path.
+     */
+    static ValidationErrors jsonSchemaErrors( List<JsonSchemaError> errors ) {
+        ValidationErrorsBuilder builder = empty().statusCode( BAD_REQUEST );
+        for( JsonSchemaError error : errors ) builder = builder.error( error.code, error.message, error.args, error.path );
+        return builder.endCode();
     }
 
-    public static ValidationErrors error( String message, Object... args ) {
-        return errors( List.of( String.format( message, args ) ) );
-    }
-
-    public static ValidationErrors error( int code, String error ) {
-        return errors( code, List.of( error ) );
-    }
-
-    public static ValidationErrors error( int code, String message, Object... args ) {
-        return errors( code, List.of( String.format( message, args ) ) );
-    }
-
-
-    public static ValidationErrors errors( List<String> errors ) {
-        return new ValidationErrors( DEFAULT_CODE, errors );
-    }
-
-    public static ValidationErrors errors( int code, List<String> errors ) {
-        return new ValidationErrors( code, errors );
-    }
-
-    @Deprecated
-    public static ValidationErrors create( List<String> errors ) {
-        return new ValidationErrors( DEFAULT_CODE, errors );
-    }
-
-    @Deprecated
-    public static ValidationErrors create( String error ) {
-        return errors( List.of( error ) );
-    }
-
-    @Deprecated
-    public static ValidationErrors create( int code, List<String> errors ) {
-        return new ValidationErrors( code, errors );
-    }
-
-    @Deprecated
-    public static ValidationErrors create( int code, String error ) {
-        return errors( code, Lists.of( error ) );
+    /**
+     * Starts the messages of one HTTP status code; finish with {@link ValidationErrorsBuilder#endCode()}.
+     */
+    public ValidationErrorsBuilder statusCode( int httpStatusCode ) {
+        return new ValidationErrorsBuilder( this, httpStatusCode );
     }
 
     public ValidationErrors merge( ValidationErrors otherErrors ) {
-        return new ValidationErrors(
-            hasDefaultCode() ? otherErrors.code : this.code, concat( this.errors, otherErrors.errors ) );
+        otherErrors.messages.forEach( this::add );
+
+        return this;
     }
 
     public ValidationErrors validateParameters( Map<Reflection.Parameter, Object> values, Reflection.Method method, Object instance, boolean beforeUnmarshaling ) {
-        var ret = ValidationErrors.empty();
+        ValidationErrors ret = ValidationErrors.empty();
 
-        for( var entry : values.entrySet() ) {
-            ret = ret.merge( forParameter( method, entry.getKey(), instance, beforeUnmarshaling )
-                .validate( entry.getValue(), values ) );
+        for( Map.Entry<Reflection.Parameter, Object> entry : values.entrySet() ) {
+            ret.merge( forParameter( method, entry.getKey(), instance, beforeUnmarshaling ).validate( entry.getValue(), values ) );
         }
 
         return ret;
     }
 
     public boolean failed() {
-        return !errors.isEmpty();
+        return !messages.isEmpty();
     }
 
-    public boolean hasDefaultCode() {
-        return code == DEFAULT_CODE;
+    public boolean hasNonDefaultCode() {
+        return messages.keySet().stream().anyMatch( code -> code != BAD_REQUEST );
     }
 
     public ValidationErrors throwIfInvalid() throws WsClientException {
-        if( failed() )
-            throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.getFirst(), code, errors );
+        if( failed() ) {
+            List<oap.ws.ErrorResponse.Message> messages = resolvedErrors();
+            int code = resolvedCode();
+            String reason = Http.StatusCode.getReason( code );
+            throw new WsClientException( reason, code, messages );
+        }
         return this;
     }
 
-    public boolean isEmpty() {
-        return errors.isEmpty();
+    /**
+     * Single status code for the whole result: 401, 403, 400, 404 (the first one present wins, its messages only),
+     * then other 4xx (merged into 400), 502 (5xx merged), then any other code.
+     */
+    public int resolvedCode() {
+        for( int code : PRIORITY_CODES ) {
+            if( messages.containsKey( code ) ) return code;
+        }
+        normalize();
+        List<Integer> rest = messages.keySet().stream().sorted().toList();
+        return rest.stream().filter( code -> code >= 400 && code < 500 ).findFirst()
+            .or( () -> rest.stream().filter( code -> code == Http.StatusCode.BAD_GATEWAY ).findFirst() )
+            .orElseGet( () -> rest.isEmpty() ? BAD_REQUEST : rest.getFirst() );
     }
 
+    /**
+     * Messages of the resolved status code.
+     */
+    public List<oap.ws.ErrorResponse.Message> resolvedErrors() {
+        return List.copyOf( messages.getOrDefault( resolvedCode(), new LinkedHashSet<>() ) );
+    }
+
+    public boolean isEmpty() {
+        return messages.isEmpty();
+    }
+
+    void add( int httpStatusCode, Collection<oap.ws.ErrorResponse.Message> messages ) {
+        if( messages.isEmpty() ) return;
+        this.messages.computeIfAbsent( httpStatusCode, c -> new LinkedHashSet<>() ).addAll( messages );
+    }
+
+    private void normalize() {
+        List<Integer> fourXx = codesIn( 400, 500 );
+        if( fourXx.size() > 1 ) mergeCodes( fourXx, BAD_REQUEST );
+
+        List<Integer> fiveXx = codesIn( 500, 600 );
+        if( fiveXx.size() > 1 ) mergeCodes( fiveXx, Http.StatusCode.BAD_GATEWAY );
+    }
+
+    private List<Integer> codesIn( int from, int to ) {
+        return messages.keySet().stream().filter( code -> code >= from && code < to ).toList();
+    }
+
+    private void mergeCodes( List<Integer> codes, int target ) {
+        LinkedHashSet<oap.ws.ErrorResponse.Message> merged = new LinkedHashSet<>();
+        for( int code : codes ) merged.addAll( messages.remove( code ) );
+        add( target, merged );
+    }
+
+    /**
+     * Validation failure body: {@code {"messages": [{"code": ..., "message": ..., "path": ...}]}}.
+     */
     @EqualsAndHashCode
     @ToString
     public static class ErrorResponse implements Serializable {
-        public final List<String> errors;
+        public final LinkedHashSet<oap.ws.ErrorResponse.Message> messages = new LinkedHashSet<>();
 
-        public ErrorResponse( List<String> errors ) {
-            this.errors = errors;
+        @JsonCreator
+        public ErrorResponse( @JsonProperty( "messages" ) Collection<oap.ws.ErrorResponse.Message> messages ) {
+            this.messages.addAll( messages );
+        }
+
+        public static ErrorResponse of( Collection<oap.ws.ErrorResponse.Message> messages ) {
+            return new ErrorResponse( messages );
         }
     }
 }

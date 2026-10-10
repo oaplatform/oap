@@ -55,14 +55,14 @@ public class SchemaTest extends AbstractSchemaTest {
     public void requiredPropertyNull() {
         String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 
-        assertFailure( schema, "{'a':null}", "/a: required property is missing" );
+        assertFailure( schema, "{'a':null}", "required property is missing" );
     }
 
     @Test
     public void requiredPropertyEmpty() {
         String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 
-        assertFailure( schema, "{}", "/a: required property is missing" );
+        assertFailure( schema, "{}", "required property is missing" );
     }
 
     @Test

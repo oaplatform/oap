@@ -24,11 +24,14 @@
 package oap.json.schema.validator.number;
 
 import oap.json.schema.AbstractJsonSchemaValidator;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractNumberJsonValidator<T extends Number> extends AbstractJsonSchemaValidator<NumberSchemaAST> {
     protected AbstractNumberJsonValidator( String type ) {
@@ -38,24 +41,24 @@ public abstract class AbstractNumberJsonValidator<T extends Number> extends Abst
     protected abstract boolean valid( Object value );
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
         if( !valid( value ) ) return typeFailed( properties, schema, value );
 
         final double doubleValue = ( ( Number ) value ).doubleValue();
 
-        final List<String> errors = new ArrayList<>();
+        final List<JsonSchemaError> errors = new ArrayList<>();
 
         schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-            .ifPresent( minimum -> errors.add( properties.error( schema, "minimum", "number " + print( doubleValue ) + " is lower than the required minimum " + print( minimum ), doubleValue, minimum ) ) );
+            .ifPresent( minimum -> errors.add( properties.error( schema, JsonMessage.MINIMUM, Map.of( "value", print( doubleValue ), "minimum", print( minimum ) ) ) ) );
 
         schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-            .ifPresent( maximum -> errors.add( properties.error( schema, "maximum", "number " + print( doubleValue ) + " is greater than the required maximum " + print( maximum ), doubleValue, maximum ) ) );
+            .ifPresent( maximum -> errors.add( properties.error( schema, JsonMessage.MAXIMUM, Map.of( "value", print( doubleValue ), "maximum", print( maximum ) ) ) ) );
 
         schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-            .ifPresent( minimum -> errors.add( properties.error( schema, "minimum", "number " + print( doubleValue ) + " is not strictly greater than the required minimum " + print( minimum ), doubleValue, minimum ) ) );
+            .ifPresent( minimum -> errors.add( properties.error( schema, JsonMessage.MINIMUM_EXCLUSIVE, Map.of( "value", print( doubleValue ), "minimum", print( minimum ) ) ) ) );
 
         schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-            .ifPresent( maximum -> errors.add( properties.error( schema, "maximum", "number " + print( doubleValue ) + " is not strictly lower than the required maximum " + print( maximum ), doubleValue, maximum ) ) );
+            .ifPresent( maximum -> errors.add( properties.error( schema, JsonMessage.MAXIMUM_EXCLUSIVE, Map.of( "value", print( doubleValue ), "maximum", print( maximum ) ) ) ) );
 
         return errors;
     }

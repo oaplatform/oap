@@ -130,7 +130,7 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 } else child = ( Map<Object, Object> ) next;
             }
 
-            return ValidationErrors.errors( schema.validate( rootMap, validate.ignoreRequired() ) );
+            return ValidationErrors.jsonSchemaErrors( schema.validate( rootMap, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }

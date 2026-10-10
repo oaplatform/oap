@@ -20,6 +20,26 @@
         }
       }
     },
+    "responses" : {
+      "UnauthorizedError" : {
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description" : "Authentication information is missing or invalid.",
+        "headers" : {
+          "WWW-Authenticate" : {
+            "description" : "Defines the authentication method that should be used.",
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        }
+      }
+    },
     "schemas" : {
       "AcmeCreativeSettings" : {
         "properties" : {
@@ -442,6 +462,36 @@
           "style" : {
             "enum" : [ "form", "spaceDelimited", "pipeDelimited", "deepObject" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ErrorResponse" : {
+        "properties" : {
+          "error" : {
+            "example" : "Unauthorized",
+            "type" : "string"
+          },
+          "messages" : {
+            "items" : {
+              "properties" : {
+                "code" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                },
+                "message" : {
+                  "type" : "string"
+                }
+              },
+              "required" : [ "message" ],
+              "type" : "object"
+            },
+            "type" : "array"
+          },
+          "statusCode" : {
+            "example" : 401,
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -4067,6 +4117,7 @@
         "description" : "Generates OpenAPI 3.0 json document",
         "operationId" : "openapi_GET",
         "parameters" : [ {
+          "description" : "Omit deprecated operations; defaults to true.",
           "in" : "query",
           "name" : "skipDeprecated",
           "required" : false,

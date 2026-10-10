@@ -34,6 +34,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>> {
     public static final String JSON_PATH = "json-path";
     protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
@@ -44,19 +46,20 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
     }
 
     public static String getType( Object object ) {
-        if( object instanceof Boolean ) return "boolean";
-        else if( object instanceof String ) return "string";
-        else if( object instanceof Number ) return "number";
-        else if( object instanceof Map<?, ?> ) return "object";
-        else if( object instanceof List<?> ) return "array";
-        else
-            throw new JsonSchemaException( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
+        return switch( object ) {
+            case Boolean _ -> "boolean";
+            case String _ -> "string";
+            case Number _ -> "number";
+            case Map<?, ?> _ -> "object";
+            case List<?> _ -> "array";
+            case null, default -> throw new JsonSchemaException( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
+        };
     }
 
-    public static List<String> typeFailed( JsonValidatorProperties properties, AbstractSchemaAST<?> schema, Object value ) {
+    public static List<JsonSchemaError> typeFailed( JsonValidatorProperties properties, AbstractSchemaAST<?> schema, Object value ) {
         String actualType = getType( value );
-        return Lists.of( properties.error( schema, "type", "instance type is " + actualType
-            + ", but allowed type is " + schema.common.schemaType, actualType, schema.common.schemaType ) );
+        return Lists.of( properties.error( schema, JsonMessage.TYPE,
+            Map.of( "actualType", actualType, "schemaType", schema.common.schemaType ) ) );
     }
 
     public static DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
@@ -71,7 +74,7 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
         return new NodeParser( context );
     }
 
-    public abstract List<String> validate( JsonValidatorProperties properties, A schema, Object value );
+    public abstract List<JsonSchemaError> validate( JsonValidatorProperties properties, A schema, Object value );
 
     public abstract AbstractSchemaASTWrapper<A> parse( JsonSchemaParserContext context );
 
@@ -209,7 +212,7 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
                     return Optional.of( new FilteredEnumFunction( sourceFunc, of ) );
                 }
 
-            } else throw new ValidationSyntaxException( "Unknown enum type " + anEnum.getClass() );
+            } else throw new ValidationSyntaxException( s( "Unknown enum type ${anEnum.getClass()}" ) );
         }
 
         private OperationFunction getOperationFunction( Map<?, ?> map ) {

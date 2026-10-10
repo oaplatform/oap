@@ -13,7 +13,7 @@ import static dev.khbd.interp4j.core.Interpolations.s;
  * {@link FileSystemConfiguration} entry (which backend/credentials to use), `path` is the blob's path within
  * that backend, always {@code /}-separated regardless of the host OS. See {@link FileSystem} for the facade
  * that resolves these against actual {@link FileSystemCloudApi} backends, and
- * {@link FileSystemCloudApi#toUri(CloudURI)} for rendering a backend-native (non-{@code fs://}) equivalent.
+ * {@link FileSystemCloudApi#toUri(CloudURI, boolean)} for rendering a backend-native (non-{@code fs://}) equivalent.
  */
 @EqualsAndHashCode
 public class CloudURI implements Serializable {

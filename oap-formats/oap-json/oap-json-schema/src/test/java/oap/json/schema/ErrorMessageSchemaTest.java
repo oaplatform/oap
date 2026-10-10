@@ -70,7 +70,7 @@ public class ErrorMessageSchemaTest extends AbstractSchemaTest {
             + "errorMessage: { required: { foo: \"{0}: ''foo'' is required\" } }"
             + "}";
 
-        assertFailure( schema, "{'foo': 1}", "/bar: required property is missing" );
+        assertFailure( schema, "{'foo': 1}", "required property is missing" );
     }
 
     @Test

@@ -67,7 +67,7 @@ public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'a':'b', 'b':'b'}" );
         assertOk( schema, "{'a':'b', 'settings':{'c':'2'} }" );
 
-        assertFailure( schema, "{'settings':{'c':'2'} }", "/settings: additional properties are not permitted [c]" );
+        assertFailure( schema, "{'settings':{'c':'2'} }", "additional properties are not permitted [c]" );
         assertFailure( schema, "{'b':'2' }", "additional properties are not permitted [b]" );
         assertFailure( schema, "{'a':'1', 'b':'b'}", "additional properties are not permitted [b]" );
     }

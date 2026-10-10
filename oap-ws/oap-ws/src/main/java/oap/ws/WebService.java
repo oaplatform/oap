@@ -66,21 +66,21 @@ public class WebService implements HttpHandler {
     }
 
     private void wsError( HttpServerExchange exchange, Throwable e ) {
-        if( e instanceof ReflectException && e.getCause() != null )
-            wsError( exchange, e.getCause() );
-        else if( e instanceof InvocationTargetException itException )
-            wsError( exchange, itException.getTargetException() );
-        else if( e instanceof WsClientException clientException ) {
-            log.debug( this + ": " + clientException, clientException );
-            if( !exchange.isResponseStarted() ) {
-                exchange.setStatusCodeReasonPhrase( clientException.code, e.getMessage() );
-                if( !clientException.errors.isEmpty() )
-                    exchange.responseJson( new ValidationErrors.ErrorResponse( clientException.errors ) );
+        switch( e ) {
+            case ReflectException reflectException when reflectException.getCause() != null -> wsError( exchange, e.getCause() );
+            case InvocationTargetException itException -> wsError( exchange, itException.getTargetException() );
+            case WsClientException clientException -> {
+                log.debug( "{}: {}", this, clientException.getMessage(), clientException );
+                if( !exchange.isResponseStarted() ) {
+                    var body = clientException.errorResponse.build();
+                    exchange.responseJson( body.statusCode, e.getMessage(), body );
+                }
             }
-        } else {
-            log.error( this + ": " + e.toString(), e );
-            if( !exchange.isResponseStarted() )
-                exchange.responseJson( Http.StatusCode.INTERNAL_SERVER_ERROR, e.getMessage(), new JsonStackTraceResponse( e ) );
+            default -> {
+                log.error( "{}: {}", this, e.getMessage(), e );
+                if( !exchange.isResponseStarted() )
+                    exchange.responseJson( Http.StatusCode.INTERNAL_SERVER_ERROR, e.getMessage(), new JsonStackTraceResponse( e ) );
+            }
         }
     }
 
@@ -113,7 +113,7 @@ public class WebService implements HttpHandler {
     }
 
     private void buildErrorResponse( HttpServerExchange exchange, ValidationErrors validationErrors ) {
-        exchange.responseJson( validationErrors.code, "validation failed", new ValidationErrors.ErrorResponse( validationErrors.errors ) );
+        exchange.responseJson( validationErrors.resolvedCode(), "validation failed", ValidationErrors.ErrorResponse.of( validationErrors.resolvedErrors() ) );
     }
 
 
@@ -198,7 +198,7 @@ public class WebService implements HttpHandler {
             return Response.noContent();
         } else if( result instanceof Response response ) return response;
         else if( result instanceof Optional<?> optResult ) return optResult.isEmpty()
-            ? Response.notFound()
+            ? Response.build404().build()
             : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces );
         else if( result instanceof Result<?, ?> resultResult ) if( resultResult.isSuccess() )
             return Response.ok().withBody( resultResult.successValue, isRaw ).withContentType( produces );

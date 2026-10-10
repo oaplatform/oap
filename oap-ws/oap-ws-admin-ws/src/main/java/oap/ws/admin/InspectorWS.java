@@ -68,7 +68,7 @@ public class InspectorWS {
         engine.init();
     }
 
-    @WsMethod( method = GET, path = "/ui", produces = "text/html" )
+    @WsMethod( method = GET, path = "/ui", produces = "text/html", description = "Renders the list of kernel services as HTML." )
     public String ui() {
         List<String> services = jPathWS.listServices( "*" );
         VelocityContext context = new VelocityContext();
@@ -78,8 +78,9 @@ public class InspectorWS {
         return writer.toString();
     }
 
-    @WsMethod( method = GET, path = "/ui/{serviceReference}", produces = "text/html" )
-    public String service( @WsParam( from = PATH ) String serviceReference ) {
+    @WsMethod( method = GET, path = "/ui/{serviceReference}", produces = "text/html", description = "Renders a service's details and its inspectable fields/methods as HTML." )
+    public String service( @WsParam( from = PATH, description = "Service reference in module.service form." )
+                           String serviceReference ) {
         int dot = serviceReference.indexOf( '.' );
         ModuleItem.ServiceItem item = dot < 0 ? null
             : kernel.services.get( serviceReference.substring( 0, dot ), serviceReference.substring( dot + 1 ) );
@@ -108,8 +109,11 @@ public class InspectorWS {
         return writer.toString();
     }
 
-    @WsMethod( method = GET, path = "/ui/value", produces = "text/html" )
-    public String value( @WsParam( from = QUERY ) String query, @WsParam( from = QUERY ) Optional<String> mode ) {
+    @WsMethod( method = GET, path = "/ui/value", produces = "text/html", description = "Evaluates a JPath query and renders the result as HTML." )
+    public String value( @WsParam( from = QUERY, description = "JPath expression to evaluate." )
+                         String query,
+                         @WsParam( from = QUERY, description = "Rendering mode; defaults to \"inspect\"." )
+                         Optional<String> mode ) {
         String effectiveMode = mode.filter( m -> !m.isEmpty() ).orElse( "inspect" );
         VelocityContext context = new VelocityContext();
         context.put( "query", query );

@@ -40,8 +40,6 @@ import oap.ws.sso.WsSecurity;
 import java.util.Objects;
 import java.util.Optional;
 
-import static oap.http.Http.StatusCode.FORBIDDEN;
-import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.ws.sso.SSO.ISSUER;
 import static oap.ws.sso.SSO.SESSION_USER_KEY;
 import static oap.ws.sso.WsSecurity.SYSTEM;
@@ -78,7 +76,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         };
 
         if( realm.isEmpty() ) {
-            return Optional.of( new Response( FORBIDDEN, "realm is not passed" ) );
+            return Optional.of( Response.build403().message( "realm is not passed" ).build() );
         }
 
         String realmString = realm.get();
@@ -87,7 +85,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         validUser = userProvider.getAuthenticatedByAccessToken( Optional.ofNullable( accessToken ), refreshToken, sessionUserKey.map( User::getId ), roles, realmString, wssPermissions );
 
         if( !validUser.isSuccess() ) {
-            return Optional.of( new Response( UNAUTHORIZED, validUser.failureValue ) );
+            return Optional.of( Response.build401().message( validUser.failureValue ).build() );
         }
         context.session.set( SESSION_USER_KEY, validUser.successValue.user );
         context.session.set( ISSUER, issuerName );

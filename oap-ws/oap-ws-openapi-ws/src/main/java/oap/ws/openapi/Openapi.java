@@ -28,14 +28,23 @@ import io.swagger.v3.oas.models.OpenAPI;
 import lombok.extern.slf4j.Slf4j;
 import oap.ws.WebServices;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class Openapi {
 
     private final WebServices webServices;
+    private final ConcurrentHashMap<CacheKey, OpenAPI> cache = new ConcurrentHashMap<>();
     public ApiInfo info;
+    /**
+     * Package prefixes {@link ErrorCodeScanner} may follow a static call into, for a user's own shared validation
+     * helpers living outside the web-service classes it scans. Empty by default: no such call is followed.
+     */
+    public Set<String> allowedStaticPackagePrefixes = Set.of();
 
     public Openapi( WebServices webServices ) {
         this.webServices = webServices;
@@ -53,17 +62,34 @@ public class Openapi {
         return generateOpenApi( skipDeprecated, Optional.empty() );
     }
 
+    /**
+     * Builds the OpenAPI document for the given arguments once per {@code (skipDeprecated, port)} pair and caches
+     * it: the bound services don't change after kernel boot, so the bytecode/annotation scan never needs to repeat.
+     */
     public OpenAPI generateOpenApi( boolean skipDeprecated, Optional<String> port ) {
+        return cache.computeIfAbsent( new CacheKey( skipDeprecated, port ), key -> build( skipDeprecated, port ) );
+    }
+
+    private OpenAPI build( boolean skipDeprecated, Optional<String> port ) {
         OpenapiGenerator openapiGenerator = new OpenapiGenerator(
             info.title,
             info.description,
-            new OpenapiGenerator.Settings( OpenapiGenerator.Settings.OutputType.JSON, skipDeprecated ) );
+            new OpenapiGenerator.Settings( OpenapiGenerator.Settings.OutputType.JSON, skipDeprecated, allowedStaticPackagePrefixes ) );
         openapiGenerator.beforeProcesingServices();
         for( Map.Entry<String, Object> ws : webServices.services.entrySet() ) {
             if( !webServices.servicePorts.getOrDefault( ws.getKey(), Optional.empty() ).equals( port ) ) continue;
-            openapiGenerator.processWebservice( ws.getValue().getClass(), ws.getKey() );
+            openapiGenerator.processWebservice( ws.getValue().getClass(), ws.getKey(), interceptorClasses( ws.getKey() ) );
         }
         openapiGenerator.afterProcesingServices();
         return openapiGenerator.build();
+    }
+
+    private List<Class<?>> interceptorClasses( String context ) {
+        return webServices.interceptors.getOrDefault( context, List.of() ).stream()
+            .<Class<?>>map( Object::getClass )
+            .toList();
+    }
+
+    private record CacheKey( boolean skipDeprecated, Optional<String> port ) {
     }
 }

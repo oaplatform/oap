@@ -39,12 +39,15 @@ import oap.json.schema.validator.object.ObjectSchemaAST;
 import oap.json.schema.validator.string.StringJsonValidator;
 import oap.util.Lists;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
 public class JsonSchema {
@@ -99,6 +102,11 @@ public class JsonSchema {
         validators.put( validator.type, validator );
     }
 
+    private static boolean declaredPropertiesPresent( AbstractSchemaAST ast, Object value ) {
+        if( !( ast instanceof ObjectSchemaAST objectAst ) || !( value instanceof Map<?, ?> map ) ) return true;
+        return objectAst.properties.keySet().stream().allMatch( k -> map.get( k ) != null );
+    }
+
     private Object parseWithTemplate( String schema, SchemaStorage storage ) {
         Object obj = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, schema );
         resolveTemplates( obj, storage );
@@ -147,38 +155,31 @@ public class JsonSchema {
         }
     }
 
-    private static boolean declaredPropertiesPresent( AbstractSchemaAST ast, Object value ) {
-        if( !( ast instanceof ObjectSchemaAST objectAst ) || !( value instanceof Map<?, ?> map ) ) return true;
-        return objectAst.properties.keySet().stream().allMatch( k -> map.get( k ) != null );
-    }
-
-
     @SuppressWarnings( "unchecked" )
-    private List<String> validate( JsonValidatorProperties properties, AbstractSchemaAST schema, Object value ) {
+    private List<JsonSchemaError> validate( JsonValidatorProperties properties, AbstractSchemaAST schema, Object value ) {
         AbstractJsonSchemaValidator jsonSchemaValidator = validators.get( schema.common.schemaType );
         if( jsonSchemaValidator == null ) {
-            log.trace( "registered validators: " + validators.keySet() );
-            throw new ValidationSyntaxException( "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
+            log.trace( "registered validators: {}", validators.keySet() );
+            throw new ValidationSyntaxException( s( "[schema:type]: unknown simple type [${schema.common.schemaType}]" ) );
         }
 
-        if( value == null && !properties.ignoreRequiredDefault
-            && schema.common.required.orElse( BooleanReference.FALSE )
-            .apply( properties.rootJson, value, properties.path, properties.prefixPath ) )
-            return Lists.of( properties.error( schema, "required", "required property is missing" ) );
-        else if( value == null ) return Lists.empty();
-        else {
-            List<String> errors = jsonSchemaValidator.validate( properties, schema, value );
+        if( value == null && !properties.ignoreRequiredDefault && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, value, properties.path, properties.prefixPath ) ) {
+            return Lists.of( properties.error( schema, JsonMessage.REQUIRED, Map.of() ) );
+        } else if( value == null ) {
+            return Lists.empty();
+        } else {
+            List<JsonSchemaError> errors = new ArrayList<>( jsonSchemaValidator.validate( properties, schema, value ) );
             schema.common.enumValue
                 .filter( e -> {
                     List<Object> applied = e.apply( properties.rootJson, properties.path );
                     log.trace( "evaluating json-path '{}' with value '{}' to contain '{}'", properties.path, applied, value );
                     return !applied.contains( value );
                 } )
-                .ifPresent( e -> errors.add( properties.error( schema, "enum", "instance of '" + value + "' does not match any member resolve the enumeration "
-                    + e.apply( properties.rootJson, properties.path ), value, e.apply( properties.rootJson, properties.path ) ) ) );
+                .ifPresent( e -> errors.add( properties.error( schema, JsonMessage.ENUM,
+                    Map.of( "value", String.valueOf( value ), "enumeration", e.apply( properties.rootJson, properties.path ).toString() ) ) ) );
             schema.common.constValue
                 .filter( c -> !Objects.equals( c, value ) )
-                .ifPresent( c -> errors.add( properties.error( schema, "const", "instance does not equal const value '" + c + "'", c ) ) );
+                .ifPresent( c -> errors.add( properties.error( schema, JsonMessage.CONST, Map.of( "constValue", String.valueOf( c ) ) ) ) );
 
             if( !schema.conditional.isEmpty() ) {
                 JsonValidatorProperties branchProperties = properties.withoutAdditionalProperties();
@@ -197,19 +198,19 @@ public class JsonSchema {
 
                 if( !schema.conditional.anyOf.isEmpty()
                     && schema.conditional.anyOf.stream().noneMatch( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ) ) {
-                    errors.add( properties.error( "instance does not match any schema in anyOf" ) );
+                    errors.add( properties.error( JsonMessage.ANY_OF, Map.of() ) );
                 }
 
                 if( !schema.conditional.oneOf.isEmpty() ) {
                     long matched = schema.conditional.oneOf.stream().filter( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ).count();
                     if( matched != 1 ) {
-                        errors.add( properties.error( "instance must match exactly one schema in oneOf, matched " + matched ) );
+                        errors.add( properties.error( JsonMessage.ONE_OF, Map.of( "matched", matched ) ) );
                     }
                 }
 
                 schema.conditional.notSchema.ifPresent( notAst -> {
                     if( properties.validator.apply( branchProperties, notAst, value ).isEmpty() ) {
-                        errors.add( properties.error( "instance must not be valid against the schema in not" ) );
+                        errors.add( properties.error( JsonMessage.NOT, Map.of() ) );
                     }
                 } );
             }
@@ -218,7 +219,7 @@ public class JsonSchema {
         }
     }
 
-    public List<String> validate( Object json, boolean ignoreRequiredDefault, boolean forceIgnoreAdditionalProperties ) {
+    public List<JsonSchemaError> validate( Object json, boolean ignoreRequiredDefault, boolean forceIgnoreAdditionalProperties ) {
         JsonValidatorProperties properties = new JsonValidatorProperties(
             schema,
             json,
@@ -232,7 +233,7 @@ public class JsonSchema {
         return validate( properties, schema, json );
     }
 
-    public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
+    public List<JsonSchemaError> validate( Object json, boolean ignoreRequiredDefault ) {
         return validate( json, ignoreRequiredDefault, false );
     }
 
@@ -266,7 +267,7 @@ public class JsonSchema {
         }
     }
 
-    public List<String> partialValidate( Object root, Object json, String path, boolean ignoreRequiredDefault ) {
+    public List<JsonSchemaError> partialValidate( Object root, Object json, String path, boolean ignoreRequiredDefault ) {
         SchemaPath.Result traverseResult = SchemaPath.traverse( this.schema, path );
         final AbstractSchemaAST partialSchema = traverseResult.schema
             .orElseThrow( () -> new ValidationSyntaxException( "path " + path + " not found" ) );

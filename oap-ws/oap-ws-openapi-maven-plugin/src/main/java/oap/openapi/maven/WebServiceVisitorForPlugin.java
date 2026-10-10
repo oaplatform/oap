@@ -82,8 +82,8 @@ public class WebServiceVisitorForPlugin implements WebServiceVisitor {
     }
 
     @Override
-    public void visit( WsConfig wsService, Class<?> clazz, String basePath ) {
-        OpenapiGenerator.Result result = openapiGenerator.processWebservice( clazz, wsService.path.stream().findFirst().orElse( "" ) );
+    public void visit( WsConfig wsService, Class<?> clazz, String basePath, List<Class<?>> interceptors ) {
+        OpenapiGenerator.Result result = openapiGenerator.processWebservice( clazz, wsService.path.stream().findFirst().orElse( "" ), interceptors );
         log.info( "WebService class " + clazz.getCanonicalName() + " " + result );
         description.add( clazz.getCanonicalName() );
     }

@@ -29,15 +29,19 @@ import com.google.common.collect.ArrayListMultimap;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.util.RefUtils;
 import io.swagger.v3.core.util.Yaml;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
@@ -57,6 +61,7 @@ import oap.io.content.ContentWriter;
 import oap.reflect.Reflect;
 import oap.util.Strings;
 import oap.ws.WsParam;
+import oap.ws.InvocationContext;
 import oap.ws.api.Info.WebMethodInfo;
 import oap.ws.openapi.swagger.DeprecationAnnotationResolver;
 import org.apache.commons.lang3.StringUtils;
@@ -67,14 +72,20 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Collection;
 import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static oap.ws.openapi.OpenapiSchema.prepareType;
+import static oap.http.Http.StatusCode.UNAUTHORIZED;
 
 /**
  * Common procedure:
@@ -93,6 +104,21 @@ public class OpenapiGenerator {
     private final ModelConverters converters = new ModelConverters();
     private final OpenAPI api = new OpenAPI();
     private final OpenapiSchema openapiSchema = new OpenapiSchema();
+    /** Example text of a message whose text is not a literal in the code. */
+    private static final String RUNTIME_MESSAGE = "<runtime message>";
+    private final ErrorCodeScanner errorCodeScanner;
+    private static final Map<Integer, String> REASON_PHRASES = Map.ofEntries(
+        Map.entry( 400, "Bad Request" ),
+        Map.entry( 401, "Unauthorized" ),
+        Map.entry( 403, "Forbidden" ),
+        Map.entry( 404, "Not Found" ),
+        Map.entry( 405, "Method Not Allowed" ),
+        Map.entry( 409, "Conflict" ),
+        Map.entry( 422, "Unprocessable Entity" ),
+        Map.entry( 429, "Too Many Requests" ),
+        Map.entry( 500, "Internal Server Error" ),
+        Map.entry( 502, "Bad Gateway" ),
+        Map.entry( 503, "Service Unavailable" ) );
     @Setter
     private String title;
     @Setter
@@ -104,6 +130,7 @@ public class OpenapiGenerator {
         this.title = title;
         this.description = description;
         this.settings = settings;
+        this.errorCodeScanner = new ErrorCodeScanner( settings.allowedStaticPackagePrefixes );
         api.openapi( OPEN_API_VERSION );
     }
 
@@ -113,7 +140,33 @@ public class OpenapiGenerator {
 
     public OpenAPI build() {
         addSecuritySchema();
+        addErrorComponents();
         return api;
+    }
+
+    private void addErrorComponents() {
+        Schema<?> messageItem = new ObjectSchema()
+            .addProperty( "code", new IntegerSchema() )
+            .addProperty( "message", new StringSchema() )
+            .required( List.of( "message" ) );
+
+        Schema<?> errorResponse = new ObjectSchema()
+            .addProperty( "statusCode", new IntegerSchema().example( 401 ) )
+            .addProperty( "error", new StringSchema().example( "Unauthorized" ) )
+            .addProperty( "messages", new ArraySchema().items( messageItem ) );
+
+        ApiResponse unauthorized = new ApiResponse()
+            .description( "Authentication information is missing or invalid." )
+            .addHeaderObject( "WWW-Authenticate", new Header()
+                .description( "Defines the authentication method that should be used." )
+                .schema( new StringSchema() ) )
+            .content( new Content().addMediaType( "application/json",
+                new MediaType().schema( new Schema<>().$ref( RefUtils.constructRef( "ErrorResponse" ) ) ) ) );
+
+        if( api.getComponents() == null ) api.components( new Components() );
+        api.getComponents()
+            .addSchemas( "ErrorResponse", errorResponse )
+            .addResponses( "UnauthorizedError", unauthorized );
     }
 
     // see https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md#securitySchemeObject
@@ -133,7 +186,7 @@ public class OpenapiGenerator {
 
     public enum Result {
         PROCESSED_OK( "processed." ),
-        SKIPPED_DUE_TO_ANNOTATED_TO_IGNORE( "has been annotated with @OpenapiIgnore." ),
+        SKIPPED_DUE_TO_ANNOTATED_TO_IGNORE( "has been annotated with @OpenApiIgnore." ),
         SKIPPED_DUE_TO_ALREADY_PROCESSED( "has already been processed." ),
         SKIPPED_DUE_TO_CLASS_HAS_NO_METHODS( "skipped due to class does not contain any public method" );
 
@@ -150,10 +203,17 @@ public class OpenapiGenerator {
     }
 
     public Result processWebservice( Class<?> clazz, String context ) {
+        return processWebservice( clazz, context, List.of() );
+    }
+
+    /**
+     * @param interceptors interceptor classes of the ws-service; their {@code before} methods' error codes are added to every operation
+     */
+    public Result processWebservice( Class<?> clazz, String context, Collection<Class<?>> interceptors ) {
         log.info( "Processing web-service {} implementation class '{}' ...", context, clazz.getCanonicalName() );
 
         if( !processedClasses.add( clazz.getCanonicalName() ) ) return Result.SKIPPED_DUE_TO_ALREADY_PROCESSED;
-        if( clazz.isAnnotationPresent( OpenapiIgnore.class ) ) return Result.SKIPPED_DUE_TO_ANNOTATED_TO_IGNORE;
+        if( clazz.isAnnotationPresent( OpenApiIgnore.class ) ) return Result.SKIPPED_DUE_TO_ANNOTATED_TO_IGNORE;
         oap.ws.api.Info.WebServiceInfo wsInfo = new oap.ws.api.Info.WebServiceInfo( Reflect.reflect( clazz ), context, Optional.empty() );
         var tag = createTag( wsInfo.name );
         if( uniqueTags.add( tag.getName() ) ) api.addTagsItem( tag );
@@ -162,6 +222,7 @@ public class OpenapiGenerator {
                 clazz.getPackage().getImplementationVersion() != null
                     ? clazz.getPackage().getImplementationVersion()
                     : Strings.UNDEFINED, wsInfo.name );
+        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes = interceptorErrorResponses( interceptors );
         boolean atLeastOneMethodProcessed = false;
         int methodNumber = 0;
         List<WebMethodInfo> methods = wsInfo.methods( !settings.skipDeprecated );
@@ -176,7 +237,7 @@ public class OpenapiGenerator {
 
             for( HttpServerExchange.HttpMethod httpMethod : method.methods ) {
                 atLeastOneMethodProcessed = true;
-                var operation = prepareOperation( method, tag, httpMethod, methodNumber );
+                var operation = prepareOperation( method, tag, httpMethod, methodNumber, interceptorCodes );
                 pathItem.operation( convertMethod( httpMethod ), operation );
             }
         }
@@ -186,7 +247,25 @@ public class OpenapiGenerator {
         return Result.PROCESSED_OK;
     }
 
-    private Operation prepareOperation( WebMethodInfo method, Tag tag, HttpServerExchange.HttpMethod httpMethod, int methodNumber ) {
+    private Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorErrorResponses( Collection<Class<?>> interceptors ) {
+        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> results = new TreeMap<>();
+        for( Class<?> interceptor : interceptors ) {
+            try {
+                merge( results, errorCodeScanner.errorResponses( interceptor.getMethod( "before", InvocationContext.class ) ) );
+            } catch( NoSuchMethodException e ) {
+                log.warn( "Interceptor {} has no before(InvocationContext) method, skipped", interceptor.getName() );
+            }
+        }
+        return results;
+    }
+
+    private static void merge( Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> target,
+                               Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> source ) {
+        source.forEach( ( code, messages ) -> target.computeIfAbsent( code, c -> new LinkedHashSet<>() ).addAll( messages ) );
+    }
+
+    private Operation prepareOperation( WebMethodInfo method, Tag tag, HttpServerExchange.HttpMethod httpMethod, int methodNumber,
+                                        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes ) {
         var params = method.parameters();
         var returnType = prepareType( method.resultType() );
 
@@ -196,12 +275,12 @@ public class OpenapiGenerator {
             .description( method.description )
             .operationId( generateOperationId( method, methodNumber, httpMethod ) )
             .requestBody( prepareRequestBody( params ) )
-            .responses( prepareResponse( returnType, method ) );
+            .responses( prepareResponse( returnType, method, interceptorCodes ) );
         if( method.deprecated ) operation.deprecated( true );
         if( method.secure ) {
             operation.addSecurityItem( new SecurityRequirement().addList( SECURITY_SCHEMA_NAME ) );
             String descriptionWithAuth = operation.getDescription();
-            if( descriptionWithAuth.length() > 0 ) {
+            if( !descriptionWithAuth.isEmpty() ) {
                 descriptionWithAuth += "\n    Note: \n- security permissions: "
                     + "\n  - " + String.join( "\n  - ", method.permissions )
                     + "\n- realm: " + method.realm;
@@ -229,14 +308,65 @@ public class OpenapiGenerator {
         return result.toString();
     }
 
-    private ApiResponses prepareResponse( Type returnType, WebMethodInfo method ) {
+    private ApiResponses prepareResponse( Type returnType, WebMethodInfo method, Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes ) {
         var responses = new ApiResponses();
         ApiResponse response = new ApiResponse();
         response.description( "" );
         responses.addApiResponse( "200", response );
-        if( returnType.equals( Void.class ) ) return responses;
-        response.content( createContent( method, returnType ) );
+        if( !returnType.equals( Void.class ) ) response.content( createContent( method, returnType ) );
+        addErrorResponses( responses, method, interceptorCodes );
         return responses;
+    }
+
+    private void addErrorResponses( ApiResponses responses, WebMethodInfo method, Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> interceptorCodes ) {
+        Map<Integer, Set<ErrorCodeScanner.ScannedMessage>> errors = new TreeMap<>();
+        merge( errors, interceptorCodes );
+        merge( errors, errorCodeScanner.errorResponses( method.reflectMethod() ) );
+        errors.forEach( ( code, messages ) -> responses.addApiResponse( String.valueOf( code ), code == UNAUTHORIZED && messages.isEmpty()
+            ? new ApiResponse().$ref( "#/components/responses/UnauthorizedError" )
+            : errorResponse( code, messages ) ) );
+    }
+
+    /**
+     * Local response for a scanned error code. {@code 401} with no scanned messages is reported as a {@code $ref} to
+     * the shared {@code UnauthorizedError} component instead (see caller); this builds the per-operation response
+     * used otherwise, re-adding the {@code WWW-Authenticate} header for {@code 401} since it is no longer inherited
+     * from that shared component.
+     */
+    private ApiResponse errorResponse( int code, Set<ErrorCodeScanner.ScannedMessage> messages ) {
+        ApiResponse response = new ApiResponse()
+            .description( REASON_PHRASES.getOrDefault( code, "HTTP " + code ) )
+            .content( errorContent( messages ) );
+        if( code == UNAUTHORIZED ) {
+            response.addHeaderObject( "WWW-Authenticate", new Header()
+                .description( "Defines the authentication method that should be used." )
+                .schema( new StringSchema() ) );
+        }
+        return response;
+    }
+
+    private static Content errorContent( Set<ErrorCodeScanner.ScannedMessage> messages ) {
+        MediaType mediaType = new MediaType().schema( new Schema<>().$ref( RefUtils.constructRef( "ErrorResponse" ) ) );
+        if( !messages.isEmpty() ) mediaType.example( messagesExample( messages ) );
+        return new Content().addMediaType( ContentType.APPLICATION_JSON.getMimeType(), mediaType );
+    }
+
+    /**
+     * Example body {@code {"messages": [{"code": ..., "message": ...}]}}; {@code code} is omitted when absent.
+     * Messages are sorted by code, messages without a code last, then by text.
+     */
+    private static Map<String, Object> messagesExample( Set<ErrorCodeScanner.ScannedMessage> messages ) {
+        List<Map<String, Object>> items = new ArrayList<>();
+        Comparator<ErrorCodeScanner.ScannedMessage> order = Comparator
+            .comparing( ErrorCodeScanner.ScannedMessage::code, Comparator.nullsLast( Comparator.naturalOrder() ) )
+            .thenComparing( ErrorCodeScanner.ScannedMessage::text, Comparator.nullsLast( Comparator.naturalOrder() ) );
+        for( ErrorCodeScanner.ScannedMessage message : messages.stream().sorted( order ).toList() ) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            if( message.code() != null ) item.put( "code", message.code() );
+            item.put( "message", message.text() != null ? message.text() : RUNTIME_MESSAGE );
+            items.add( item );
+        }
+        return Map.of( "messages", items );
     }
 
     private Schema getSchemaByReturnType( Type returnType, WebMethodInfo method ) {
@@ -396,10 +526,16 @@ public class OpenapiGenerator {
          */
         public final OutputType outputType;
         public boolean skipDeprecated = true;
+        public final Set<String> allowedStaticPackagePrefixes;
 
         public Settings( OutputType outputType, boolean skipDeprecated ) {
+            this( outputType, skipDeprecated, Set.of() );
+        }
+
+        public Settings( OutputType outputType, boolean skipDeprecated, Set<String> allowedStaticPackagePrefixes ) {
             this.outputType = outputType;
             this.skipDeprecated = skipDeprecated;
+            this.allowedStaticPackagePrefixes = allowedStaticPackagePrefixes;
         }
 
         public enum OutputType {

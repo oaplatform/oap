@@ -51,7 +51,7 @@ public class SchemaRefTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'field1': {'a': 'test'}}", _ -> schema2, false );
         assertFailure( schema, "{'field1': {'a': 1}}",
-            _ -> schema2, "/field1/a: instance type is number, but allowed type is string"
+            _ -> schema2, "instance type is number, but allowed type is string"
         );
     }
 
@@ -83,7 +83,7 @@ public class SchemaRefTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'list': [{'a': 'test'}]}", _ -> schema2, false );
         assertFailure( schema, "{'list': [{'a': 1}]}",
-            _ -> schema2, "/list/0/a: instance type is number, but allowed type is string"
+            _ -> schema2, "instance type is number, but allowed type is string"
         );
     }
 }

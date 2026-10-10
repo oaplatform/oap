@@ -155,7 +155,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     }
 
     @Override
-    public String toUri( CloudURI path ) {
+    public String toUri( CloudURI path, boolean credentials ) {
         return uriPrefix + "/" + bucketName + "/" + path.path;
     }
 

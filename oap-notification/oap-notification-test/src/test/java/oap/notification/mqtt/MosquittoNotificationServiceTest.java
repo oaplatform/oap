@@ -1,6 +1,5 @@
 package oap.notification.mqtt;
 
-import oap.notification.Notification;
 import oap.notification.NotificationPublish;
 import oap.notification.NotificationPublishWithAcknowledge;
 import oap.notification.NotificationService;
@@ -121,9 +120,9 @@ public class MosquittoNotificationServiceTest extends Fixtures {
 
             assertEventually( 100, 20, () -> {
                 // wire payload is the Notification envelope (polymorphic `message`), not TestNotificationMessage directly
-                List<Notification> received = mosquittoFixture.receive( "/test-fixture", Notification.class );
-                assertThat( received.getFirst().stringMessage() ).contains( "fixture-val" );
-                assertThat( mosquittoFixture.receive( Notification.class ).getFirst().stringMessage() ).contains( "fixture-val" );
+                List<TestNotificationMessage> received = mosquittoFixture.receive( "/test-fixture", TestNotificationMessage.class );
+                assertThat( received.getFirst().value ).contains( "fixture-val" );
+                assertThat( mosquittoFixture.receive( TestNotificationMessage.class ).getFirst().value ).contains( "fixture-val" );
                 assertThat( mosquittoFixture.receive( "/test-fixture" ) ).hasSize( 1 );
                 assertThat( mosquittoFixture.receive() ).hasSize( 1 );
             } );

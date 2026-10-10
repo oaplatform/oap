@@ -75,8 +75,9 @@ public class JPathWS {
     }
 
     @SuppressWarnings( "unchecked" )
-    @WsMethod( method = GET, path = "/" )
-    public Response get( @WsParam( from = QUERY ) String query ) {
+    @WsMethod( method = GET, path = "/", description = "Evaluates a JPath query against the kernel service tree, or lists matching services when the query contains '*'." )
+    public Response get( @WsParam( from = QUERY, description = "JPath expression, or a glob pattern ('*', 'prefix*', '*suffix') to list matching module.service names." )
+                         String query ) {
         log.debug( "query = {}", query );
         try {
             if( query.contains( "*" ) ) {

@@ -26,19 +26,27 @@ package oap.ws.openapi;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.module.Module;
+import oap.application.module.Service;
 import oap.ws.WsConfig;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class WebServicesWalker {
 
     public static void walk( WebServiceVisitor visitor ) {
-        List<URL> urls = visitor.getWebServiceUrls();
-        for( URL url : urls ) {
+        List<Module> modules = new ArrayList<>();
+        for( URL url : visitor.getWebServiceUrls() ) {
             log.info( "Reading config from " + url.getPath() );
-            Module config = Module.CONFIGURATION.fromUrl( url );
+            modules.add( Module.CONFIGURATION.fromUrl( url ) );
+        }
+
+        Map<String, Service> index = serviceIndex( modules );
+        for( Module config : modules ) {
             config.services.forEach( ( name, service ) -> {
                 log.info( String.format( "Service %s", name ) );
                 WsConfig wsService = ( WsConfig ) service.ext.get( "ws-service" );
@@ -50,12 +58,44 @@ public class WebServicesWalker {
                 try {
                     Class<?> clazz = visitor.loadClass( service );
                     String basePath = wsService.path.stream().findFirst().orElse( "" );
-                    visitor.visit( wsService, clazz, basePath );
+                    visitor.visit( wsService, clazz, basePath, interceptorClasses( visitor, wsService, index ) );
                 } catch( Exception e ) {
                     log.warn( "Could not deal with module: " + name + " due to the implementation class '"
                         + service.implementation + "' is unavailable", e );
                 }
             } );
         }
+    }
+
+    /**
+     * Services by {@code module.service} and by plain service name (first module wins for plain names).
+     */
+    private static Map<String, Service> serviceIndex( List<Module> modules ) {
+        Map<String, Service> index = new HashMap<>();
+        for( Module module : modules ) {
+            module.services.forEach( ( name, service ) -> {
+                index.putIfAbsent( name, service );
+                if( module.name != null ) index.put( module.name + "." + name, service );
+            } );
+        }
+        return index;
+    }
+
+    private static List<Class<?>> interceptorClasses( WebServiceVisitor visitor, WsConfig wsService, Map<String, Service> index ) {
+        List<Class<?>> classes = new ArrayList<>();
+        for( String reference : wsService.interceptors ) {
+            String name = reference.replaceAll( "^<modules\\.|>$", "" );
+            Service interceptor = index.get( name );
+            if( interceptor == null ) {
+                log.warn( "Interceptor '{}' not found in any module config, skipped", reference );
+                continue;
+            }
+            try {
+                classes.add( visitor.loadClass( interceptor ) );
+            } catch( ClassNotFoundException e ) {
+                log.warn( "Interceptor '{}' implementation '{}' is unavailable, skipped", reference, interceptor.implementation, e );
+            }
+        }
+        return classes;
     }
 }

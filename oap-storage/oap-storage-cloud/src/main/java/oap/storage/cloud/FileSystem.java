@@ -346,7 +346,7 @@ public class FileSystem implements AutoCloseable {
     public boolean deleteBlob( CloudURI path ) throws CloudException {
         FileSystemCloudApi cloudApi = getCloudApi( path );
 
-        log.debug( "deleteBlob {} / real path {}", path, cloudApi.toUri( path ) );
+        log.debug( "deleteBlob {} / real path {}", path, cloudApi.toUri( path, false ) );
 
         try {
             String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( path.configurationId );
@@ -427,12 +427,21 @@ public class FileSystem implements AutoCloseable {
 
     /**
      * Renders a {@code CloudURI} as a "native"-looking URI string; delegates to the resolved backend's
-     * {@link FileSystemCloudApi#toUri(CloudURI)}.
+     * {@link FileSystemCloudApi#toUri(CloudURI, boolean)}.
+     *
+     * @param credentials {@code true} to include the user name as a {@code user:XXX@} placeholder
+     */
+    public String toUri( CloudURI cloudURI, boolean credentials ) {
+        log.debug( "toUri {} credentials {}", cloudURI, credentials );
+
+        return getCloudApi( cloudURI ).toUri( cloudURI, credentials );
+    }
+
+    /**
+     * Same as {@link #toUri(CloudURI, boolean)} with {@code credentials = false}.
      */
     public String toUri( CloudURI cloudURI ) {
-        log.debug( "toUri {}", cloudURI );
-
-        return getCloudApi( cloudURI ).toUri( cloudURI );
+        return toUri( cloudURI, false );
     }
 
     /**

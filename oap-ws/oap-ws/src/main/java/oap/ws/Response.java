@@ -39,7 +39,6 @@ import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.Http.Headers.CONTENT_TYPE;
 import static oap.http.Http.Headers.LOCATION;
 import static oap.http.Http.StatusCode.FOUND;
-import static oap.http.Http.StatusCode.NOT_FOUND;
 import static oap.http.Http.StatusCode.NO_CONTENT;
 import static oap.http.Http.StatusCode.OK;
 
@@ -84,8 +83,16 @@ public class Response {
         return ok().withContentType( APPLICATION_JSON );
     }
 
-    public static Response notFound() {
-        return new Response( NOT_FOUND );
+    public static ErrorResponse401Builder build401() {
+        return new ErrorResponse401Builder();
+    }
+
+    public static ErrorResponse403Builder build403() {
+        return new ErrorResponse403Builder();
+    }
+
+    public static ErrorResponse404Builder build404() {
+        return new ErrorResponse404Builder();
     }
 
     public static Response ok() {
@@ -142,48 +149,62 @@ public class Response {
     }
 
     public String bodyToString() {
-        if( body == null ) return null;
-
-        if( body instanceof byte[] bytes ) return new String( bytes );
-        else if( body instanceof ByteBuffer byteBuffer ) {
-            byte[] bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get( bytes );
-            return new String( bytes );
-        } else if( body instanceof String str ) {
-            if( raw ) return str;
-            else return HttpServerExchange.contentToString( false, str, contentType );
-        } else if( body instanceof Consumer ) {
-            @SuppressWarnings( "unchecked" )
-            var cons = ( Consumer<ByteArrayOutputStream> ) body;
-            var baos = new ByteArrayOutputStream();
-            cons.accept( baos );
-            body = baos.toByteArray();
-            return new String( ( byte[] ) body );
-        } else {
-            Preconditions.checkArgument( !raw );
-            return HttpServerExchange.contentToString( false, body, contentType );
+        switch( body ) {
+            case null -> {
+                return null;
+            }
+            case byte[] bytes -> {
+                return new String( bytes );
+            }
+            case ByteBuffer byteBuffer -> {
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get( bytes );
+                return new String( bytes );
+            }
+            case String str -> {
+                if( raw ) return str;
+                else return HttpServerExchange.contentToString( false, str, contentType );
+            }
+            case Consumer consumer -> {
+                @SuppressWarnings( "unchecked" )
+                Consumer<ByteArrayOutputStream> cons = ( Consumer<ByteArrayOutputStream> ) body;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                cons.accept( baos );
+                body = baos.toByteArray();
+                return new String( ( byte[] ) body );
+            }
+            default -> {
+                Preconditions.checkArgument( !raw );
+                return HttpServerExchange.contentToString( false, body, contentType );
+            }
         }
-
     }
 
     @SuppressWarnings( "unchecked" )
     public void send( HttpServerExchange exchange ) {
         exchange.setStatusCode( code );
-        if( reasonPhrase != null ) exchange.setReasonPhrase( reasonPhrase );
+        if( reasonPhrase != null ) {
+            exchange.setReasonPhrase( reasonPhrase );
+        }
         headers.forEach( exchange::setResponseHeader );
         cookies.forEach( exchange::setResponseCookie );
-        if( contentType != null ) exchange.setResponseHeader( CONTENT_TYPE, contentType );
-        if( body != null )
-            if( body instanceof byte[] bytes ) exchange.send( bytes );
-            else if( body instanceof ByteBuffer byteBuffer ) exchange.send( byteBuffer );
-            else if( body instanceof String string )
-                if( raw ) exchange.send( string );
-                else exchange.send( HttpServerExchange.contentToString( false, string, contentType ) );
-            else if( body instanceof Consumer cons ) cons.accept( exchange.getOutputStream() );
-            else {
-                Preconditions.checkArgument( !raw );
-                exchange.send( HttpServerExchange.contentToString( false, body, contentType ) );
+        if( contentType != null ) {
+            exchange.setResponseHeader( CONTENT_TYPE, contentType );
+        }
+        if( body != null ) {
+            switch( body ) {
+                case byte[] bytes -> exchange.send( bytes );
+                case ByteBuffer byteBuffer -> exchange.send( byteBuffer );
+                case String string -> {
+                    if( raw ) exchange.send( string );
+                    else exchange.send( HttpServerExchange.contentToString( false, string, contentType ) );
+                }
+                case Consumer cons -> cons.accept( exchange.getOutputStream() );
+                default -> {
+                    Preconditions.checkArgument( !raw );
+                    exchange.send( HttpServerExchange.contentToString( false, body, contentType ) );
+                }
             }
-        else exchange.endExchange();
+        } else exchange.endExchange();
     }
 }

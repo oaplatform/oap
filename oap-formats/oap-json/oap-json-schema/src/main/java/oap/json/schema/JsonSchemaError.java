@@ -21,20 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.openapi;
+package oap.json.schema;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Map;
 
 /**
- * This annotation is supposed to be used with WS class or method in order to mark them
- * as ignored for generation OpenAPI file.
- * Note: protected methods in any WS classes are also ignored
+ * One validation failure: a message code, a message template with {@code ${name}} placeholders, the values
+ * for the placeholders, and the JSON path of the failing value ({@code null} at the root).
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.TYPE, ElementType.METHOD } )
-public @interface OpenapiIgnore {
+@EqualsAndHashCode
+@ToString
+public final class JsonSchemaError {
+    public final String code;
+    public final String message;
+    public final Map<String, Object> args;
+    public final String path;
+
+    public JsonSchemaError( String code, String message, Map<String, Object> args, String path ) {
+        this.code = code;
+        this.message = message;
+        this.args = args;
+        this.path = path;
+    }
 }

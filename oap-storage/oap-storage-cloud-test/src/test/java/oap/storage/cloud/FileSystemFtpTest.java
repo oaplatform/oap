@@ -66,7 +66,7 @@ public class FileSystemFtpTest extends Fixtures {
     @Test
     public void testToUri() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.toUri( ftpUri( "logs/file.txt" ) ) ).isEqualTo( "ftp://ftp-test-user:XXX@" + ftpFixture.hostPort() + "/logs/file.txt" );
+            assertThat( fileSystem.toUri( ftpUri( "logs/file.txt" ), true ) ).isEqualTo( "ftp://ftp-test-user:XXX@" + ftpFixture.hostPort() + "/logs/file.txt" );
         }
     }
 
@@ -381,7 +381,7 @@ public class FileSystemFtpTest extends Fixtures {
 
             assertThat( Files.read( ftpFixture.homeDirectory().resolve( "sub/dir/file.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" );
 
-            assertThat( fileSystem.toUri( ftpUri( "file.txt" ) ) ).isEqualTo( s( "ftp://ftp-test-user:XXX@${ftpFixture.hostPort()}/file.txt" ) );
+            assertThat( fileSystem.toUri( ftpUri( "file.txt" ), true ) ).isEqualTo( s( "ftp://ftp-test-user:XXX@${ftpFixture.hostPort()}/file.txt" ) );
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( ftpUri( "" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 1 );

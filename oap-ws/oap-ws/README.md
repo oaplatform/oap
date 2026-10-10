@@ -257,7 +257,9 @@ import oap.ws.Response;
 // factory methods
 Response.ok()                         // 200
 Response.noContent()                  // 204
-Response.notFound()                   // 404
+Response.build404().build()           // 404 + JSON error body
+Response.build401().message( "no token" ).build()  // 401 + WWW-Authenticate: Bearer + JSON error body
+Response.build403().message( "no access" ).build() // 403 + JSON error body
 Response.jsonOk()                     // 200 + Content-Type: application/json
 Response.redirect( "/new/location" )  // 302 + Location header
 
@@ -275,7 +277,7 @@ return Response.ok()
 
 ## Interceptors
 
-Interceptors run before and after each endpoint invocation. They are applied in the order listed in `ws-service.interceptors`; `after()` is called in reverse order.
+Interceptors run before and after each endpoint invocation. They are applied in the order listed in `ws-service.interceptors`; `after()` is called in reverse order. Error responses an interceptor returns from `before()` are listed in the generated OpenAPI for every operation of its service (see [oap-ws-openapi](../oap-ws-openapi/README.md#interceptors)).
 
 ```java
 import oap.ws.interceptor.Interceptor;
@@ -430,11 +432,64 @@ public Response patch(
 
 | Throw / return | HTTP status | Body |
 |---|---|---|
-| `WsClientException( message )` | 400 | `{ "errors": ["message"] }` |
-| `WsClientException( message, errors )` | 400 | `{ "errors": [ … ] }` |
-| `WsClientException( message, code, errors )` | `code` | `{ "errors": [ … ] }` |
+| `WsClientException( message )` | 400 | `{ "statusCode": 400, "error": "message", "messages": [ { "message": "message" } ] }` |
+| `WsClientException( message, errors )` | 400 | `{ "statusCode": 400, "error": "message", "messages": [ { "message": "…" }, … ] }` |
+| `WsClientException( message, code, errors )` | `code` | `{ "statusCode": code, "error": "message", "messages": [ … ] }` |
 | any other unchecked exception | 500 | error details |
-| `Response.notFound()` | 404 | — |
+| `Response.build404().build()` | 404 | `{ "statusCode": 404, "error": "Not Found", … }` |
+| `Response.build401().build()` | 401 | `{ "statusCode": 401, "error": "Unauthorized", … }` + `WWW-Authenticate: Bearer` |
+| `Response.build403().build()` | 403 | `{ "statusCode": 403, "error": "Forbidden", … }` |
+
+`WsClientException` carries an `ErrorResponseBuilder` (`errorResponse`). Its `errors` list becomes the `messages` array and its status code becomes `statusCode`.
+
+### Validation errors
+
+`ValidationErrors` groups messages by HTTP status code (`HashMap<Integer, LinkedHashSet<Pair<Integer, String>>>`). Each message is a pair of an optional message code and the text. A validator reports an error with an HTTP status code:
+
+```java
+ValidationErrors.empty().statusCode( 400 ).error( "name must not be null" ).endCode();      // 400
+ValidationErrors.empty().statusCode( 404 ).error( "product not found" ).endCode();           // 404
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, message code "1000010" (enum, see below)
+ValidationErrors.empty().statusCode( 400 ).errors( "1000002", List.of( "a", "b" ) ).endCode();    // one message code for all
+ValidationErrors.empty().statusCode( 400 ).pairs( List.of( ProductError.X ) ).endCode(); // one ValidationMessage per message
+```
+
+A message defined once, as an enum constant, implements `ValidationMessage` and is passed as a whole. Its code and text come from the constant:
+
+```java
+public enum ProductError implements ValidationMessage {
+    NAME_REQUIRED( "1000010", "name is required" );
+    // constructor, code() and message() omitted
+}
+
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED ).endCode(); // 400, code "1000010"
+ValidationErrors.empty().statusCode( 400 ).error( ProductError.NAME_REQUIRED, Map.of( "name", name ) ).endCode(); // template with ${name}, formatted
+```
+
+The message code is optional (use the variants without it). A validation failure responds with the messages, each with its code when set:
+
+Message codes are `String`s. A message with no code uses the variants without a code (`error( text )`, `errors( list )`).
+
+```json
+{ "messages": [ { "code": "1000001", "message": "name must not be null" }, { "message": "product not found" } ] }
+```
+
+Messages can be formatted from a map. Placeholders are `${name}` and are resolved by the oap template engine at runtime:
+
+```java
+ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) ).endCode();          // no code
+ValidationErrors.empty().statusCode( 404 ).error( "item ${id} not found", Map.of( "id", id ) ).endCode();          // no code, template is not shown in the code
+```
+
+The rendered text is only known at runtime, so the OpenAPI generator shows the template text with its `${name}` placeholders (see [oap-ws-openapi](../oap-ws-openapi/README.md#messages-in-examples)).
+
+`resolvedCode()` and `resolvedErrors()` pick one code for the response:
+
+1. Priority order: 401, 403, 400, 404. The first one present wins and only its messages are returned; other codes are ignored.
+2. Otherwise, multiple other 4xx codes are merged into 400 and multiple 5xx codes into 502.
+3. Then other 4xx codes (ascending), 502, other codes (ascending).
+
+`throwIfInvalid()` throws a `WsClientException` using the resolved code and that code's messages.
 
 ```java
 public Response update( @WsParam( from = From.PATH ) String id,

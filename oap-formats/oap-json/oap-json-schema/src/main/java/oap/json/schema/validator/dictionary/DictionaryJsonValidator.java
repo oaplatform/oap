@@ -31,14 +31,18 @@ import oap.dictionary.DictionaryNotFoundError;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.BooleanReference;
 import oap.json.schema.JsonPath;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaPath;
 import oap.util.Lists;
 import oap.util.Result;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
@@ -60,12 +64,12 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
             .toString();
     }
 
-    private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
+    private Result<List<Dictionary>, List<JsonSchemaError>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
         if( schemaOpt.isEmpty() ) return Result.success( dictionaries );
 
         final DictionarySchemaAST schema = schemaOpt.get();
 
-        final Result<List<Dictionary>, List<String>> cd = validate( properties, schema.parent, dictionaries );
+        final Result<List<Dictionary>, List<JsonSchemaError>> cd = validate( properties, schema.parent, dictionaries );
 
         if( !cd.isSuccess() ) return cd;
 
@@ -97,7 +101,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 .collect( toList() );
             if( children.isEmpty() )
                 return Result.failure( Lists.of(
-                    properties.error( "instance of '" + parentValue + "'does not match any member resolve the enumeration " + printIds( cd.successValue ) )
+                    properties.error( JsonMessage.DICTIONARY_NO_MATCH, Map.of( "value", String.valueOf( parentValue ), "ids", printIds( cd.successValue ) ) )
                 ) );
 
             cDict.addAll( children );
@@ -107,15 +111,15 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
     }
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
         final List<Dictionary> dictionaries;
         try {
             dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
         } catch( final DictionaryNotFoundError e ) {
-            return Lists.of( properties.error( "dictionary " + schema.name + " not found" ) );
+            return Lists.of( properties.error( JsonMessage.DICTIONARY_NOT_FOUND, Collections.singletonMap( "name", schema.name ) ) );
         }
 
-        final List<String> errors = new ArrayList<>();
+        final List<JsonSchemaError> errors = new ArrayList<>();
 
         validate( properties, schema.parent, dictionaries )
             .ifFailure( errors::addAll )
@@ -123,8 +127,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 if( !successes.isEmpty()
                     && successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
 
-                    errors.addAll( Lists.of( properties.error( "instance of '" + value + "' does not match any member resolve "
-                        + "the enumeration " + printIds( successes ) ) ) );
+                    errors.addAll( Lists.of( properties.error( JsonMessage.DICTIONARY_NO_MATCH, Map.of( "value", String.valueOf( value ), "ids", printIds( successes ) ) ) ) );
                 }
             } );
 

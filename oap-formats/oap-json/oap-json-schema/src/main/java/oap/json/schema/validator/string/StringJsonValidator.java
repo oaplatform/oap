@@ -24,11 +24,14 @@
 package oap.json.schema.validator.string;
 
 import oap.json.schema.AbstractJsonSchemaValidator;
+import oap.json.schema.JsonSchemaError;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonMessage;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class StringJsonValidator extends AbstractJsonSchemaValidator<StringSchemaAST> {
     public StringJsonValidator( String type ) {
@@ -36,24 +39,24 @@ public class StringJsonValidator extends AbstractJsonSchemaValidator<StringSchem
     }
 
     @Override
-    public List<String> validate( JsonValidatorProperties properties, StringSchemaAST schema, Object value ) {
+    public List<JsonSchemaError> validate( JsonValidatorProperties properties, StringSchemaAST schema, Object value ) {
         if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
         String strValue = ( String ) value;
 
-        List<String> errors = new ArrayList<>();
+        List<JsonSchemaError> errors = new ArrayList<>();
 
         schema.minLength
             .filter( minLength -> strValue.length() < minLength )
-            .ifPresent( minLength -> errors.add( properties.error( schema, "minLength", "string " + strValue + " is shorter than minLength " + minLength, strValue, minLength ) ) );
+            .ifPresent( minLength -> errors.add( properties.error( schema, JsonMessage.MIN_LENGTH, Map.of( "value", strValue, "minLength", minLength ) ) ) );
 
         schema.maxLength
             .filter( maxLength -> strValue.length() > maxLength )
-            .ifPresent( maxLength -> errors.add( properties.error( schema, "maxLength", "string " + strValue + " is longer than maxLength " + maxLength, strValue, maxLength ) ) );
+            .ifPresent( maxLength -> errors.add( properties.error( schema, JsonMessage.MAX_LENGTH, Map.of( "value", strValue, "maxLength", maxLength ) ) ) );
 
         schema.pattern
             .filter( pattern -> !pattern.matcher( strValue ).matches() )
-            .ifPresent( pattern -> errors.add( properties.error( schema, "pattern", "string " + strValue + " does not match specified regex " + pattern, strValue, pattern ) ) );
+            .ifPresent( pattern -> errors.add( properties.error( schema, JsonMessage.PATTERN, Map.of( "value", strValue, "pattern", pattern.pattern() ) ) ) );
 
         return errors;
     }

@@ -52,7 +52,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
         try {
             Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
             JsonSchema factory = getJsonSchema( originalValues );
-            return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
+            return ValidationErrors.jsonSchemaErrors( factory.validate( mapValue, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }
@@ -65,7 +65,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
 
         StringBuilder id = new StringBuilder();
 
-        var ref = Strings.substitute( schemaRef, key -> originalValues
+        String ref = Strings.substitute( schemaRef, key -> originalValues
             .entrySet()
             .stream()
             .filter( e -> key.equals( e.getKey().name() ) )

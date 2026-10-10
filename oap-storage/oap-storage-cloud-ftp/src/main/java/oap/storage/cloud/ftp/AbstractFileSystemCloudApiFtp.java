@@ -121,8 +121,8 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     @Override
-    public String toUri( CloudURI path ) {
-        String auth = "anonymous".equals( username ) ? "" : username + ":XXX@";
+    public String toUri( CloudURI path, boolean credentials ) {
+        String auth = credentials && !"anonymous".equals( username ) ? username + ":XXX@" : "";
         return s( "${scheme}://${auth}${host}:${port}/${path.path}" );
     }
 

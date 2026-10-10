@@ -1,6 +1,6 @@
 # oap-ws-openapi-ws
 
-Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived entirely from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenapiIgnore` annotations via reflection.
+Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenApiIgnore` annotations, the `ValidationErrors` and `Response` error codes in the code, and the interceptors of each service, all via reflection and bytecode.
 
 Depends on: `oap-ws`, `oap-ws-api-ws`
 
@@ -10,7 +10,7 @@ Depends on: `oap-ws`, `oap-ws-api-ws`
 GET /system/openapi
 ```
 
-Returns the OpenAPI 3.x YAML document describing the web services bound to the **same port** as this endpoint (except those marked `@OpenapiIgnore`). `OpenapiWS` only documents services reachable on its own port — it does not aggregate services from other ports.
+Returns the OpenAPI 3.x YAML document describing the web services bound to the **same port** as this endpoint (except those marked `@OpenApiIgnore`). `OpenapiWS` only documents services reachable on its own port — it does not aggregate services from other ports.
 
 ```bash
 curl http://localhost:8080/system/openapi
@@ -61,6 +61,16 @@ services {
 }
 ```
 
+To let the error-response scanner follow a static call into your own shared validation helpers (see [`oap-ws-openapi`](../oap-ws-openapi/README.md#error-responses)), list their package prefixes — empty by default, so none are followed:
+
+```hocon
+services {
+  oap-ws-openapi-ws {
+    openapi.parameters.allowedStaticPackagePrefixes = [ "com.myapp." ]
+  }
+}
+```
+
 ## Annotating endpoints
 
 **Document a method:**
@@ -82,11 +92,15 @@ public List<Item> list(
 
 ```java
 @WsMethod( path = "/probe", method = HttpMethod.GET )
-@OpenapiIgnore
+@OpenApiIgnore
 public String healthProbe() { return "ok"; }
 ```
 
 **Optional parameters** are automatically marked as not required in the spec; all other parameters are treated as required.
+
+## Error responses
+
+Each operation lists the error responses it can return, such as `400` from a `ValidationErrors` validator, `401` from `Response.build401()`, or `403` from an interceptor. The rules and sources are described in [`oap-ws-openapi`](../oap-ws-openapi/README.md#error-responses). Interceptor codes apply to every operation of the service that lists the interceptor in `ws-service.interceptors`.
 
 ## Comparison with oap-ws-api-ws
 
@@ -94,7 +108,7 @@ public String healthProbe() { return "ok"; }
 |---|---|---|
 | Format | OpenAPI 3.x (OAS) | OAP-native JSON |
 | Tooling | Swagger UI, code generators | Internal only |
-| Inclusion control | `@OpenapiIgnore` per method | All services |
+| Inclusion control | `@OpenApiIgnore` per method | All services |
 | Schema | OAS `$ref` components | Simple type names |
 
 Use `oap-ws-openapi-ws` for public APIs; use `oap-ws-api-ws` for lightweight internal introspection.

@@ -1,0 +1,15 @@
+name = interceptor-walker-test
+services {
+  ws {
+    implementation = "oap.ws.openapi.OpenapiInterceptorTest$Fixture"
+    ws-service {
+      path = ctx
+      interceptors = [
+        <modules.interceptor-walker-test.i401>
+        <modules.interceptor-walker-test.i403>
+      ]
+    }
+  }
+  i401.implementation = "oap.ws.openapi.OpenapiInterceptorTest$Interceptor401"
+  i403.implementation = "oap.ws.openapi.OpenapiInterceptorTest$Interceptor403"
+}

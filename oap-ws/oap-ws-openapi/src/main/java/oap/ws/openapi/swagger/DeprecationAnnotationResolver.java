@@ -46,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.json.ext.Ext;
 import oap.json.ext.ExtDeserializer;
 import oap.util.Pair;
+import oap.ws.openapi.OpenApiIgnore;
 import oap.util.Strings;
 
 import javax.annotation.Nullable;
@@ -152,6 +153,9 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
                               String propName,
                               Set<String> propertiesToIgnore,
                               BeanPropertyDefinition propDef ) {
+        if( propDef.getField() != null && propDef.getField().hasAnnotation( OpenApiIgnore.class ) ) return true;
+        if( propDef.getGetter() != null && propDef.getGetter().hasAnnotation( OpenApiIgnore.class ) ) return true;
+
         if( member.getClass() == AnnotatedField.class ) {
             //only for fields
             if( propDef.getPrimaryMember() != null && Ext.class.isAssignableFrom( member.getRawType() ) ) {
