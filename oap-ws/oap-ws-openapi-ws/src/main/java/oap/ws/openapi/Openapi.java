@@ -31,6 +31,7 @@ import oap.ws.WebServices;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -39,6 +40,11 @@ public class Openapi {
     private final WebServices webServices;
     private final ConcurrentHashMap<CacheKey, OpenAPI> cache = new ConcurrentHashMap<>();
     public ApiInfo info;
+    /**
+     * Package prefixes {@link ErrorCodeScanner} may follow a static call into, for a user's own shared validation
+     * helpers living outside the web-service classes it scans. Empty by default: no such call is followed.
+     */
+    public Set<String> allowedStaticPackagePrefixes = Set.of();
 
     public Openapi( WebServices webServices ) {
         this.webServices = webServices;
@@ -68,7 +74,7 @@ public class Openapi {
         OpenapiGenerator openapiGenerator = new OpenapiGenerator(
             info.title,
             info.description,
-            new OpenapiGenerator.Settings( OpenapiGenerator.Settings.OutputType.JSON, skipDeprecated ) );
+            new OpenapiGenerator.Settings( OpenapiGenerator.Settings.OutputType.JSON, skipDeprecated, allowedStaticPackagePrefixes ) );
         openapiGenerator.beforeProcesingServices();
         for( Map.Entry<String, Object> ws : webServices.services.entrySet() ) {
             if( !webServices.servicePorts.getOrDefault( ws.getKey(), Optional.empty() ).equals( port ) ) continue;

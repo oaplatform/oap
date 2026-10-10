@@ -61,6 +61,16 @@ services {
 }
 ```
 
+To let the error-response scanner follow a static call into your own shared validation helpers (see [`oap-ws-openapi`](../oap-ws-openapi/README.md#error-responses)), list their package prefixes — empty by default, so none are followed:
+
+```hocon
+services {
+  oap-ws-openapi-ws {
+    openapi.parameters.allowedStaticPackagePrefixes = [ "com.myapp." ]
+  }
+}
+```
+
 ## Annotating endpoints
 
 **Document a method:**

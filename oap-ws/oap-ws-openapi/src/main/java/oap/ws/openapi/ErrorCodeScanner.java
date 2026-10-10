@@ -69,9 +69,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * A literal {@code int} code passed to {@link ValidationErrors}, {@link WsClientException}, {@link Response}
  * or {@code oap.http.Response} is an HTTP status code, recorded when it is {@code >= 400}.
  * Calls to methods of the scanned class hierarchy, of classes in the same package and to {@link Response} are followed,
- * up to {@link #MAX_DEPTH} levels. A static call into a class outside the {@code oap.} namespace (and outside the JDK
- * and this module's known third-party dependencies) is also followed, to support a user's own shared validation
- * helpers living in their own package.
+ * up to {@link #MAX_DEPTH} levels. A static call into any other class is also followed when its package starts with
+ * one of the constructor's {@code allowedStaticPackagePrefixes} — empty by default, so none are followed unless
+ * configured; this supports a user's own shared validation helpers living in their own package.
  * {@code Response.build401()}, {@code build403()} and {@code build404()} always yield their status code.
  * <p>
  * Messages: {@code statusCode( x ).error( text )} on {@link ValidationErrorsBuilder} adds a message with no code to
@@ -98,9 +98,6 @@ public class ErrorCodeScanner {
     private static final String CODED_MESSAGE_DESC_PREFIX = "(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;";
     private static final String VALIDATION_MESSAGE_DESC_PREFIX = "(Loap/validation/ValidationMessage;";
     private static final int MIN_ERROR_CODE = 400;
-    private static final Set<String> EXCLUDED_STATIC_PACKAGE_PREFIXES = Set.of(
-        "java.", "javax.",
-        "io.swagger.", "org.objectweb.asm.", "com.fasterxml.", "com.google.", "org.apache.", "lombok." );
     private static final Set<String> CODE_OWNERS = Set.of(
         Type.getInternalName( ValidationErrors.class ),
         Type.getInternalName( WsClientException.class ),
@@ -109,6 +106,20 @@ public class ErrorCodeScanner {
 
     private final Map<Class<?>, ClassNode> classNodes = new ConcurrentHashMap<>();
     private final Map<String, Optional<ScannedMessage>> enumMessages = new ConcurrentHashMap<>();
+    private final Set<String> allowedStaticPackagePrefixes;
+
+    public ErrorCodeScanner() {
+        this( Set.of() );
+    }
+
+    /**
+     * @param allowedStaticPackagePrefixes package prefixes a static call may be followed into when its target is
+     *                                     otherwise unrelated to the scanned class (not the same package, not its
+     *                                     hierarchy, not {@link Response}); empty means no such call is followed.
+     */
+    public ErrorCodeScanner( Set<String> allowedStaticPackagePrefixes ) {
+        this.allowedStaticPackagePrefixes = allowedStaticPackagePrefixes;
+    }
 
     private static List<String> validatorNames( java.lang.reflect.Method method ) {
         List<String> names = new ArrayList<>();
@@ -191,7 +202,7 @@ public class ErrorCodeScanner {
         return null;
     }
 
-    private static boolean followable( MethodInsnNode invoke, Class<?> target, Class<?> scanned ) {
+    private boolean followable( MethodInsnNode invoke, Class<?> target, Class<?> scanned ) {
         return target == Response.class
             || target == oap.http.Response.class
             || target != Object.class && target.isAssignableFrom( scanned )
@@ -200,19 +211,16 @@ public class ErrorCodeScanner {
     }
 
     /**
-     * A static call into a class outside the {@code oap.} namespace, the JDK, and this module's known third-party
-     * dependencies — typically a user's own helper method building a {@code ValidationErrors}/status code, living
-     * in a package this library has no other knowledge of. Not exhaustive: an unlisted third-party static call is
-     * still followed, bounded by {@link #MAX_DEPTH} and the {@code visited} dedup set, so at worst it's wasted scan
-     * time, not an incorrect result.
+     * A static call into a class whose package starts with one of {@link #allowedStaticPackagePrefixes} —
+     * typically a user's own helper method building a {@code ValidationErrors}/status code, living in a package
+     * this library has no other knowledge of. Empty by default, so no such call is followed unless configured.
      */
-    private static boolean followableStatic( Class<?> target ) {
+    private boolean followableStatic( Class<?> target ) {
         String targetPackage = target.getPackageName();
-        if( targetPackage.startsWith( "oap." ) ) return false;
-        for( String excluded : EXCLUDED_STATIC_PACKAGE_PREFIXES ) {
-            if( targetPackage.startsWith( excluded ) ) return false;
+        for( String allowed : allowedStaticPackagePrefixes ) {
+            if( targetPackage.startsWith( allowed ) ) return true;
         }
-        return true;
+        return false;
     }
 
     private static Class<?> resolve( String internalName, ClassLoader loader ) {

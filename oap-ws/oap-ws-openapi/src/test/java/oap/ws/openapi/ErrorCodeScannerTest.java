@@ -68,10 +68,16 @@ public class ErrorCodeScannerTest {
     }
 
     @Test
-    public void testFollowsStaticCallIntoExternalPackage() throws NoSuchMethodException {
-        SortedMap<Integer, Set<ErrorCodeScanner.ScannedMessage>> responses = scanner.errorResponses( method( "external" ) );
+    public void testFollowsStaticCallIntoAllowedPackage() throws NoSuchMethodException {
+        ErrorCodeScanner scanner = new ErrorCodeScanner( Set.of( "external." ) );
 
-        assertThat( responses.get( 400 ) ).containsExactly( new ErrorCodeScanner.ScannedMessage( null, "payload too large" ) );
+        assertThat( scanner.errorResponses( method( "external" ) ).get( 400 ) )
+            .containsExactly( new ErrorCodeScanner.ScannedMessage( null, "payload too large" ) );
+    }
+
+    @Test
+    public void testDoesNotFollowStaticCallIntoDisallowedPackage() throws NoSuchMethodException {
+        assertThat( scanner.errorResponses( method( "external" ) ) ).isEmpty();
     }
 
     @Test

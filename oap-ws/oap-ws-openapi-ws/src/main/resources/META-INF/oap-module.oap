@@ -20,6 +20,7 @@ services {
     parameters {
       webServices = <modules.oap-ws.oap-ws-webservices>
       info = <modules.this.openapi-info>
+      allowedStaticPackagePrefixes = []
     }
   }
 

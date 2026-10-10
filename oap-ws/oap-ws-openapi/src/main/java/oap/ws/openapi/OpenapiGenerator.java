@@ -106,7 +106,7 @@ public class OpenapiGenerator {
     private final OpenapiSchema openapiSchema = new OpenapiSchema();
     /** Example text of a message whose text is not a literal in the code. */
     private static final String RUNTIME_MESSAGE = "<runtime message>";
-    private final ErrorCodeScanner errorCodeScanner = new ErrorCodeScanner();
+    private final ErrorCodeScanner errorCodeScanner;
     private static final Map<Integer, String> REASON_PHRASES = Map.ofEntries(
         Map.entry( 400, "Bad Request" ),
         Map.entry( 401, "Unauthorized" ),
@@ -130,6 +130,7 @@ public class OpenapiGenerator {
         this.title = title;
         this.description = description;
         this.settings = settings;
+        this.errorCodeScanner = new ErrorCodeScanner( settings.allowedStaticPackagePrefixes );
         api.openapi( OPEN_API_VERSION );
     }
 
@@ -525,10 +526,16 @@ public class OpenapiGenerator {
          */
         public final OutputType outputType;
         public boolean skipDeprecated = true;
+        public final Set<String> allowedStaticPackagePrefixes;
 
         public Settings( OutputType outputType, boolean skipDeprecated ) {
+            this( outputType, skipDeprecated, Set.of() );
+        }
+
+        public Settings( OutputType outputType, boolean skipDeprecated, Set<String> allowedStaticPackagePrefixes ) {
             this.outputType = outputType;
             this.skipDeprecated = skipDeprecated;
+            this.allowedStaticPackagePrefixes = allowedStaticPackagePrefixes;
         }
 
         public enum OutputType {
