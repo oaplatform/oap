@@ -31,6 +31,7 @@ import io.swagger.v3.core.util.RefUtils;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.MapSchema;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import oap.reflect.Reflect;
 import oap.ws.api.Info;
@@ -183,6 +184,28 @@ public class OpenapiSchemaTest {
         private String secret;
 
         @OpenApiIgnore
+        public String getSecret() {
+            return secret;
+        }
+    }
+
+    @Test
+    public void testOpenApiDescriptionOnFieldAndGetterSetsDescription() {
+        OpenapiSchema openapiSchema = new OpenapiSchema();
+
+        ResolvedSchema resolvedSchema = openapiSchema.resolveSchema( DescribedMembersBean.class, method );
+
+        assertThat( ( ( Schema ) resolvedSchema.schema.getProperties().get( "name" ) ).getDescription() ).isEqualTo( "the name" );
+        assertThat( ( ( Schema ) resolvedSchema.schema.getProperties().get( "secret" ) ).getDescription() ).isEqualTo( "the secret" );
+    }
+
+    public static class DescribedMembersBean {
+        @OpenApiDescription( "the name" )
+        public String name;
+
+        private String secret;
+
+        @OpenApiDescription( "the secret" )
         public String getSecret() {
             return secret;
         }
