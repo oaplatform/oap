@@ -46,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.json.ext.Ext;
 import oap.json.ext.ExtDeserializer;
 import oap.util.Pair;
+import oap.ws.openapi.OpenApiDescription;
 import oap.ws.openapi.OpenApiIgnore;
 import oap.util.Strings;
 
@@ -130,6 +131,12 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
                 String since = !Strings.isEmpty( anno.since() ) ? " since: " + anno.since() : "";
                 if( property.getName() != null )
                     log.debug( "Field '{}' marked as deprecated{}", property.getName(), since );
+            } );
+
+            Optional<Annotation> description = Arrays.stream( annotations ).filter( anno -> anno.annotationType().equals( OpenApiDescription.class ) ).findAny();
+            description.ifPresent( annotation -> {
+                OpenApiDescription anno = ( OpenApiDescription ) annotation;
+                property.setDescription( anno.value() );
             } );
         }
 
