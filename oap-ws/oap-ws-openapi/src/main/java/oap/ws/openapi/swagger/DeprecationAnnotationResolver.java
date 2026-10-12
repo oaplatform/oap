@@ -46,9 +46,9 @@ import lombok.extern.slf4j.Slf4j;
 import oap.json.ext.Ext;
 import oap.json.ext.ExtDeserializer;
 import oap.util.Pair;
+import oap.util.Strings;
 import oap.ws.openapi.OpenApiDescription;
 import oap.ws.openapi.OpenApiIgnore;
-import oap.util.Strings;
 
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
@@ -65,6 +65,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
 @ToString
@@ -93,7 +95,7 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
             default -> null;
         };
         if( typeSchema == null ) {
-            log.debug( "Cannot inline schema for non-primitive type " + innerType );
+            log.debug( s( "Cannot inline schema for non-primitive type ${innerType}" ) );
 
         }
         return typeSchema;
@@ -128,7 +130,7 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
             deprecated.ifPresent( annotation -> {
                 Deprecated anno = ( Deprecated ) annotation;
                 property.setDeprecated( true );
-                String since = !Strings.isEmpty( anno.since() ) ? " since: " + anno.since() : "";
+                String since = !Strings.isEmpty( anno.since() ) ? s( " since: ${anno.since()}" ) : "";
                 if( property.getName() != null )
                     log.debug( "Field '{}' marked as deprecated{}", property.getName(), since );
             } );

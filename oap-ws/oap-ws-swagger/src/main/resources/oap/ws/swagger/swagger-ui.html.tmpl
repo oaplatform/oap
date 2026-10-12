@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SwaggerUI" />
+  <title>SwaggerUI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui.css" />
+</head>
+<body>
+<div id="swagger-ui"></div>
+
+<script src="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui-bundle.js" crossorigin></script>
+<script src="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui-standalone-preset.js" crossorigin></script>
+
+<script>
+  function renderSwaggerUi() {
+    window.ui = SwaggerUIBundle({
+      presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+      ],
+      plugins: [
+        SwaggerUIBundle.plugins.DownloadUrl
+      ],
+      urls: [
+{{% range $u := urls }}        {name: "{{ $u.name }}", url: "{{ $u.url }}"},
+{{% end }}      ],
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      layout: "StandaloneLayout"
+    });
+  }
+
+  window.onload = () => {
+{{% if templateLoginRequest }}    fetch( "{{ loginUrl }}", {
+      method: "{{ loginMethod }}",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: {{ templateLoginRequest }}
+    } ).then( renderSwaggerUi );
+{{% else }}    renderSwaggerUi();
+{{% end }}  };
+</script>
+</body>
+</html>

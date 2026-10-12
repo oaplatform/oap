@@ -1,0 +1,16 @@
+name: oap-ws-swagger
+
+dependsOn:
+  - oap-ws
+  - oap-template
+
+services:
+  swagger-ui:
+    implementation: oap.ws.swagger.SwaggerWS
+    parameters:
+      templateEngine = <modules.oap-template.oap-template-engine>
+      version: "5.33.2"
+      urls: []
+      loginMethod: POST
+      loginUrl: "<change me>"
+    ws-service.path: swagger

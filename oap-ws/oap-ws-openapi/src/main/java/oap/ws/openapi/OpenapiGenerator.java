@@ -99,7 +99,7 @@ import static oap.http.Http.StatusCode.UNAUTHORIZED;
 @Slf4j
 public class OpenapiGenerator {
     public static final String OPEN_API_VERSION = "3.0.3";
-    public static final String SECURITY_SCHEMA_NAME = "JWT";
+    public static final String SECURITY_SCHEMA_NAME = "OAPAuthentication";
     private final ArrayListMultimap<String, String> versions = ArrayListMultimap.create();
     private final ModelConverters converters = new ModelConverters();
     private final OpenAPI api = new OpenAPI();
@@ -139,7 +139,7 @@ public class OpenapiGenerator {
     }
 
     public OpenAPI build() {
-        addSecuritySchema();
+        if( hasSecureMethod ) addSecuritySchema();
         addErrorComponents();
         return api;
     }
@@ -176,13 +176,14 @@ public class OpenapiGenerator {
             .type( SecurityScheme.Type.HTTP ) // "apiKey", "http", "oauth2", "openIdConnect"
             .description( "In order to use the method you have to be authorised" )
             .scheme( "bearer" ) //see https://www.rfc-editor.org/rfc/rfc7235#section-5.1
-            .bearerFormat( SECURITY_SCHEMA_NAME );
+            .bearerFormat( "JWT" );
         api.schemaRequirement( SECURITY_SCHEMA_NAME, securityScheme );
     }
 
     private final Set<String> processedClasses = new HashSet<>();
     private final Set<String> uniqueTags = new HashSet<>();
     private final Set<String> uniqueVersions = new HashSet<>();
+    private boolean hasSecureMethod = false;
 
     public enum Result {
         PROCESSED_OK( "processed." ),
@@ -278,7 +279,8 @@ public class OpenapiGenerator {
             .responses( prepareResponse( returnType, method, interceptorCodes ) );
         if( method.deprecated ) operation.deprecated( true );
         if( method.secure ) {
-            operation.addSecurityItem( new SecurityRequirement().addList( SECURITY_SCHEMA_NAME ) );
+            hasSecureMethod = true;
+            operation.addSecurityItem( new SecurityRequirement().addList( SECURITY_SCHEMA_NAME, method.permissions ) );
             String descriptionWithAuth = operation.getDescription();
             if( !descriptionWithAuth.isEmpty() ) {
                 descriptionWithAuth += "\n    Note: \n- security permissions: "
