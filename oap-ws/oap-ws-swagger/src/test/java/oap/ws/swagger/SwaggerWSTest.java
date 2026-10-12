@@ -25,13 +25,19 @@
 package oap.ws.swagger;
 
 import oap.application.testng.KernelFixture;
+import oap.template.TemplateEngine;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import java.util.Optional;
+
 import static oap.http.Http.ContentType.TEXT_HTML;
+import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
+import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
 import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class SwaggerWSTest extends Fixtures {
     private final KernelFixture kernel;
@@ -48,6 +54,44 @@ public class SwaggerWSTest extends Fixtures {
             .hasContentType( TEXT_HTML )
             .bodyContains( "swagger-ui-dist@5.33.2" )
             .bodyContains( "{name: \"api\", url: \"/system/openapi\"}" )
-            .bodyDoesNotContain( "credentials: \"include\"" );
+            .bodyDoesNotContain( "credentials: \"include\"" )
+            .bodyDoesNotContain( "login-box" );
+    }
+
+    @Test
+    public void testRenderWithLoginGet() {
+        SwaggerWS swaggerWS = kernel.service( "oap-ws-swagger", SwaggerWS.class );
+        swaggerWS.loginMethod = GET;
+        swaggerWS.urlTemplate = "/login?u={username}&p={password}";
+
+        assertGet( kernel.httpUrl( "/swagger" ) )
+            .isOk()
+            .hasContentType( TEXT_HTML )
+            .bodyContains( "login-box" )
+            .bodyContains( "credentials: \"include\"" )
+            .bodyContains( "\"/login?u={username}&p={password}\"" );
+    }
+
+    @Test
+    public void testRenderWithLoginPost() {
+        SwaggerWS swaggerWS = kernel.service( "oap-ws-swagger", SwaggerWS.class );
+        swaggerWS.loginMethod = POST;
+        swaggerWS.urlTemplate = "/login";
+        swaggerWS.requestTemplate = Optional.of( "{\"username\":\"{username}\",\"password\":\"{password}\"}" );
+
+        assertGet( kernel.httpUrl( "/swagger" ) )
+            .isOk()
+            .hasContentType( TEXT_HTML )
+            .bodyContains( "login-box" )
+            .bodyContains( "{\\\"username\\\":\\\"{username}\\\",\\\"password\\\":\\\"{password}\\\"}" );
+    }
+
+    @Test
+    public void testRenderPostWithoutRequestTemplateThrows() {
+        SwaggerWS swaggerWS = new SwaggerWS( new TemplateEngine( 0 ) );
+        swaggerWS.loginMethod = POST;
+        swaggerWS.urlTemplate = "/login";
+
+        assertThatThrownBy( swaggerWS::render ).isInstanceOf( IllegalStateException.class );
     }
 }

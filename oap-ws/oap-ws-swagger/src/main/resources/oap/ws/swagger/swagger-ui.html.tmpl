@@ -8,7 +8,17 @@
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui.css" />
 </head>
 <body>
+{{% if urlTemplate }}
 <div id="swagger-ui"></div>
+<div id="login-box">
+  <label>User<input id="login-username" type="text" /></label>
+  <label>Password<input id="login-password" type="password" /></label>
+  <button id="login-button" type="button">Login</button>
+  <div id="login-error" style="display:none;color:red;"></div>
+</div>
+{{% else }}
+<div id="swagger-ui"></div>
+{{% end }}
 
 <script src="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui-bundle.js" crossorigin></script>
 <script src="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui-standalone-preset.js" crossorigin></script>
@@ -32,15 +42,45 @@
     });
   }
 
+{{% if urlTemplate }}
+  var urlTemplate = {{ urlTemplateJs }};
+  var requestTemplate = {{ requestTemplateJs }};
+  var loginMethod = {{ loginMethodJs }};
+
+  function substitute( template, username, password ) {
+    return template.split( "{username}" ).join( encodeURIComponent( username ) )
+                    .split( "{password}" ).join( encodeURIComponent( password ) );
+  }
+
+  function doLogin() {
+    var username = document.getElementById( "login-username" ).value;
+    var password = document.getElementById( "login-password" ).value;
+    var url = substitute( urlTemplate, username, password );
+    var options = { method: loginMethod, credentials: "include" };
+    if ( loginMethod === "POST" ) {
+      options.headers = { "Content-Type": "application/json" };
+      options.body = substitute( requestTemplate, username, password );
+    }
+    fetch( url, options ).then( function( response ) {
+      if ( response.ok ) {
+        document.getElementById( "login-box" ).style.display = "none";
+      } else {
+        var err = document.getElementById( "login-error" );
+        err.textContent = "Login failed (" + response.status + ")";
+        err.style.display = "";
+      }
+    } );
+  }
+
   window.onload = () => {
-{{% if templateLoginRequest }}    fetch( "{{ loginUrl }}", {
-      method: "{{ loginMethod }}",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: {{ templateLoginRequest }}
-    } ).then( renderSwaggerUi );
-{{% else }}    renderSwaggerUi();
-{{% end }}  };
+    renderSwaggerUi();
+    document.getElementById( "login-button" ).addEventListener( "click", doLogin );
+  };
+{{% else }}
+  window.onload = () => {
+    renderSwaggerUi();
+  };
+{{% end }}
 </script>
 </body>
 </html>

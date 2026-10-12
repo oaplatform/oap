@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
+import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.template.Template;
 import oap.template.TemplateEngine;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
+import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
 import static oap.template.TemplateAccumulators.STRING;
 
 /**
@@ -53,13 +55,18 @@ public class SwaggerWS {
      */
     public String version = "5.33.2";
     public List<SwaggerUrl> urls = List.of();
-    /**
-     * Optional request body template for a login call issued (via {@code fetch}) before the
-     * Swagger UI page loads any of {@link #urls}.
-     */
-    public Optional<String> templateLoginRequest = Optional.empty();
     public HttpServerExchange.HttpMethod loginMethod = HttpServerExchange.HttpMethod.POST;
-    public String loginUrl = "";
+    /**
+     * Login request URL; contains the literal placeholders {@code {username}} and
+     * {@code {password}}, filled in client-side from the login form on submit. Empty
+     * disables the login form entirely.
+     */
+    public String urlTemplate = "";
+    /**
+     * POST login request body; same {@code {username}}/{@code {password}} placeholders.
+     * Required when {@link #loginMethod} is POST and {@link #urlTemplate} is non-empty.
+     */
+    public Optional<String> requestTemplate = Optional.empty();
 
     public SwaggerWS( TemplateEngine templateEngine ) {
         String templateText = Resources.readOrThrow( getClass(), "swagger-ui.html.tmpl", ContentReader.ofString() );
@@ -68,12 +75,16 @@ public class SwaggerWS {
 
     @WsMethod( method = GET, path = "/", produces = "text/html", description = "Renders the Swagger UI page." )
     public String render() {
+        if( !urlTemplate.isEmpty() && loginMethod == POST && requestTemplate.isEmpty() )
+            throw new IllegalStateException( "SwaggerWS: loginMethod=POST requires requestTemplate to be configured" );
+
         Context context = new Context();
         context.version = version;
         context.urls = urls;
-        context.loginMethod = loginMethod.name();
-        context.loginUrl = loginUrl;
-        context.templateLoginRequest = templateLoginRequest.orElse( "" );
+        context.urlTemplate = urlTemplate;
+        context.loginMethodJs = Binder.json.marshal( loginMethod.name() );
+        context.urlTemplateJs = Binder.json.marshal( urlTemplate );
+        context.requestTemplateJs = Binder.json.marshal( requestTemplate.orElse( "" ) );
         return template.render( context ).get();
     }
 
@@ -97,8 +108,9 @@ public class SwaggerWS {
     public static class Context {
         public String version;
         public List<SwaggerUrl> urls;
-        public String loginMethod;
-        public String loginUrl;
-        public String templateLoginRequest;
+        public String urlTemplate;
+        public String loginMethodJs;
+        public String urlTemplateJs;
+        public String requestTemplateJs;
     }
 }

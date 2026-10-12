@@ -12,5 +12,5 @@ services:
       version: "5.33.2"
       urls: []
       loginMethod: POST
-      loginUrl: "<change me>"
+      urlTemplate: ""
     ws-service.path: swagger
