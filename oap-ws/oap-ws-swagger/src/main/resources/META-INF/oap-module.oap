@@ -8,9 +8,10 @@ services:
   swagger-ui:
     implementation: oap.ws.swagger.SwaggerWS
     parameters:
-      templateEngine = <modules.oap-template.oap-template-engine>
+      templateEngine: <modules.oap-template.oap-template-engine>
       version: "5.33.2"
       urls: []
       loginMethod: POST
       urlTemplate: ""
+      // requestTemplate: "{}"
     ws-service.path: swagger

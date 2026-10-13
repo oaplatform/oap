@@ -9,13 +9,13 @@
 </head>
 <body>
 {{% if urlTemplate }}
-<div id="swagger-ui"></div>
 <div id="login-box">
-  <label>User<input id="login-username" type="text" /></label>
-  <label>Password<input id="login-password" type="password" /></label>
+  <label>User<input id="login-username" type="text" /></label><br/>
+  <label>Password<input id="login-password" type="password" /></label><br/>
   <button id="login-button" type="button">Login</button>
   <div id="login-error" style="display:none;color:red;"></div>
 </div>
+<div id="swagger-ui"></div>
 {{% else }}
 <div id="swagger-ui"></div>
 {{% end }}
@@ -56,7 +56,7 @@
     var username = document.getElementById( "login-username" ).value;
     var password = document.getElementById( "login-password" ).value;
     var url = substitute( urlTemplate, username, password );
-    var options = { method: loginMethod, credentials: "include" };
+    var options = { method: loginMethod };
     if ( loginMethod === "POST" ) {
       options.headers = { "Content-Type": "application/json" };
       options.body = substitute( requestTemplate, username, password );
