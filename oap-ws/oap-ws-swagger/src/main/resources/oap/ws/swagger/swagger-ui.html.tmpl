@@ -32,7 +32,6 @@
     });
   }
 
-{{% if urlTemplate }}
   var urlTemplate = {{ urlTemplateJs }};
   var requestTemplate = {{ requestTemplateJs }};
   var loginMethod = {{ loginMethodJs }};
@@ -51,87 +50,242 @@
                     .split( "{password}" ).join( jsonEscape( password ) );
   }
 
-  function doLogin() {
-    var username = document.getElementById( "login-username" ).value;
-    var password = document.getElementById( "login-password" ).value;
-    var url = substituteUrl( urlTemplate, username, password );
-    var options = { method: loginMethod };
-    if ( loginMethod === "POST" ) {
-      options.headers = { "Content-Type": "application/json" };
-      options.body = substituteBody( requestTemplate, username, password );
+    const overrider = () => {
+        const swagger = window.ui;
+        if (!swagger) {
+            console.error('Swagger wasn\'t found');
+            return;
+        }
+
+        ensureAuthorization(swagger);
+        reloadSchemaOnAuth(swagger);
+        clearInputPlaceHolder(swagger);
+        showLoginUI(swagger);
     }
-    fetch( url, options ).then( function( response ) {
-      if ( response.ok ) {
-        document.getElementById( "login-box" ).style.display = "none";
-      } else {
-        var err = document.getElementById( "login-error" );
-        err.textContent = "Login failed (" + response.status + ")";
-        err.style.display = "";
-      }
-    } );
-  }
 
-  function createLoginUI() {
-    var box = document.createElement( "div" );
-    box.id = "login-box";
-    box.style.position = "absolute";
-    box.style.top = "0";
-    box.style.left = "0";
-    box.style.right = "0";
-    box.style.zIndex = "1000";
-    box.style.background = "#fff";
-    box.style.padding = "10px";
-    box.style.borderBottom = "1px solid #ccc";
+    const getAuthorization = (swagger) => swagger.auth()._root.entries.find(e => e[0] === 'authorized');
+    const isAuthorized = (swagger) => {
+        const auth = getAuthorization(swagger);
+        return auth && auth[1].size !== 0;
+    };
+    // a hacky way to append authorization header - we are basically intercepting
+    // all requests, if no authorization was attached while user did authorized himself,
+    // append token to request
+    const ensureAuthorization = (swagger) => {
+        // retrieve bearer token from authorization
+        const getBearer = () => {
+            const auth = getAuthorization(swagger);
+            const def = auth[1]._root.entries.find(e => e[0] === 'Bearer');
+            if (!def)
+                return undefined;
 
-    var userInput = document.createElement( "input" );
-    userInput.id = "login-username";
-    userInput.type = "text";
-    var userLabel = document.createElement( "label" );
-    userLabel.textContent = "User";
-    userLabel.appendChild( userInput );
+            const token = def[1]._root.entries.find(e => e[0] === 'value');
+            if (!token)
+                return undefined;
 
-    var passwordInput = document.createElement( "input" );
-    passwordInput.id = "login-password";
-    passwordInput.type = "password";
-    var passwordLabel = document.createElement( "label" );
-    passwordLabel.textContent = "Password";
-    passwordLabel.appendChild( passwordInput );
+            return token[1];
+        }
 
-    var button = document.createElement( "button" );
-    button.id = "login-button";
-    button.type = "button";
-    button.textContent = "Login";
+        // override fetch function of Swagger to make sure
+        // that on every request of the client is authorized append auth-header
+        const fetch = swagger.fn.fetch;
+        swagger.fn.fetch = (req) => {
+            if (!req.headers.Authorization && isAuthorized(swagger)) {
+                const bearer = getBearer();
+                if (bearer) {
+                    req.headers.Authorization = bearer;
+                }
+            }
+            return fetch(req);
+        }
+    };
+    // makes that once user triggers performs authorization,
+    // the schema will be reloaded from backend url
+    const reloadSchemaOnAuth = (swagger) => {
+        const getCurrentUrl = () => {
+            const spec = swagger.getState()._root.nodes.find(n => n.entry !== undefined && n.entry[0] === 'spec');
+            if (!spec)
+                return undefined;
 
-    var error = document.createElement( "div" );
-    error.id = "login-error";
-    error.style.display = "none";
-    error.style.color = "red";
+            const url = spec.entry[1]._root.entries.find(e => e[0] === 'url');
+            if (!url)
+                return undefined;
 
-    box.appendChild( userLabel );
-    box.appendChild( document.createElement( "br" ) );
-    box.appendChild( passwordLabel );
-    box.appendChild( document.createElement( "br" ) );
-    box.appendChild( button );
-    box.appendChild( error );
+            return url[1];
+        }
+        const reload = () => {
+            const url = getCurrentUrl();
+            if (url) {
+                swagger.specActions.download(url);
+            }
+        };
 
-    return box;
-  }
+        const handler = (caller, args) => {
+            const result = caller(args);
+            // if (result.then) {
+            //     result.then(() => reload())
+            // } else {
+                reload();
+            // }
+            return result;
+        }
 
-  function showLoginUI() {
-    var loginBox = createLoginUI();
-    document.getElementById( "swagger-ui" ).prepend( loginBox );
-    document.getElementById( "login-button" ).addEventListener( "click", doLogin );
-  }
 
-  window.onload = () => {
-    renderSwaggerUi();
-    showLoginUI();
-  };
-{{% else }}
-  window.onload = () => {
-    renderSwaggerUi();
-  };
-{{% end }}
+        const auth = swagger.authActions.authorize;
+        swagger.authActions.authorize = (args) => handler(auth, args);
+        const logout = swagger.authActions.logout;
+        swagger.authActions.logout = (args) => handler(logout, args);
+    };
+    /**
+     * Reset input element placeholder
+     * @param {any} swagger
+     */
+    const clearInputPlaceHolder = (swagger) => {
+        //https://github.com/api-platform/core/blob/main/src/Bridge/Symfony/Bundle/Resources/public/init-swagger-ui.js#L6-L41
+        new MutationObserver(function (mutations, self) {
+            var elements = document.querySelectorAll("input[type=text]");
+            for (var i = 0; i < elements.length; i++)
+                elements[i].placeholder = "";
+        }).observe(document, {childList: true, subtree: true});
+    }
+    /**
+     * Show login UI
+     * @param {any} swagger
+     */
+    const showLoginUI = (swagger) => {
+        //https://github.com/api-platform/core/blob/main/src/Bridge/Symfony/Bundle/Resources/public/init-swagger-ui.js#L6-L41
+        new MutationObserver(function (mutations, self) {
+            var rootDiv = document.querySelector("#swagger-ui > section > div.swagger-ui > div:nth-child(2)");
+            if (rootDiv == null)
+                return;
+
+            var informationContainerDiv = rootDiv.querySelector("div.information-container.wrapper");
+            if (informationContainerDiv == null)
+                return;
+
+            var descriptionDiv = informationContainerDiv.querySelector("section > div > div > div.description");
+            if (descriptionDiv == null)
+                return;
+
+            var loginDiv = descriptionDiv.querySelector("div.login");
+            if (loginDiv != null)
+                return;
+
+            //Check authentication
+            if (isAuthorized(swagger))
+                return;
+
+            //Remove elements different from information-container wrapper
+            for (var i = 0; i < rootDiv.children.length; i++) {
+                var child = rootDiv.children[i];
+                if (child !== informationContainerDiv)
+                    child.remove();
+            }
+
+            //Create UI di login
+            createLoginUI(swagger, descriptionDiv);
+
+        }).observe(document, {childList: true, subtree: true});
+    }
+
+    /**
+     * Create login ui elements
+     * @param {any} rootDiv
+     */
+    const createLoginUI = function (swagger, rootDiv) {
+        var div = document.createElement("div");
+        div.className = "login";
+
+        rootDiv.appendChild(div);
+
+        //UserName
+        var userNameLabel = document.createElement("label");
+        div.appendChild(userNameLabel);
+
+        var userNameSpan = document.createElement("span");
+        userNameSpan.innerText = "User";
+        userNameLabel.appendChild(userNameSpan);
+
+        var userNameInput = document.createElement("input");
+        userNameInput.type = "text";
+        userNameInput.style = "margin-left: 10px; margin-right: 10px;";
+        userNameLabel.appendChild(userNameInput);
+
+        //Password
+        var passwordLabel = document.createElement("label");
+        div.appendChild(passwordLabel);
+
+        var passwordSpan = document.createElement("span");
+        passwordSpan.innerText = "Password";
+        passwordLabel.appendChild(passwordSpan);
+
+        var passwordInput = document.createElement("input");
+        passwordInput.type = "password";
+        passwordInput.style = "margin-left: 10px; margin-right: 10px;";
+        passwordLabel.appendChild(passwordInput);
+
+        //Login button
+        var loginButton = document.createElement("button")
+        loginButton.type = "submit";
+        loginButton.type = "button";
+        loginButton.classList.add("btn");
+        loginButton.classList.add("auth");
+        loginButton.classList.add("authorize");
+        loginButton.classList.add("button");
+        loginButton.innerText = "Login";
+        loginButton.onclick = function () {
+            var userName = userNameInput.value;
+            var password = passwordInput.value;
+
+            if (userName === "" || password === "") {
+                alert("Insert userName and password!");
+                return;
+            }
+
+            login(swagger, userName, password);
+        };
+
+        div.appendChild(loginButton);
+    }
+    /**
+     * Manage login
+     * @param {any} userName UserName
+     * @param {any} password Password
+     */
+    const login = function (swagger, userName, password) {
+        var url = substituteUrl(urlTemplate, userName, password);
+        var options = {method: loginMethod};
+        if (loginMethod === "POST") {
+            options.headers = {"Content-Type": "application/json"};
+            options.body = substituteBody(requestTemplate, userName, password);
+        }
+        fetch(url, options).then(function (response) {
+            if (response.ok) {
+                response.json().then(function (data) {
+                    var accessToken = data.accessToken;
+                    var obj = {
+                        JWT: {
+                            name: "JWT",
+                            schema: {type: "apiKey", in: "header", name: "Authorization", description: ""},
+                            value: accessToken
+                        }
+                    };
+
+                    swagger.authActions.authorize(obj);
+                });
+            } else {
+                alert("Login failed (" + response.status + ")");
+            }
+        });
+    }
+
+    // append to event right after SwaggerUIBundle initialized
+    window.addEventListener('load', () => setTimeout(overrider, 0), false);
+
+    window.onload = () => {
+        renderSwaggerUi();
+    };
+
 </script>
 </body>
 </html>
