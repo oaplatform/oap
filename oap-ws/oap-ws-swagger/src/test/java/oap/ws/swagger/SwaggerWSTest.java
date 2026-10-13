@@ -53,8 +53,7 @@ public class SwaggerWSTest extends Fixtures {
             .isOk()
             .hasContentType( TEXT_HTML )
             .bodyContains( "swagger-ui-dist@5.33.2" )
-            .bodyContains( "{name: \"api\", url: \"/system/openapi\"}" )
-            .bodyDoesNotContain( "login-box" );
+            .bodyContains( "{name: \"api\", url: \"/system/openapi\"}" );
     }
 
     @Test
@@ -66,8 +65,9 @@ public class SwaggerWSTest extends Fixtures {
         assertGet( kernel.httpUrl( "/swagger" ) )
             .isOk()
             .hasContentType( TEXT_HTML )
-            .bodyContains( "login-box" )
-            .bodyContains( "\"/login?u={username}&p={password}\"" );
+            .bodyContains( "createLoginUI" )
+            .bodyContains( "var loginMethod = \"GET\";" )
+            .bodyContains( "var urlTemplate = \"/login?u={username}&p={password}\";" );
     }
 
     @Test
@@ -80,7 +80,7 @@ public class SwaggerWSTest extends Fixtures {
         assertGet( kernel.httpUrl( "/swagger" ) )
             .isOk()
             .hasContentType( TEXT_HTML )
-            .bodyContains( "login-box" )
+            .bodyContains( "var loginMethod = \"POST\";" )
             .bodyContains( "{\\\"username\\\":\\\"{username}\\\",\\\"password\\\":\\\"{password}\\\"}" );
     }
 
