@@ -121,12 +121,8 @@
         };
 
         const handler = (caller, args) => {
-            const result = caller(args);
-            // if (result.then) {
-            //     result.then(() => reload())
-            // } else {
-                reload();
-            // }
+            caller(args);
+            reload();
             return result;
         }
 
@@ -264,9 +260,9 @@
                 response.json().then(function (data) {
                     var accessToken = data.accessToken;
                     var obj = {
-                        JWT: {
-                            name: "JWT",
-                            schema: {type: "apiKey", in: "header", name: "Authorization", description: ""},
+                        OAPAuthentication: {
+                            name: "OAPAuthentication",
+                            schema: {type: "http", scheme: "bearer", value: accessToken},
                             value: accessToken
                         }
                     };
