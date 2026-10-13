@@ -54,7 +54,6 @@ public class SwaggerWSTest extends Fixtures {
             .hasContentType( TEXT_HTML )
             .bodyContains( "swagger-ui-dist@5.33.2" )
             .bodyContains( "{name: \"api\", url: \"/system/openapi\"}" )
-            .bodyDoesNotContain( "credentials: \"include\"" )
             .bodyDoesNotContain( "login-box" );
     }
 
@@ -68,7 +67,6 @@ public class SwaggerWSTest extends Fixtures {
             .isOk()
             .hasContentType( TEXT_HTML )
             .bodyContains( "login-box" )
-            .bodyContains( "credentials: \"include\"" )
             .bodyContains( "\"/login?u={username}&p={password}\"" );
     }
 

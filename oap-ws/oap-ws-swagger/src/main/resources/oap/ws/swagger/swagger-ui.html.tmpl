@@ -8,17 +8,7 @@
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui.css" />
 </head>
 <body>
-{{% if urlTemplate }}
-<div id="login-box">
-  <label>User<input id="login-username" type="text" /></label><br/>
-  <label>Password<input id="login-password" type="password" /></label><br/>
-  <button id="login-button" type="button">Login</button>
-  <div id="login-error" style="display:none;color:red;"></div>
-</div>
 <div id="swagger-ui"></div>
-{{% else }}
-<div id="swagger-ui"></div>
-{{% end }}
 
 <script src="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui-bundle.js" crossorigin></script>
 <script src="https://unpkg.com/swagger-ui-dist@{{ version }}/swagger-ui-standalone-preset.js" crossorigin></script>
@@ -47,19 +37,28 @@
   var requestTemplate = {{ requestTemplateJs }};
   var loginMethod = {{ loginMethodJs }};
 
-  function substitute( template, username, password ) {
+  function substituteUrl( template, username, password ) {
     return template.split( "{username}" ).join( encodeURIComponent( username ) )
                     .split( "{password}" ).join( encodeURIComponent( password ) );
+  }
+
+  function jsonEscape( value ) {
+    return value.split( "\\" ).join( "\\\\" ).split( "\"" ).join( "\\\"" );
+  }
+
+  function substituteBody( template, username, password ) {
+    return template.split( "{username}" ).join( jsonEscape( username ) )
+                    .split( "{password}" ).join( jsonEscape( password ) );
   }
 
   function doLogin() {
     var username = document.getElementById( "login-username" ).value;
     var password = document.getElementById( "login-password" ).value;
-    var url = substitute( urlTemplate, username, password );
+    var url = substituteUrl( urlTemplate, username, password );
     var options = { method: loginMethod };
     if ( loginMethod === "POST" ) {
       options.headers = { "Content-Type": "application/json" };
-      options.body = substitute( requestTemplate, username, password );
+      options.body = substituteBody( requestTemplate, username, password );
     }
     fetch( url, options ).then( function( response ) {
       if ( response.ok ) {
@@ -72,9 +71,61 @@
     } );
   }
 
+  function createLoginUI() {
+    var box = document.createElement( "div" );
+    box.id = "login-box";
+    box.style.position = "absolute";
+    box.style.top = "0";
+    box.style.left = "0";
+    box.style.right = "0";
+    box.style.zIndex = "1000";
+    box.style.background = "#fff";
+    box.style.padding = "10px";
+    box.style.borderBottom = "1px solid #ccc";
+
+    var userInput = document.createElement( "input" );
+    userInput.id = "login-username";
+    userInput.type = "text";
+    var userLabel = document.createElement( "label" );
+    userLabel.textContent = "User";
+    userLabel.appendChild( userInput );
+
+    var passwordInput = document.createElement( "input" );
+    passwordInput.id = "login-password";
+    passwordInput.type = "password";
+    var passwordLabel = document.createElement( "label" );
+    passwordLabel.textContent = "Password";
+    passwordLabel.appendChild( passwordInput );
+
+    var button = document.createElement( "button" );
+    button.id = "login-button";
+    button.type = "button";
+    button.textContent = "Login";
+
+    var error = document.createElement( "div" );
+    error.id = "login-error";
+    error.style.display = "none";
+    error.style.color = "red";
+
+    box.appendChild( userLabel );
+    box.appendChild( document.createElement( "br" ) );
+    box.appendChild( passwordLabel );
+    box.appendChild( document.createElement( "br" ) );
+    box.appendChild( button );
+    box.appendChild( error );
+
+    return box;
+  }
+
+  function showLoginUI() {
+    var loginBox = createLoginUI();
+    document.getElementById( "swagger-ui" ).prepend( loginBox );
+    document.getElementById( "login-button" ).addEventListener( "click", doLogin );
+  }
+
   window.onload = () => {
     renderSwaggerUi();
-    document.getElementById( "login-button" ).addEventListener( "click", doLogin );
+    showLoginUI();
   };
 {{% else }}
   window.onload = () => {
