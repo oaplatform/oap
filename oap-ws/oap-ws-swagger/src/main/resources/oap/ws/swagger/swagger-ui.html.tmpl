@@ -58,7 +58,7 @@
         }
 
         ensureAuthorization(swagger);
-        reloadSchemaOnAuth(swagger);
+//        reloadSchemaOnAuth(swagger);
         clearInputPlaceHolder(swagger);
         showLoginUI(swagger);
     }
@@ -172,11 +172,11 @@
                 return;
 
             //Remove elements different from information-container wrapper
-            for (var i = 0; i < rootDiv.children.length; i++) {
-                var child = rootDiv.children[i];
-                if (child !== informationContainerDiv)
-                    child.remove();
-            }
+            // for (var i = 0; i < rootDiv.children.length; i++) {
+            //     var child = rootDiv.children[i];
+            //     if (child !== informationContainerDiv)
+            //         child.remove();
+            // }
 
             //Create UI di login
             createLoginUI(swagger, descriptionDiv);
@@ -191,6 +191,7 @@
     const createLoginUI = function (swagger, rootDiv) {
         var div = document.createElement("div");
         div.className = "login";
+        div.id = "custom-login"
 
         rootDiv.appendChild(div);
 
@@ -268,6 +269,7 @@
                     };
 
                     swagger.authActions.authorize(obj);
+                    document.querySelector("#custom-login").remove();
                 });
             } else {
                 alert("Login failed (" + response.status + ")");
