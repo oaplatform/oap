@@ -1,5 +1,6 @@
 package oap.notification;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 
 import java.io.ByteArrayOutputStream;
@@ -11,6 +12,7 @@ import java.util.function.Consumer;
  * Higher-level, typed wrapper around a {@link NotificationTransport} — wraps a plain {@link Serializable}
  * payload into a {@link Notification} on send, and hands the transport's config through to {@code subscribe}.
  */
+@Slf4j
 public class NotificationService {
     public final NotificationTransport notificationTransport;
 
@@ -34,6 +36,14 @@ public class NotificationService {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Binder.json.marshal( message, outputStream );
         notificationTransport.publish( topic, qos, retain, new Notification( outputStream.toByteArray() ) );
+    }
+
+    public <TMessage extends Serializable> void sendNotificationSilently( String topic, Qos qos, TMessage message ) {
+        try {
+            sendNotification( topic, qos, message );
+        } catch( Exception e ) {
+            log.error( "Failed to send notification to topic {}: {}", topic, message, e );
+        }
     }
 
     /**
