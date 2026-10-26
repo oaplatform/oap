@@ -52,6 +52,7 @@ import oap.logstream.Timestamp;
 import oap.template.TemplateEngine;
 import oap.util.Dates;
 import oap.util.Lists;
+import oap.util.Result;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.joda.time.DateTime;
@@ -166,8 +167,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
     @Override
     @SneakyThrows
-    public String log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                       String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                                                   String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
         }
@@ -178,7 +179,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
-            return writer.write( protocolVersion, buffer, offset, length );
+            return Result.success( writer.write( protocolVersion, buffer, offset, length ) );
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
             for( int i = 0; i < headers.length; i++ ) {
