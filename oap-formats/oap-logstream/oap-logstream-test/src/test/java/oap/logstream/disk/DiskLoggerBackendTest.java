@@ -33,6 +33,7 @@ import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
+import oap.util.Result;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -44,6 +45,7 @@ import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
 import static oap.net.Inet.HOSTNAME;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -114,7 +116,11 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             Logger logger = new Logger( backend );
             //log a line to lfn1
-            logger.log( "lfn1", Map.of(), "log", headers, types, lines );
+            Result<String, LogstreamException> result = logger.log( "lfn1", Map.of(), "log", headers, types, lines );
+
+            assertThat( result.isSuccess() ).isTrue();
+            assertThat( result.successValue )
+                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ).toString() );
 
             assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf(

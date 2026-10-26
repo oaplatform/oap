@@ -34,11 +34,13 @@ import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
+import oap.logstream.disk.LogstreamException;
 import oap.logstream.net.BufferConfigurationMap;
 import oap.logstream.net.Buffers;
 import oap.message.client.MessageAvailabilityReport;
 import oap.message.client.MessageSender;
 import oap.util.FastByteArrayOutputStream;
+import oap.util.Result;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -108,11 +110,11 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     }
 
     @Override
-    public String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                       String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+    public Result<String, LogstreamException> log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                                                   String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
         buffers.put( logId, version, buffer, offset, length );
-        return logId.toString();
+        return Result.success( logId.toString() );
     }
 
     @Override

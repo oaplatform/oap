@@ -27,8 +27,10 @@ package oap.logstream;
 import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
+import oap.logstream.disk.LogstreamException;
 import oap.logstream.formats.RowBinaryAssertion;
 import oap.util.LinkedHashMaps;
+import oap.util.Result;
 import org.testng.Assert;
 
 import java.io.BufferedReader;
@@ -46,14 +48,14 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     private final LinkedHashMap<LogId, ByteArrayOutputStream> outputs = new LinkedHashMap<>();
 
     @Override
-    public synchronized String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+    public synchronized Result<String, LogstreamException> log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                                                                String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
         outputs
             .computeIfAbsent( logId, fn -> new ByteArrayOutputStream() )
             .write( buffer, offset, length );
 
-        return logId.toString();
+        return Result.success( logId.toString() );
     }
 
     @Deprecated( forRemoval = true )
