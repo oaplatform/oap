@@ -23,7 +23,9 @@
  */
 package oap.logstream;
 
+import oap.logstream.disk.LogstreamException;
 import oap.net.Inet;
+import oap.util.Result;
 
 import java.util.Map;
 
@@ -42,8 +44,8 @@ public class Logger {
         this( backend, CURRENT_PROTOCOL_VERSION );
     }
 
-    public String log( String filePreffix, Map<String, String> properties, String logType,
-                     String[] headers, byte[][] types, byte[] row ) {
+    public Result<String, LogstreamException> log( String filePreffix, Map<String, String> properties, String logType,
+                                                   String[] headers, byte[][] types, byte[] row ) {
         return backend.log( protocolVersion, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, row );
     }
 

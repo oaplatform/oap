@@ -4,10 +4,16 @@ import oap.message.MessageProtocol;
 
 import java.util.stream.Stream;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 
 @SuppressWarnings( "checkstyle:InterfaceIsType" )
 public interface LogStreamProtocol {
     ProtocolVersion CURRENT_PROTOCOL_VERSION = ProtocolVersion.ROW_BINARY_V3;
+    byte MESSAGE_TYPE = 20;
+    short STATUS_BACKEND_LOGGER_NOT_AVAILABLE = 20000;
+    short INVALID_VERSION = 20001;
+    short STATUS_OK = MessageProtocol.STATUS_OK;
 
     enum ProtocolVersion {
         TSV_V1( 1 ), BINARY_V2( 2 ), ROW_BINARY_V3( 3 );
@@ -19,12 +25,12 @@ public interface LogStreamProtocol {
 
         public static ProtocolVersion valueOf( int protocolVersion ) {
             return Stream.of( values() ).filter( pv -> pv.version == protocolVersion ).findAny()
-                .orElseThrow( () -> new IllegalArgumentException( "version " + protocolVersion ) );
+                .orElseThrow( () -> new IllegalArgumentException( s( "version ${protocolVersion}" ) ) );
         }
     }
 
-    byte MESSAGE_TYPE = 20;
-    short STATUS_BACKEND_LOGGER_NOT_AVAILABLE = 20000;
-    short INVALID_VERSION = 20001;
-    short STATUS_OK = MessageProtocol.STATUS_OK;
+    enum ErrorStatus {
+        ERROR_RETRY,
+        ERROR_NO_RETRY
+    }
 }

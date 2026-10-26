@@ -28,7 +28,10 @@ import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
+import oap.logstream.disk.LogstreamException;
+import oap.message.MessageProtocol;
 import oap.message.server.MessageListener;
+import oap.util.Result;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -37,6 +40,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static oap.logstream.LogStreamProtocol.MESSAGE_TYPE;
 
 @Slf4j
@@ -63,27 +67,23 @@ public class SocketLoggerServer implements MessageListener, Closeable {
             return LogStreamProtocol.STATUS_BACKEND_LOGGER_NOT_AVAILABLE;
         }
         try( DataInputStream in = new DataInputStream( new ByteArrayInputStream( data ) ) ) {
-            switch( protocolVersion ) {
+            return switch( protocolVersion ) {
                 case 1, 2, 3 -> readBinaryV3( ProtocolVersion.valueOf( protocolVersion ), hostName, in );
-                default -> {
-                    return LogStreamProtocol.INVALID_VERSION;
-                }
-            }
+                default -> LogStreamProtocol.INVALID_VERSION;
+            };
         } catch( EOFException e ) {
-            log.debug( "[" + hostName + "] " + " ended, closed" );
+            log.debug( s( "[${hostName}]  ended, closed" ) );
             throw new LoggerException( e );
         } catch( LoggerException e ) {
-            log.error( "[" + hostName + "] ", e );
+            log.error( s( "[${hostName}] " ), e );
             throw e;
         } catch( Exception e ) {
-            log.error( "[" + hostName + "] ", e );
+            log.error( s( "[${hostName}] " ), e );
             throw new LoggerException( e );
         }
-
-        return LogStreamProtocol.STATUS_OK;
     }
 
-    private void readBinaryV3( ProtocolVersion version, String hostName, DataInputStream in ) throws IOException {
+    private short readBinaryV3( ProtocolVersion version, String hostName, DataInputStream in ) throws IOException {
         in.readLong(); // digestion control
         int length = in.readInt();
         String filePreffix = in.readUTF();
@@ -115,7 +115,16 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         byte[] compressedBuffer = new byte[length];
         in.readFully( compressedBuffer, 0, length );
 
-        backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, compressedBuffer, 0, length );
+        Result<String, LogstreamException> result = backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, compressedBuffer, 0, length );
+        if( result.isSuccess() ) {
+            return MessageProtocol.STATUS_OK;
+        } else {
+            if( result.failureValue.status == LogStreamProtocol.ErrorStatus.ERROR_RETRY ) {
+                return MessageProtocol.STATUS_UNKNOWN_ERROR;
+            }
+
+            throw new LoggerException( result.failureValue.getCause() );
+        }
     }
 
     @Override
