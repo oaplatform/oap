@@ -101,6 +101,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     public long connectionTimeout = Dates.s( 30 );
     public volatile boolean closed = false;
     public Scheduled diskSyncScheduler;
+    public Scheduled memorySyncScheduler;
     public AtomicLong networkAvailable = new AtomicLong( 0 );
     public int networkAvailableMaxErrors = 2;
     public long ioExceptionStartRetryTimeout = -1;
@@ -156,7 +157,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
 
         if( memorySyncPeriod > 0 )
-            diskSyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
+            memorySyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
         log.info( "[{}] message server started", uniqueName );
     }
 
@@ -193,6 +194,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             closed = true;
 
             Closeables.close( diskSyncScheduler );
+            Closeables.close( memorySyncScheduler );
         } finally {
             lock.unlock();
         }
