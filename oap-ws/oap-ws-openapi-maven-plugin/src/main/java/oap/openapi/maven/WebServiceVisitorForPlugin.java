@@ -24,6 +24,7 @@
 
 package oap.openapi.maven;
 
+import oap.application.ModuleConfiguration;
 import oap.application.module.Module;
 import oap.application.module.Service;
 import oap.ws.WsConfig;
@@ -37,9 +38,8 @@ import java.io.File;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -104,18 +104,23 @@ public class WebServiceVisitorForPlugin implements WebServiceVisitor {
             .toList() );
         if( classpath != null && !classpath.isEmpty() ) {
             outputPath = classpath.get( 0 ) + "/swagger";
-            File file = new File( classpath.get( 0 ) + "/META-INF/oap-module.oap" );
-            if( !Files.exists( Paths.get( file.getPath() ) ) ) {
-                log.info( "File " + file.getPath() + " is missing, nothing to do" );
+            File metaInf = new File( classpath.get( 0 ) + "/META-INF" );
+            File[] moduleFiles = metaInf.listFiles( ( dir, name ) ->
+                "oap-module.oap".equals( name ) || ModuleConfiguration.isAdditionalModuleFileName( name ) );
+            if( moduleFiles == null || moduleFiles.length == 0 ) {
+                log.info( "No oap-module*.oap files in " + metaInf.getPath() + ", nothing to do" );
                 return urls;
             }
-            URL currentModuleUrl;
-            try {
-                currentModuleUrl = file.toURI().toURL();
-            } catch( MalformedURLException e ) {
-                throw new UncheckedIOException( e );
+            Arrays.sort( moduleFiles );
+            for( File file : moduleFiles ) {
+                URL currentModuleUrl;
+                try {
+                    currentModuleUrl = file.toURI().toURL();
+                } catch( MalformedURLException e ) {
+                    throw new UncheckedIOException( e );
+                }
+                if( moduleConfigurations.add( currentModuleUrl.toString() ) ) urls.add( currentModuleUrl );
             }
-            if( moduleConfigurations.add( currentModuleUrl.toString() ) ) urls.add( currentModuleUrl );
         }
         return urls;
     }

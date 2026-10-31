@@ -265,6 +265,10 @@ public class Kernel implements Closeable, AutoCloseable {
             if( StringUtils.isBlank( module.name ) ) {
                 throw new ApplicationException( moduleConfiguration + ": module.name is blank" );
             }
+            ModuleWithLocation existing = modules.get( module.name );
+            if( existing != null && !existing.location.toString().equals( moduleConfiguration.toString() ) ) {
+                log.warn( "duplicate module name {}: {} is replaced by {}", module.name, existing.location, moduleConfiguration );
+            }
             modules.put( module.name, new ModuleWithLocation( module, moduleConfiguration ) );
         }
     }
