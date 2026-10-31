@@ -1,0 +1,10 @@
+name = test-multi-base
+
+services {
+  one {
+    implementation = oap.application.ServiceOne
+    parameters {
+      i = 1
+    }
+  }
+}

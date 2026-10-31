@@ -1,0 +1,11 @@
+name = test-multi-services
+dependsOn = [test-multi-base]
+
+services {
+  two {
+    implementation = oap.application.ServiceTwo
+    parameters {
+      one = <modules.test-multi-base.one>
+    }
+  }
+}
