@@ -1,18 +1,18 @@
 package oap.configuration;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.json.HoconFactoryWithSystemProperties;
+import oap.json.OapHoconFactory;
 import oap.util.Lists;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -37,14 +37,14 @@ public class ConfigurationLoader {
                     );
                     log.trace( "urls {}", urls );
 
-                    ObjectMapper objectMapper = new ObjectMapper( new HoconFactoryWithSystemProperties( log ) );
-                    objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                    objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
-                    objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
+                    ObjectMapper objectMapper = JsonMapper.builder( new HoconFactoryWithSystemProperties( log ) )
+                        .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES )
+                        .enable( tools.jackson.databind.MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS )
+                        .build();
 
                     for( URL url : urls ) {
-                        try {
-                            Configurations conf = objectMapper.readValue( url, Configurations.class );
+                        try( var reader = OapHoconFactory.open( url ) ) {
+                            Configurations conf = objectMapper.readValue( reader, Configurations.class );
                             log.trace( "conf {}", conf );
 
                             for( ClassConfiguration<?> c : conf.configurations ) {
@@ -73,17 +73,17 @@ public class ConfigurationLoader {
             return List.of();
         }
 
-        ObjectMapper objectMapper = new ObjectMapper( new JsonFactory() );
-        objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-        objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
-        objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
+        ObjectMapper objectMapper = JsonMapper.builder( new JsonFactory() )
+            .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES )
+            .enable( tools.jackson.databind.MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS )
+            .build();
 
         try {
             String data = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( Map.of( "map", conf ) );
 
             Map<String, List<T>> config = objectMapper.readValue( data, typeReference );
             return config.get( "map" );
-        } catch( JsonProcessingException e ) {
+        } catch( JacksonException e ) {
             throw new RuntimeException( e );
         }
     }

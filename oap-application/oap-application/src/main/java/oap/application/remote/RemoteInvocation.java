@@ -34,7 +34,7 @@ import java.util.List;
 
 @ToString
 public class RemoteInvocation implements Serializable {
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     @Serial
     private static final long serialVersionUID = -4083101417145198050L;
 

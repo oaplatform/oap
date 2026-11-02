@@ -25,19 +25,18 @@
 package oap.json.ext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.configuration.ConfigurationLoader;
 import oap.json.ClassDeserializer;
 import oap.json.ext.ExtDeserializer.Configuration.ClassConfiguration;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.TokenStreamContext;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -106,11 +105,11 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
     }
 
     @Override
-    public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
-        JsonStreamContext parsingContext = jsonParser.getParsingContext();
-        JsonStreamContext contextParent = parsingContext.getParent();
-        String field = contextParent.getCurrentName();
-        Class<?> clazz = contextParent.getCurrentValue().getClass();
+    public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) {
+        TokenStreamContext parsingContext = jsonParser.streamReadContext();
+        TokenStreamContext contextParent = parsingContext.getParent();
+        String field = contextParent.currentName();
+        Class<?> clazz = contextParent.currentValue().getClass();
         Class<?> implementation = extensionOf( clazz, field );
         if( implementation == null ) {
             log.trace( "extension class lookup failed for {}#{}", clazz, field );

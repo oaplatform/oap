@@ -24,16 +24,15 @@
 
 package oap.dictionary;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
-import java.io.IOException;
 import java.util.Map;
 
-public class DictionaryDeserializer extends JsonDeserializer<DictionaryRoot> {
+public class DictionaryDeserializer extends ValueDeserializer<DictionaryRoot> {
     @Override
-    public DictionaryRoot deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+    public DictionaryRoot deserialize( JsonParser p, DeserializationContext ctxt ) {
         var map = p.readValueAs( Map.class );
         return DictionaryParser.parse( map, new DictionaryParser.IncrementalIdStrategy() );
     }

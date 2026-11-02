@@ -26,7 +26,6 @@ package oap.statsdb;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -34,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.json.TypeIdFactory;
 import oap.util.Mergeable;
 import org.joda.time.DateTimeUtils;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
 
 import javax.annotation.Nonnull;
 import java.io.Serial;

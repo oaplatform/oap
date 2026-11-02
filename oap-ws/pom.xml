@@ -12,11 +12,10 @@
     <artifactId>oap-ws-parent</artifactId>
 
     <properties>
+        <oap.deps.nimbus-jose-jwt.version>10.10</oap.deps.nimbus-jose-jwt.version>
         <oap.deps.javaassist.version>3.29.2-GA</oap.deps.javaassist.version>
-        <oap.deps.jwt.version>4.4.0</oap.deps.jwt.version>
-        <oap.deps.jwks.version>0.22.0</oap.deps.jwks.version>
         <oap.deps.totp.version>1.0</oap.deps.totp.version>
-        <oap.deps.swagger.version>2.2.40</oap.deps.swagger.version>
+        <oap.deps.swagger.version>3.0.0</oap.deps.swagger.version>
     </properties>
 
     <modules>

@@ -24,7 +24,6 @@
 
 package oap.ws.openapi;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.converter.ResolvedSchema;
 import io.swagger.v3.core.util.RefUtils;
@@ -36,6 +35,7 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import oap.reflect.Reflect;
 import oap.ws.api.Info;
 import org.testng.annotations.Test;
+import tools.jackson.core.type.TypeReference;
 
 import java.lang.reflect.Type;
 import java.util.List;

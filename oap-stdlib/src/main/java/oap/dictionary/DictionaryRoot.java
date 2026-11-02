@@ -25,9 +25,9 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;

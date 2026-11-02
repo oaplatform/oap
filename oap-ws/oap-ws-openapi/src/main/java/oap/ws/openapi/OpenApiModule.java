@@ -24,26 +24,24 @@
 
 package oap.ws.openapi;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.core.util.VersionUtil;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleDeserializers;
-import com.fasterxml.jackson.databind.module.SimpleSerializers;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.Version;
+import tools.jackson.core.util.VersionUtil;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.module.SimpleDeserializers;
+import tools.jackson.databind.module.SimpleSerializers;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 import java.io.StringWriter;
 
-public class OpenApiModule extends Module {
+public class OpenApiModule extends JacksonModule {
 
     private static final Version VERSION = VersionUtil.parseVersion(
         "3.0.3", "io.xenoss.platform", "openapi" );
@@ -76,7 +74,7 @@ public class OpenApiModule extends Module {
         }
 
         @Override
-        public void serialize( OpenAPI openAPI, JsonGenerator jsonGenerator, SerializerProvider serializerProvider ) throws IOException {
+        public void serialize( OpenAPI openAPI, JsonGenerator jsonGenerator, SerializationContext serializerProvider ) {
             StringWriter stringWriter = new StringWriter();
             Json.mapper().writeValue( stringWriter, openAPI );
 
@@ -90,9 +88,9 @@ public class OpenApiModule extends Module {
         }
 
         @Override
-        public OpenAPI deserialize( JsonParser jp, DeserializationContext ctxt ) throws IOException {
-            var mapper = ( ObjectMapper ) jp.getCodec();
-            ObjectNode obj = mapper.readTree( jp );
+        public OpenAPI deserialize( JsonParser jp, DeserializationContext ctxt ) {
+            var mapper = Json.mapper();
+            ObjectNode obj = ( ObjectNode ) ctxt.readTree( jp );
 
             return mapper.treeToValue( obj, OpenAPI.class );
         }

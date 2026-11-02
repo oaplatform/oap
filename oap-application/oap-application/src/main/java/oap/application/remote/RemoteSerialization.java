@@ -62,15 +62,15 @@ public final class RemoteSerialization<T> implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        byte[] content = FstConsts.asByteArray( new RemoteInvocation( "service", method.getName(), arguments ) );
-        RemoteInvocation ri = ( RemoteInvocation ) FstConsts.asObject( content );
+        byte[] content = RemoteObjectCodec.asByteArray( new RemoteInvocation( "service", method.getName(), arguments ) );
+        RemoteInvocation ri = ( RemoteInvocation ) RemoteObjectCodec.asObject( content );
 
         Object result = master.getClass()
             .getMethod( ri.method, ri.types() )
             .invoke( master, ri.values() );
 
 
-        content = FstConsts.asByteArray( result );
-        return FstConsts.asObject( content );
+        content = RemoteObjectCodec.asByteArray( result );
+        return RemoteObjectCodec.asObject( content );
     }
 }

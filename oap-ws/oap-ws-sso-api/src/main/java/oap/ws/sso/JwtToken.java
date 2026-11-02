@@ -1,7 +1,6 @@
 package oap.ws.sso;
 
-import com.auth0.jwt.interfaces.Claim;
-import com.auth0.jwt.interfaces.DecodedJWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,32 +9,32 @@ import java.util.Map;
 import static oap.ws.sso.WsSecurity.SYSTEM;
 
 public class JwtToken {
-    private final DecodedJWT decodedJWT;
+    private final JWTClaimsSet decodedJWT;
     private final SecurityRoles roles;
 
-    public JwtToken( DecodedJWT decodedJWT, SecurityRoles roles ) {
+    public JwtToken( JWTClaimsSet decodedJWT, SecurityRoles roles ) {
         this.decodedJWT = decodedJWT;
         this.roles = roles;
     }
 
     public String getUserId() {
-        final Claim id = decodedJWT.getClaims().get( "id" );
-        return id != null ? id.asString() : null;
+        final Object id = decodedJWT.getClaim( "id" );
+        return id instanceof String value ? value : null;
     }
 
     public String getUserEmail() {
-        final Claim user = decodedJWT.getClaims().get( "user" );
-        return user != null ? user.asString() : null;
+        final Object user = decodedJWT.getClaim( "user" );
+        return user instanceof String value ? value : null;
     }
 
     public String getOrganizationId() {
-        final Claim orgId = decodedJWT.getClaims().get( "org_id" );
-        return orgId != null ? orgId.asString() : null;
+        final Object orgId = decodedJWT.getClaim( "org_id" );
+        return orgId instanceof String value ? value : null;
     }
 
     public long getCounter() {
-        final Claim counter = decodedJWT.getClaims().get( "counter" );
-        return counter != null ? counter.asLong() : 0;
+        final Object counter = decodedJWT.getClaim( "counter" );
+        return counter instanceof Number value ? value.longValue() : 0;
     }
 
     public List<String> getPermissions( String organizationId ) {
@@ -43,11 +42,10 @@ public class JwtToken {
             return List.of();
         }
 
-        final Claim tokenRoles = decodedJWT.getClaims().get( "roles" );
-        if( tokenRoles == null ) {
+        final Object tokenRoles = decodedJWT.getClaim( "roles" );
+        if( !( tokenRoles instanceof Map<?, ?> rolesByOrganization ) ) {
             return List.of();
         }
-        Map<String, Object> rolesByOrganization = tokenRoles.asMap();
         final String role;
         if( rolesByOrganization.get( SYSTEM ) != null ) {
             role = ( String ) rolesByOrganization.get( SYSTEM );

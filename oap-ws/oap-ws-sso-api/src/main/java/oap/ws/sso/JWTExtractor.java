@@ -24,13 +24,20 @@
 
 package oap.ws.sso;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import lombok.extern.slf4j.Slf4j;
 import oap.time.JodaClock;
+
+import java.text.ParseException;
+import java.util.Date;
+import java.util.Set;
 
 @Slf4j
 public class JWTExtractor {
@@ -53,14 +60,31 @@ public class JWTExtractor {
         return authorization;
     }
 
-    public JwtToken decodeJWT( String token ) throws JWTVerificationException {
+    public JwtToken decodeJWT( String token ) {
         if( token == null ) {
             return null;
         }
-        Algorithm algorithm = Algorithm.HMAC256( secret );
-        JWTVerifier.BaseVerification verification = ( JWTVerifier.BaseVerification ) JWT.require( algorithm ).withIssuer( issuer );
-        JWTVerifier verifier = verification.build( new JodaClock() );
-        return new JwtToken( verifier.verify( token ), roles );
+        try {
+            var jwt = SignedJWT.parse( token );
+            if( !JWSAlgorithm.HS256.equals( jwt.getHeader().getAlgorithm() )
+                || !jwt.verify( new MACVerifier( JwtHmac.key( secret ) ) ) ) throw new IllegalArgumentException( "Invalid JWT signature or algorithm" );
+            var claims = jwt.getJWTClaimsSet();
+            Date now = Date.from( new JodaClock().instant() );
+            if( !issuer.equals( claims.getIssuer() ) ) throw new IllegalArgumentException( "Invalid JWT issuer" );
+            if( claims.getExpirationTime() != null && !now.before( claims.getExpirationTime() ) ) throw new ExpiredTokenException();
+            var verifier = new DefaultJWTClaimsVerifier<SecurityContext>( new JWTClaimsSet.Builder().issuer( issuer ).build(), Set.of( "iss" ) ) {
+                @Override
+                protected Date currentTime() {
+                    return now;
+                }
+            };
+            verifier.setMaxClockSkew( 0 );
+            verifier.verify( claims, null );
+            if( claims.getIssueTime() != null && claims.getIssueTime().after( now ) ) throw new IllegalArgumentException( "JWT issued in the future" );
+            return new JwtToken( claims, roles );
+        } catch( ParseException | JOSEException | BadJWTException e ) {
+            throw new IllegalArgumentException( "Invalid JWT", e );
+        }
     }
 
     public TokenStatus verifyToken( String token ) {
@@ -71,12 +95,14 @@ public class JWTExtractor {
             decodeJWT( token );
 
             return TokenStatus.VALID;
-        } catch( TokenExpiredException e ) {
+        } catch( ExpiredTokenException e ) {
             return TokenStatus.EXPIRED;
-        } catch( JWTVerificationException e ) {
+        } catch( IllegalArgumentException e ) {
             return TokenStatus.INVALID;
         }
     }
+
+    private static final class ExpiredTokenException extends IllegalArgumentException {}
 
     public enum TokenStatus {
         EMPTY, INVALID, VALID, EXPIRED

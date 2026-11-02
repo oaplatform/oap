@@ -11,6 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderBsonTest {
     @Test
+    public void binaryUrlInput() throws java.io.IOException {
+        var file = java.nio.file.Files.createTempFile( "binder", ".bson" );
+        try {
+            Bean expected = new Bean( "binary", 123, null );
+            Binder.bson.marshal( file, expected );
+            assertThat( Binder.bson.unmarshal( Bean.class, file.toUri().toURL() ) ).isEqualTo( expected );
+        } finally {
+            java.nio.file.Files.delete( file );
+        }
+    }
+
+    @Test
     public void testBson() {
         Bean obj = new Bean( "1", 1, null );
         Bean clone = Binder.bson.clone( obj );

@@ -3,10 +3,10 @@ package oap.json;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.properties.PropertiesDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import javax.annotation.Nullable;
 import java.util.LinkedHashMap;

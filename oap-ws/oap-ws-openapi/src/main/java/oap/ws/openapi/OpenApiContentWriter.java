@@ -24,12 +24,11 @@
 
 package oap.ws.openapi;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.core.util.Json;
 import oap.io.content.ContentWriter;
 import oap.json.JsonException;
+import tools.jackson.core.JacksonException;
 
-import java.io.IOException;
 import java.io.OutputStream;
 
 public class OpenApiContentWriter {
@@ -39,7 +38,7 @@ public class OpenApiContentWriter {
             public byte[] write( Object object ) {
                 try {
                     return Json.mapper().writeValueAsBytes( object );
-                } catch( JsonProcessingException e ) {
+                } catch( JacksonException e ) {
                     throw new JsonException( e );
                 }
             }
@@ -47,7 +46,7 @@ public class OpenApiContentWriter {
             public void write( OutputStream os, Object object ) {
                 try {
                     Json.mapper().writeValue( os, object );
-                } catch( IOException e ) {
+                } catch( JacksonException e ) {
                     throw new JsonException( e );
                 }
             }

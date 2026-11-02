@@ -25,17 +25,6 @@ package oap.benchmark;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
-import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
-import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.OapJsonModule;
@@ -43,6 +32,17 @@ import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
 import org.testng.annotations.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.datatype.joda.JodaModule;
+import tools.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
+import tools.jackson.datatype.joda.deser.DateTimeDeserializer;
+import tools.jackson.datatype.joda.ser.DateTimeSerializer;
+import tools.jackson.module.afterburner.AfterburnerModule;
 
 import java.util.Map;
 import java.util.Optional;
@@ -56,40 +56,30 @@ public class ParserPerformance {
     public static String yearJson = Resources.read( ParserPerformance.class, "/oap/json/year.json", ofString() ).orElseThrow();
 
     @SuppressWarnings( "unchecked" )
-    private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
-        return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
+    private static <T extends ReadableInstant> ValueDeserializer<T> forType( Class<T> cls ) {
+        return ( ValueDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
     }
 
     @Test( enabled = false )
     public void performance() {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule( new Jdk8Module() );
-        final JodaModule module = new JodaModule();
+        final SimpleModule module = new SimpleModule();
         module.addDeserializer( DateTime.class, forType( DateTime.class ) );
         module.addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat, 0 ) );
-        mapper.registerModule( module );
-        mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
-        mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
-        mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
-        mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper.registerModule( new OapJsonModule() );
+        final var builder = JsonMapper.builder()
+            .addModule( new JodaModule() )
+            .addModule( module )
+            .enable( DeserializationFeature.USE_LONG_FOR_INTS )
+            .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES )
+            .disable( DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS )
+            .changeDefaultVisibility( v -> v.withFieldVisibility( JsonAutoDetect.Visibility.ANY ) )
+            .changeDefaultPropertyInclusion( v -> JsonInclude.Value.construct( JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS ) )
+            .addModule( new OapJsonModule() );
+        final ObjectMapper mapper = builder.build();
 
         benchmark( "mapParser-jackson", 5000,
             () -> mapper.writeValueAsString( mapper.readValue( yearJson, Map.class ) ) ).run();
 
-        final ObjectMapper mapper2 = new ObjectMapper();
-        mapper2.registerModule( new Jdk8Module() );
-        mapper2.registerModule( module );
-        mapper2.enable( DeserializationFeature.USE_LONG_FOR_INTS );
-        mapper2.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
-        mapper2.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
-        mapper2.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        mapper2.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper2.registerModule( new OapJsonModule() );
-
-        mapper2.registerModule( new AfterburnerModule() );
-
+        final ObjectMapper mapper2 = builder.addModule( new AfterburnerModule() ).build();
 
         benchmark( "mapParser-jackson2", 5000,
             () -> mapper2.writeValueAsString( mapper2.readValue( yearJson, Map.class ) ) ).run();

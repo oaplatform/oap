@@ -24,11 +24,10 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
-import java.io.IOException;
 
 public class ClassDeserializer extends StdDeserializer<Class<?>> {
     protected ClassDeserializer() {
@@ -36,8 +35,8 @@ public class ClassDeserializer extends StdDeserializer<Class<?>> {
     }
 
     @Override
-    public Class<?> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var className = p.getText();
+    public Class<?> deserialize( JsonParser p, DeserializationContext ctxt ) {
+        var className = p.getString();
 
         try {
             return ctxt.getTypeFactory().findClass( className );

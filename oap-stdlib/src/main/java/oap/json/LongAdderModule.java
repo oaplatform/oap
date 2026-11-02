@@ -24,26 +24,25 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.Deserializers;
-import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
-import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
-import com.fasterxml.jackson.databind.ser.Serializers;
-import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
 import oap.util.Numbers;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.deser.jdk.NumberDeserializers;
+import tools.jackson.databind.deser.std.StdScalarDeserializer;
+import tools.jackson.databind.ser.Serializers;
+import tools.jackson.databind.ser.std.StdScalarSerializer;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
 
 class LongAdderModule {
@@ -53,20 +52,20 @@ class LongAdderModule {
         }
 
         @Override
-        public void serialize( LongAdder value, JsonGenerator gen, SerializerProvider provider ) throws IOException {
-            gen.writeObject( value.sum() );
+        public void serialize( LongAdder value, JsonGenerator gen, SerializationContext provider ) {
+            gen.writePOJO( value.sum() );
         }
     }
 
     public static class LongAdderSerializers extends Serializers.Base {
         @Override
-        public JsonSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription beanDesc ) {
+        public ValueSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription.Supplier beanDesc, com.fasterxml.jackson.annotation.JsonFormat.Value formatOverrides ) {
             final Class<?> raw = type.getRawClass();
             if( LongAdder.class.isAssignableFrom( raw ) ) {
                 return new LongAdderSerializer();
             }
 
-            return super.findSerializer( config, type, beanDesc );
+            return super.findSerializer( config, type, beanDesc, formatOverrides );
         }
     }
 
@@ -79,9 +78,9 @@ class LongAdderModule {
         }
 
         @Override
-        public LongAdder deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+        public LongAdder deserialize( JsonParser p, DeserializationContext ctxt ) {
             final long l = p.hasToken( JsonToken.VALUE_STRING )
-                ? Numbers.parseLongWithUnits( p.getText().trim() )
+                ? Numbers.parseLongWithUnits( p.getString().trim() )
                 : deserializer.deserialize( p, ctxt );
             return new oap.concurrent.LongAdder( l );
         }
@@ -89,8 +88,13 @@ class LongAdderModule {
 
     public static class LongAdderDeserializers extends Deserializers.Base {
         @Override
-        public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
-                                                         BeanDescription beanDesc ) throws JsonMappingException {
+        public boolean hasDeserializerFor( DeserializationConfig config, Class<?> valueType ) {
+            return LongAdder.class.isAssignableFrom( valueType );
+        }
+
+        @Override
+        public ValueDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
+                                                          BeanDescription.Supplier beanDesc ) throws DatabindException {
             final Class<?> raw = type.getRawClass();
             if( LongAdder.class.isAssignableFrom( raw ) ) {
                 return new LongAdderDeserializer();

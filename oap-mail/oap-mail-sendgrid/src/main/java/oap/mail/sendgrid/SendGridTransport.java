@@ -24,21 +24,21 @@
 
 package oap.mail.sendgrid;
 
-import com.sendgrid.Method;
-import com.sendgrid.Request;
-import com.sendgrid.SendGrid;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Attachments;
-import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email;
 import lombok.extern.slf4j.Slf4j;
+import oap.json.Binder;
 import oap.mail.MailAddress;
 import oap.mail.Message;
 import oap.mail.Transport;
 
 import javax.mail.Part;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-@SuppressWarnings( "unused" )
 @Slf4j
 public class SendGridTransport implements Transport {
     private final String sendGridKey;
@@ -49,35 +49,47 @@ public class SendGridTransport implements Transport {
 
     @Override
     public void send( Message message ) {
-        Email from = new Email( message.from.toString() );
-        Content content = new Content( "text/html", message.body );
-        SendGrid sendGrid = new SendGrid( sendGridKey );
-        Request request = new Request();
-        request.setMethod( Method.POST );
-        request.setEndpoint( "mail/send" );
-        for( MailAddress address : message.to ) {
-            Email to = new Email( address.toString() );
-            Mail mail = new Mail( from, message.subject, to, content );
-            message.attachments.stream()
-                .map( this::createAttachments )
-                .forEach( mail::addAttachments );
-            try {
-                request.setBody( mail.build() );
-                sendGrid.api( request );
-            } catch( Exception e ) {
-                log.error( "failed to send {}", message, e );
+        try( HttpClient client = HttpClient.newHttpClient() ) {
+            for( MailAddress address : message.to ) {
+                try {
+                    var request = HttpRequest.newBuilder( URI.create( "https://api.sendgrid.com/v3/mail/send" ) )
+                        .header( "Authorization", "Bearer " + sendGridKey )
+                        .header( "Content-Type", "application/json" )
+                        .POST( HttpRequest.BodyPublishers.ofString( Binder.json.marshal( payload( message, address ) ) ) ).build();
+                    var response = client.send( request, HttpResponse.BodyHandlers.discarding() );
+                    if( response.statusCode() >= 400 ) log.error( "failed to send {}: HTTP {}", message, response.statusCode() );
+                } catch( InterruptedException e ) {
+                    Thread.currentThread().interrupt();
+                    log.error( "failed to send {}", message, e );
+                    return;
+                } catch( Exception e ) {
+                    log.error( "failed to send {}", message, e );
+                }
             }
         }
     }
 
-    private Attachments createAttachments( oap.mail.Attachment oapAttachment ) {
-        Attachments attachments = new Attachments();
-        attachments.setContent( oapAttachment.getContent() );
-        attachments.setContentId( oapAttachment.getContentId() );
-        attachments.setDisposition( Part.ATTACHMENT );
-        attachments.setFilename( oapAttachment.getFile() );
-        attachments.setType( oapAttachment.getContentType() );
-
-        return attachments;
+    static Map<String, Object> payload( Message message, MailAddress address ) {
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put( "from", Map.of( "email", message.from.toString() ) );
+        payload.put( "subject", message.subject );
+        payload.put( "personalizations", List.of( Map.of( "to", List.of( Map.of( "email", address.toString() ) ) ) ) );
+        var content = new LinkedHashMap<String, Object>();
+        content.put( "type", "text/html" );
+        content.put( "value", message.body );
+        content.values().removeIf( value -> value == null || "".equals( value ) );
+        payload.put( "content", List.of( content ) );
+        if( !message.attachments.isEmpty() ) payload.put( "attachments", message.attachments.stream().map( attachment -> {
+            var fields = new LinkedHashMap<String, Object>();
+            fields.put( "content", attachment.getContent() );
+            fields.put( "content_id", attachment.getContentId() );
+            fields.put( "disposition", Part.ATTACHMENT );
+            fields.put( "filename", attachment.getFile() );
+            fields.put( "type", attachment.getContentType() );
+            fields.values().removeIf( value -> value == null || "".equals( value ) );
+            return fields;
+        } ).toList() );
+        payload.values().removeIf( value -> value == null || "".equals( value ) );
+        return payload;
     }
 }

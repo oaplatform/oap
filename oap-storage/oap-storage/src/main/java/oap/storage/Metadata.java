@@ -26,10 +26,10 @@ package oap.storage;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
 
 import java.io.Serial;
 import java.io.Serializable;

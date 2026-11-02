@@ -31,10 +31,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FSTTest {
+public class RemoteObjectCodecTest {
     @Test
     public void optional() throws IOException {
-        assertThat( FstConsts.asObject( FstConsts.asByteArray( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
-        assertThat( FstConsts.asObject( FstConsts.asByteArray( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
+        assertThat( RemoteObjectCodec.asObject( RemoteObjectCodec.asByteArray( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
+        assertThat( RemoteObjectCodec.asObject( RemoteObjectCodec.asByteArray( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
     }
 }

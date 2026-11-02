@@ -2615,6 +2615,17 @@
             "additionalProperties" : {
               "type" : "object"
             }
+          },
+          "content" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/MediaType"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              }
+            },
+            "type" : "object"
           }
         }
       },
@@ -2756,7 +2767,8 @@
               "extensions" : {
                 "type" : "object",
                 "additionalProperties" : {
-                  "type" : "object"
+                  "type" : "object",
+                  "deprecated" : true
                 },
                 "deprecated" : true
               }
@@ -3418,7 +3430,8 @@
           "extensions" : {
             "type" : "object",
             "additionalProperties" : {
-              "type" : "object"
+              "type" : "object",
+              "deprecated" : true
             },
             "deprecated" : true
           }
@@ -3499,7 +3512,8 @@
               "extensions" : {
                 "type" : "object",
                 "additionalProperties" : {
-                  "type" : "object"
+                  "type" : "object",
+                  "deprecated" : true
                 },
                 "deprecated" : true
               }
@@ -3548,7 +3562,8 @@
           "extensions" : {
             "type" : "object",
             "additionalProperties" : {
-              "type" : "object"
+              "type" : "object",
+              "deprecated" : true
             },
             "deprecated" : true
           }
@@ -3722,8 +3737,7 @@
         "type" : "object",
         "properties" : {
           "extension" : {
-            "type" : "string",
-            "deprecated" : true
+            "type" : "string"
           },
           "score" : {
             "type" : "integer",
@@ -3797,8 +3811,7 @@
             }
           },
           "something" : {
-            "type" : "string",
-            "deprecated" : true
+            "type" : "string"
           }
         }
       },
@@ -3891,8 +3904,7 @@
             }
           },
           "something" : {
-            "type" : "string",
-            "deprecated" : true
+            "type" : "string"
           }
         }
       },
@@ -3981,7 +3993,7 @@
           "values" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/Dictionary"
+              "$ref" : "#/components/schemas/oap_dictionary_Dictionary"
             }
           },
           "externalId" : {
@@ -4014,7 +4026,7 @@
           "values" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/Dictionary"
+              "$ref" : "#/components/schemas/oap_dictionary_Dictionary"
             }
           },
           "externalId" : {

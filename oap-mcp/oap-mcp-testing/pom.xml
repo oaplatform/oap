@@ -25,11 +25,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp-test</artifactId>
-            <version>${oap.deps.mcp.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>oap</groupId>

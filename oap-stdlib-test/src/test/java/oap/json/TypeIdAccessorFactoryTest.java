@@ -29,11 +29,11 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.id.Id;
 import org.testng.annotations.Test;
+import tools.jackson.databind.annotation.JsonTypeIdResolver;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -24,24 +24,22 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.core.util.VersionUtil;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
-import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleDeserializers;
 import oap.reflect.Coercions;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Numbers;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.Version;
+import tools.jackson.core.util.VersionUtil;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.deser.jdk.NumberDeserializers;
+import tools.jackson.databind.deser.std.StdScalarDeserializer;
+import tools.jackson.databind.module.SimpleDeserializers;
 
-import java.io.IOException;
 
-public class OapJsonModule extends Module {
+public class OapJsonModule extends JacksonModule {
     public static final Version VERSION = VersionUtil.parseVersion(
         "1.0.0", "oap", "oap-json" );
 
@@ -85,9 +83,9 @@ public class OapJsonModule extends Module {
         }
 
         @Override
-        public Long deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+        public Long deserialize( JsonParser p, DeserializationContext ctxt ) {
             return p.hasToken( JsonToken.VALUE_STRING )
-                ? Numbers.parseLongWithUnits( p.getText().trim() )
+                ? Numbers.parseLongWithUnits( p.getString().trim() )
                 : deserializer.deserialize( p, ctxt );
         }
     }
@@ -100,8 +98,8 @@ public class OapJsonModule extends Module {
         }
 
         @Override
-        public String deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException, JacksonException {
-            String s = com.fasterxml.jackson.databind.deser.std.StringDeserializer.instance.deserialize( jsonParser, deserializationContext );
+        public String deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) {
+            String s = tools.jackson.databind.deser.jdk.StringDeserializer.instance.deserialize( jsonParser, deserializationContext );
 
             return ( String ) Coercions.castFunction( STRING_REFLECTION, s );
         }

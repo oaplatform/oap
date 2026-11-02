@@ -24,9 +24,6 @@
 
 package oap.dictionary;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
@@ -36,9 +33,10 @@ import oap.util.function.Try;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NonNull;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -383,10 +381,10 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
-    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator ) throws IOException {
+    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator ) {
         jsonGenerator.writeStartObject();
 
-        jsonGenerator.writeStringField( NAME, dictionary.name );
+        jsonGenerator.writeStringProperty( NAME, dictionary.name );
 
         writeProperties( jsonGenerator, dictionary );
 
@@ -398,49 +396,41 @@ public class DictionaryParser {
     public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( path, format ) ) {
             serialize( dictionary, jsonGenerator );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
     public static void serialize( DictionaryRoot dictionary, StringBuilder sb, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
             serialize( dictionary, jsonGenerator );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
     public static JsonGenerator getJsonGenerator( Path path, boolean format ) {
-        JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( path );
-        if( format ) jsonGenerator = jsonGenerator
-            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
-        return jsonGenerator;
+        var writer = Binder.json.getMapper().writer();
+        if( format ) writer = writer.with( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
+        return writer.createGenerator( path.toFile(), tools.jackson.core.JsonEncoding.UTF8 );
     }
 
     public static JsonGenerator getJsonGenerator( StringBuilder sb, boolean format ) {
-        JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( sb );
-        if( format ) jsonGenerator = jsonGenerator
-            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
-        return jsonGenerator;
+        var writer = Binder.json.getMapper().writer();
+        if( format ) writer = writer.with( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
+        return writer.createGenerator( new oap.io.StringBuilderWriter( sb ) );
     }
 
-    private static void writeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {
+    private static void writeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) {
         if( values.isEmpty() ) return;
 
-        jsonGenerator.writeFieldName( VALUES );
+        jsonGenerator.writeName( VALUES );
         serializeValues( jsonGenerator, values );
     }
 
     public static void serializeValues( List<? extends Dictionary> values, StringBuilder sb, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
             serializeValues( jsonGenerator, values );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
-    private static void serializeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {
+    private static void serializeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) {
         jsonGenerator.writeStartArray();
 
         for( Dictionary value : values ) {
@@ -453,16 +443,14 @@ public class DictionaryParser {
     public static void serializeChild( Dictionary value, StringBuilder sb, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
             serializeChild( jsonGenerator, value );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
-    private static void serializeChild( JsonGenerator jsonGenerator, Dictionary value ) throws IOException {
+    private static void serializeChild( JsonGenerator jsonGenerator, Dictionary value ) {
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField( ID, value.getId() );
-        if( !value.isEnabled() ) jsonGenerator.writeBooleanField( ENABLED, false );
-        jsonGenerator.writeNumberField( EXTERNAL_ID, value.getExternalId() );
+        jsonGenerator.writeStringProperty( ID, value.getId() );
+        if( !value.isEnabled() ) jsonGenerator.writeBooleanProperty( ENABLED, false );
+        jsonGenerator.writeNumberProperty( EXTERNAL_ID, value.getExternalId() );
         if( value instanceof DictionaryValue ) {
             writeValues( jsonGenerator, value.getValues() );
         }
@@ -473,7 +461,7 @@ public class DictionaryParser {
     }
 
     private static void writeProperties( JsonGenerator jsonGenerator, Dictionary value ) {
-        value.getProperties().forEach( Try.consume( jsonGenerator::writeObjectField ) );
+        value.getProperties().forEach( Try.consume( jsonGenerator::writePOJOProperty ) );
     }
 
     public interface IdStrategy {
