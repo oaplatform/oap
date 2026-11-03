@@ -25,15 +25,15 @@
 package oap.json;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.configuration.ConfigurationLoader;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.jsontype.TypeIdResolver;
+import tools.jackson.databind.type.TypeFactory;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -122,12 +122,12 @@ public class TypeIdFactory implements TypeIdResolver {
     }
 
     @Override
-    public String idFromValue( Object value ) {
-        return idFromValueAndType( value, value.getClass() );
+    public String idFromValue( DatabindContext context, Object value ) {
+        return idFromValueAndType( context, value, value.getClass() );
     }
 
     @Override
-    public String idFromValueAndType( Object value, Class<?> suggestedType ) {
+    public String idFromValueAndType( DatabindContext context, Object value, Class<?> suggestedType ) {
         init();
 
         return classToId.computeIfAbsent( suggestedType, k -> {
@@ -136,8 +136,8 @@ public class TypeIdFactory implements TypeIdResolver {
     }
 
     @Override
-    public String idFromBaseType() {
-        return idFromValueAndType( null, baseType.getRawClass() );
+    public String idFromBaseType( DatabindContext context ) {
+        return idFromValueAndType( context, null, baseType.getRawClass() );
     }
 
     @Override
@@ -147,7 +147,7 @@ public class TypeIdFactory implements TypeIdResolver {
         final Class<?> clazz = idToClass.computeIfAbsent( id, k -> {
             throw new IllegalStateException( "cannot find id '" + k + "'" );
         } );
-        return TypeFactory.defaultInstance().constructSpecializedType( baseType, clazz );
+        return TypeFactory.createDefaultInstance().constructSpecializedType( baseType, clazz );
     }
 
     @Override

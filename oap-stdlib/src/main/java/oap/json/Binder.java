@@ -24,42 +24,10 @@
 package oap.json;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.Nulls;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.StreamReadFeature;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.AnnotationIntrospector;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.dataformat.xml.XmlFactory;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
-import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import de.undercouch.bson4jackson.BsonFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +44,38 @@ import oap.util.Dates;
 import oap.util.FastByteArrayOutputStream;
 import oap.util.function.Try;
 import org.joda.time.ReadableInstant;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonEncoding;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.core.StreamWriteFeature;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.DefaultTyping;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import tools.jackson.dataformat.xml.XmlFactory;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.xml.XmlWriteFeature;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.datatype.joda.JodaModule;
+import tools.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
+import tools.jackson.datatype.joda.deser.DateTimeDeserializer;
+import tools.jackson.module.afterburner.AfterburnerModule;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -107,17 +107,17 @@ public class Binder {
     private static final byte[] BEGIN_ARRAY = "[".getBytes();
     private static final byte[] END_ARRAY = "]".getBytes();
     private static final byte[] ITEM_SEP = ",".getBytes();
-    private static final Set<Module> modules;
+    private static final Set<JacksonModule> modules;
 
     static {
         modules = Resources
             .lines( "META-INF/jackson.modules" )
-            .map( Try.map( clazz -> ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) )
+            .map( Try.map( clazz -> ( JacksonModule ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) )
             .toSet();
 
         BsonFactory bsonFactory = new BsonFactory();
 
-        JsonFactory jsonFactory = BsonFactory.builder()
+        JsonFactory jsonFactory = JsonFactory.builder()
             .enable( StreamReadFeature.USE_FAST_DOUBLE_PARSER )
             .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
             .build();
@@ -127,31 +127,24 @@ public class Binder {
             .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
             .build();
 
-        HoconFactory hoconFactory = new HoconFactory();
-        hoconFactory
-            .enable( JsonParser.Feature.USE_FAST_DOUBLE_PARSER )
-            .enable( JsonParser.Feature.USE_FAST_BIG_NUMBER_PARSER );
-
+        OapHoconFactory hoconFactory = new OapHoconFactory();
         HoconFactoryWithSystemProperties hoconFactoryWithSystemProperties = new HoconFactoryWithSystemProperties( log );
-        hoconFactoryWithSystemProperties
-            .enable( JsonParser.Feature.USE_FAST_DOUBLE_PARSER )
-            .enable( JsonParser.Feature.USE_FAST_BIG_NUMBER_PARSER );
 
         YAMLFactory yamlFactory = YAMLFactory.builder()
             .enable( StreamReadFeature.USE_FAST_DOUBLE_PARSER )
             .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
             .build();
 
-        json = new Binder( initialize( new ObjectMapper( jsonFactory ), false, false, true ) );
-        jsonWithTyping = new Binder( initialize( new ObjectMapper( jsonFactory ), true, false, true ) );
-        bson = new Binder( initialize( new ObjectMapper( bsonFactory ), false, false, true ) );
-        xml = new Binder( initialize( new XmlMapper( xmlFactory ), false, false, true ) );
-        xmlWithTyping = new Binder( initialize( new XmlMapper( xmlFactory ), true, false, true ) );
+        json = new Binder( initialize( JsonMapper.builder( jsonFactory ), false, false, true ) );
+        jsonWithTyping = new Binder( initialize( JsonMapper.builder( jsonFactory ), true, false, true ) );
+        bson = new Binder( initialize( JsonMapper.builder( bsonFactory ), false, false, true ) );
+        xml = new Binder( initialize( XmlMapper.builder( xmlFactory ), false, false, true ) );
+        xmlWithTyping = new Binder( initialize( XmlMapper.builder( xmlFactory ), true, false, true ) );
         hoconWithoutSystemProperties =
-            new Binder( initialize( new ObjectMapper( hoconFactory ), false, false, true ) );
+            new Binder( initialize( JsonMapper.builder( hoconFactory ), false, false, true ) );
         hocon =
-            new Binder( initialize( new ObjectMapper( hoconFactoryWithSystemProperties ), false, false, true ) );
-        yaml = new Binder( initialize( new ObjectMapper( yamlFactory ), false, false, true ) );
+            new Binder( initialize( JsonMapper.builder( hoconFactoryWithSystemProperties ), false, false, true ) );
+        yaml = new Binder( initialize( YAMLMapper.builder( yamlFactory ), false, false, true ) );
     }
 
     private final ObjectMapper mapper;
@@ -181,11 +174,11 @@ public class Binder {
     }
 
     public static Binder hoconWithConfig( boolean withSystemProperties, List<String> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( withSystemProperties, log, config ) ), false, false, true ) );
+        return new Binder( initialize( JsonMapper.builder( new HoconFactoryWithFallback( withSystemProperties, log, config ) ), false, false, true ) );
     }
 
     public static Binder hoconWithConfig( Map<String, Object> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, false, true ) );
+        return new Binder( initialize( JsonMapper.builder( new HoconFactoryWithFallback( true, log, config ) ), false, false, true ) );
     }
 
     private static Binder hoconWithConfigWithNullInclusion( Map<String, Object> config ) {
@@ -193,7 +186,7 @@ public class Binder {
     }
 
     private static Binder hoconWithConfigWithNullInclusion( Map<String, Object> config, boolean skipInputNulls ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true, skipInputNulls ) );
+        return new Binder( initialize( JsonMapper.builder( new HoconFactoryWithFallback( true, log, config ) ), false, true, skipInputNulls ) );
     }
 
     private static Binder hoconWithConfigWithNullInclusion( List<String> config ) {
@@ -201,49 +194,55 @@ public class Binder {
     }
 
     private static Binder hoconWithConfigWithNullInclusion( List<String> config, boolean skipInputNulls ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true, skipInputNulls ) );
+        return new Binder( initialize( JsonMapper.builder( new HoconFactoryWithFallback( true, log, config ) ), false, true, skipInputNulls ) );
     }
 
-    private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion, boolean skipInputNulls ) {
-        if( mapper instanceof XmlMapper ) {
-            ( ( XmlMapper ) mapper ).setDefaultUseWrapper( false );
-            ( ( XmlMapper ) mapper ).configure( ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true );
+    private static ObjectMapper initialize( MapperBuilder<?, ?> builder, boolean defaultTyping, boolean nonNullInclusion, boolean skipInputNulls ) {
+        if( builder instanceof XmlMapper.Builder xmlBuilder ) {
+            xmlBuilder.defaultUseWrapper( false );
+            xmlBuilder.enable( XmlWriteFeature.WRITE_XML_DECLARATION );
         }
-        AnnotationIntrospector introspector = new JacksonAnnotationIntrospector();
-        mapper.getDeserializationConfig().with( introspector );
-        mapper.getSerializationConfig().with( introspector );
-        mapper.registerModule( new AfterburnerModule() );
-        mapper.registerModule( new Jdk8Module().configureAbsentsAsNulls( true ) );
-        mapper.registerModule( new JodaModule() );
-        mapper.registerModule( new ExtModule() );
-        mapper.registerModule( new JavaTimeModule() );
-        mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
-        mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
-        mapper.enable( JsonParser.Feature.ALLOW_SINGLE_QUOTES );
-        mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
-        mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
-        mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
-        mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
-        mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
-        mapper.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
-        mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        //todo remove after kernel cleanup
-        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
-
-        if( skipInputNulls ) mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
-        if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-
-        modules.forEach( mapper::registerModule );
-
+        builder.addModule( new AfterburnerModule() );
+        builder.addModule( new JodaModule() );
+        builder.addModule( new ExtModule() );
+        builder.enable( DeserializationFeature.USE_LONG_FOR_INTS );
+        if( builder instanceof JsonMapper.Builder jsonBuilder ) jsonBuilder.enable( JsonReadFeature.ALLOW_SINGLE_QUOTES );
+        builder.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
+        builder.disable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES );
+        builder.disable( DeserializationFeature.FAIL_ON_TRAILING_TOKENS );
+        builder.disable( DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS );
+        builder.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
+        builder.disable( MapperFeature.SORT_PROPERTIES_ALPHABETICALLY );
+        builder.disable( StreamWriteFeature.AUTO_CLOSE_TARGET );
+        builder.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
+        builder.enable( MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS );
+        builder.constructorDetector( tools.jackson.databind.cfg.ConstructorDetector.DEFAULT.withAllowImplicitWithDefaultConstructor( false ) );
+        builder.polymorphicTypeValidator( BasicPolymorphicTypeValidator.builder().allowIfSubType( Object.class ).build() );
+        builder.changeDefaultVisibility( v -> v.withFieldVisibility( JsonAutoDetect.Visibility.ANY ).withCreatorVisibility( JsonAutoDetect.Visibility.ANY ) );
+        builder.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
+        if( skipInputNulls ) builder.changeDefaultNullHandling( v -> JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
+        if( !nonNullInclusion ) builder.changeDefaultPropertyInclusion( v -> JsonInclude.Value.construct( JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS ) );
+        // Preserve WRITE_EMPTY_JSON_ARRAYS=false for all container implementations,
+        // while keeping empty strings and explicit inclusion annotations.
+        builder.annotationIntrospector( tools.jackson.databind.introspect.AnnotationIntrospectorPair.pair(
+            builder.annotationIntrospector(), new tools.jackson.databind.introspect.NopAnnotationIntrospector() {
+                @Override
+                public JsonInclude.Value findPropertyInclusion( tools.jackson.databind.cfg.MapperConfig<?> config, tools.jackson.databind.introspect.Annotated annotated ) {
+                    Class<?> type = annotated.getRawType();
+                    return type.isArray() || java.util.Collection.class.isAssignableFrom( type ) || Map.class.isAssignableFrom( type )
+                        ? JsonInclude.Value.construct( JsonInclude.Include.NON_EMPTY, JsonInclude.Include.ALWAYS ) : JsonInclude.Value.empty();
+                }
+            } ) );
+        builder.withConfigOverride( Optional.class, c -> c.setInclude( JsonInclude.Value.construct( JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS ) ) );
+        modules.forEach( builder::addModule );
         if( defaultTyping )
-            mapper.enableDefaultTyping( ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY );
-
-        return mapper;
+            builder.activateDefaultTyping( BasicPolymorphicTypeValidator.builder().allowIfSubType( Object.class ).build(), DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY );
+        return builder.build();
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> clazz ) {
-        return ( JsonDeserializer<T> ) new DateTimeDeserializer( clazz, JACKSON_DATE_FORMAT );
+    private static <T extends ReadableInstant> ValueDeserializer<T> forType( Class<T> clazz ) {
+        return ( ValueDeserializer<T> ) new DateTimeDeserializer( clazz, JACKSON_DATE_FORMAT );
     }
 
     private static <T> TypeReference<T> toTypeReference( TypeRef<T> ref ) {
@@ -259,7 +258,7 @@ public class Binder {
         try {
             var marshal = json.marshal( obj );
             hoconWithConfigWithNullInclusion( values, false ).mapper.readerForUpdating( obj ).readValue( marshal );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( e );
         }
     }
@@ -268,7 +267,7 @@ public class Binder {
         try {
             String marshal = Binder.json.marshal( obj );
             hoconWithConfigWithNullInclusion( List.of( json ), false ).mapper.readerForUpdating( obj ).readValue( marshal );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( e );
         }
     }
@@ -289,16 +288,16 @@ public class Binder {
 
     public final JsonGenerator getJsonGenerator( Path path ) {
         try {
-            return mapper.getFactory().createGenerator( path.toFile(), JsonEncoding.UTF8 );
-        } catch( IOException e ) {
+            return mapper.createGenerator( path.toFile(), JsonEncoding.UTF8 );
+        } catch( JacksonException e ) {
             throw new JsonException( e );
         }
     }
 
     public final JsonGenerator getJsonGenerator( StringBuilder sb ) {
         try {
-            return mapper.getFactory().createGenerator( new StringBuilderWriter( sb ) );
-        } catch( IOException e ) {
+            return mapper.createGenerator( new StringBuilderWriter( sb ) );
+        } catch( JacksonException e ) {
             throw new JsonException( e );
         }
     }
@@ -328,7 +327,7 @@ public class Binder {
             if( prettyPrinter )
                 return mapper.writerWithDefaultPrettyPrinter().with( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) ).writeValueAsString( value );
             else return mapper.writeValueAsString( value );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( e );
         }
     }
@@ -354,11 +353,11 @@ public class Binder {
             if( prettyPrinter ) {
                 DefaultPrettyPrinter defaultPrettyPrinter = new DefaultPrettyPrinter();
                 defaultPrettyPrinter.indentArraysWith( DefaultIndenter.SYSTEM_LINEFEED_INSTANCE );
-                mapper.writer( defaultPrettyPrinter ).writeValue( writer, value );
+                mapper.writer().with( defaultPrettyPrinter ).writeValue( writer, value );
             } else {
                 mapper.writeValue( writer, value );
             }
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( e );
         }
     }
@@ -372,7 +371,7 @@ public class Binder {
             if( prettyPrinter ) mapper.writerWithDefaultPrettyPrinter().writeValue( outputStream, value );
             else
                 mapper.writeValue( outputStream, value );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot serialize from class: " + value.getClass().getCanonicalName(), e );
         }
     }
@@ -380,7 +379,7 @@ public class Binder {
     public <T> String marshal( TypeRef<T> ref, Object value ) {
         try {
             return mapper.writerFor( toTypeReference( ref ) ).writeValueAsString( value );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot serialize from class: " + ref.type().getClass().getCanonicalName(), e );
         }
     }
@@ -389,7 +388,7 @@ public class Binder {
     public <T> String marshal( TypeReference<T> ref, Object value ) {
         try {
             return mapper.writerFor( ref ).writeValueAsString( value );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot serialize from class: " + value.getClass().getCanonicalName(), e );
         }
     }
@@ -397,7 +396,7 @@ public class Binder {
     public void marshal( OutputStream os, Object value ) {
         try {
             mapper.writeValue( os, value );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot serialize from class: " + value.getClass().getCanonicalName(), e );
         }
     }
@@ -407,7 +406,7 @@ public class Binder {
 
         try( OutputStream os = IoStreams.out( path ) ) {
             marshal( os, value );
-        } catch( IOException e ) {
+        } catch( IOException | JacksonException e ) {
             throw new JsonException( "Cannot serialize from class: " + value.getClass().getCanonicalName(), e );
         }
     }
@@ -453,9 +452,9 @@ public class Binder {
     }
 
     public <T> T unmarshal( Class<T> clazz, URL url ) throws JsonException {
-        try {
-            return mapper.readValue( url, clazz );
-        } catch( IOException e ) {
+        try( var reader = OapHoconFactory.open( url ) ) {
+            return mapper.readValue( reader, clazz );
+        } catch( IOException | JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + clazz.getCanonicalName(), e );
         }
     }
@@ -463,7 +462,7 @@ public class Binder {
     public <T> T unmarshal( TypeRef<T> ref, String string ) {
         try {
             return mapper.readValue( string, toTypeReference( ref ) );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             log.trace( "json: {}", string );
             throw new JsonException( "Cannot deserialize to class: " + ref.type().getClass().getCanonicalName(), e );
         }
@@ -472,16 +471,16 @@ public class Binder {
     public <T> T unmarshal( Reflection type, String string ) throws JsonException {
         try {
             return mapper.readValue( string, mapper.getTypeFactory().constructType( type.getType() ) );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             log.trace( "json: {}", string );
             throw new JsonException( "Cannot deserialize to class: " + type.getType().getClass().getCanonicalName(), e );
         }
     }
 
     public <T> T unmarshal( Reflection type, URL url ) throws JsonException {
-        try {
-            return mapper.readValue( url, mapper.getTypeFactory().constructType( type.getType() ) );
-        } catch( IOException e ) {
+        try( var reader = OapHoconFactory.open( url ) ) {
+            return mapper.readValue( reader, mapper.getTypeFactory().constructType( type.getType() ) );
+        } catch( IOException | JacksonException e ) {
             log.trace( "url: {}", url );
             throw new JsonException( "Cannot deserialize to class: " + type.getType().getClass().getCanonicalName(), e );
         }
@@ -490,7 +489,7 @@ public class Binder {
     public <T> T unmarshal( Reflection type, Path path ) throws JsonException {
         try( var is = java.nio.file.Files.newInputStream( path ) ) {
             return mapper.readValue( is, mapper.getTypeFactory().constructType( type.getType() ) );
-        } catch( IOException e ) {
+        } catch( IOException | JacksonException e ) {
             log.trace( "path: {}", path );
             throw new JsonException( "Cannot deserialize to class: " + type.getType().getClass().getCanonicalName(), e );
         }
@@ -500,7 +499,7 @@ public class Binder {
     public <T> T unmarshal( TypeReference<T> ref, String string ) throws JsonException {
         try {
             return mapper.readValue( string, ref );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             log.trace( "json: " + string );
             throw new JsonException( "Cannot deserialize to class: " + ref.getType().getClass().getCanonicalName(), e );
         }
@@ -518,7 +517,7 @@ public class Binder {
     public <T> T unmarshal( TypeReference<T> ref, Path path ) throws JsonException {
         try( var in = IoStreams.in( path ) ) {
             return unmarshal( ref, in );
-        } catch( IOException e ) {
+        } catch( IOException | JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + ref.getType().getClass().getCanonicalName(), e );
         }
     }
@@ -526,7 +525,7 @@ public class Binder {
     public <T> T unmarshal( TypeRef<T> ref, URL url ) throws JsonException {
         try( var in = url.openStream() ) {
             return unmarshal( ref, in );
-        } catch( IOException e ) {
+        } catch( IOException | JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + ref.type().getClass().getCanonicalName(), e );
         }
     }
@@ -535,7 +534,7 @@ public class Binder {
     public <T> T unmarshal( TypeReference<T> ref, URL url ) throws JsonException {
         try( var in = url.openStream() ) {
             return unmarshal( ref, in );
-        } catch( IOException e ) {
+        } catch( IOException | JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + ref.getType().getClass().getCanonicalName(), e );
         }
     }
@@ -543,7 +542,7 @@ public class Binder {
     public <T> T unmarshal( TypeRef<T> ref, InputStream is ) throws JsonException {
         try {
             return mapper.readValue( is, toTypeReference( ref ) );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + ref.type().getClass().getCanonicalName(), e );
         }
     }
@@ -552,7 +551,7 @@ public class Binder {
     public <T> T unmarshal( TypeReference<T> ref, InputStream is ) throws JsonException {
         try {
             return mapper.readValue( is, ref );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + ref.getType().getClass().getCanonicalName(), e );
         }
     }
@@ -649,7 +648,7 @@ public class Binder {
     public <T> T unmarshal( Class<T> clazz, InputStream json ) throws JsonException {
         try {
             return mapper.readValue( json, clazz );
-        } catch( IOException e ) {
+        } catch( JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + clazz.getCanonicalName(), e );
         }
     }
@@ -658,7 +657,7 @@ public class Binder {
         try( InputStream is = context.getResourceAsStream( resourceJsonPath ) ) {
             if( is == null ) throw new JsonException( "not found " + resourceJsonPath );
             return this.unmarshal( clazz, is );
-        } catch( IOException e ) {
+        } catch( IOException | JacksonException e ) {
             throw new JsonException( "Cannot deserialize to class: " + clazz.getCanonicalName(), e );
         }
     }

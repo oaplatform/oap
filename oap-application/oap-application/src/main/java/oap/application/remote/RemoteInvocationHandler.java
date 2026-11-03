@@ -162,7 +162,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     try {
                         if( !success ) {
                             try {
-                                Throwable throwable = FstConsts.readObjectWithSize( dis );
+                                Throwable throwable = RemoteObjectCodec.readObjectWithSize( dis );
 
                                 if( throwable instanceof RemoteInvocationException riex ) {
                                     errorMetrics.increment();
@@ -185,7 +185,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                 } ) ) );
                             } else {
                                 try {
-                                    Result<Object, Throwable> r = Result.success( FstConsts.readObjectWithSize( dis ) );
+                                    Result<Object, Throwable> r = Result.success( RemoteObjectCodec.readObjectWithSize( dis ) );
                                     successMetrics.increment();
                                     return r;
                                 } finally {
@@ -228,7 +228,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try( DataOutputStream out = new DataOutputStream( baos ) ) {
             out.writeInt( RemoteInvocation.VERSION );
-            FstConsts.writeObjectWithSize( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
+            RemoteObjectCodec.writeObjectWithSize( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
         }
 
         return baos.toByteArray();
@@ -259,7 +259,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
             boolean b = dis.readBoolean();
             if( b ) {
-                obj = FstConsts.readObjectWithSize( dis );
+                obj = RemoteObjectCodec.readObjectWithSize( dis );
             } else {
                 end = true;
                 obj = null;

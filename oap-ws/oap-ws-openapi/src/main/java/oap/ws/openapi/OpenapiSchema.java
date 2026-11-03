@@ -24,7 +24,6 @@
 
 package oap.ws.openapi;
 
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.converter.ResolvedSchema;
 import io.swagger.v3.core.jackson.ModelResolver;
@@ -38,6 +37,7 @@ import oap.reflect.Reflection;
 import oap.ws.api.Info;
 import oap.ws.openapi.swagger.DeprecationAnnotationResolver;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import tools.jackson.databind.type.TypeFactory;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -136,7 +136,7 @@ class OpenapiSchema {
      * @see io.swagger.v3.oas.models.media.Schema
      */
     public ResolvedSchema resolveSchema( Type type, Info.WebMethodInfo method ) {
-        if ( type == null ) return null;
+        if( type == null ) return null;
         ResolvedSchema resolvedSchema = null;
         Class rawClass = null;
         try {
@@ -148,7 +148,7 @@ class OpenapiSchema {
                 + ( rawClass != null ? rawClass.getCanonicalName() : "?" ) + ">" );
         }
 
-        if ( resolvedSchema == null || resolvedSchema.schema != null ) {
+        if( resolvedSchema == null || resolvedSchema.schema != null ) {
             return resolvedSchema;
         }
         if( type instanceof ParameterizedType paramType ) {
@@ -200,7 +200,7 @@ class OpenapiSchema {
         }
         //replace outer schema to array with detected inner one
         Schema array = converter.getArraySchema( className, fieldName );
-        if ( array != null ) {
+        if( array != null ) {
             schema.setItems( array );
             schema.set$ref( null );
         }

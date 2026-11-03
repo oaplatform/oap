@@ -69,7 +69,7 @@
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-core-jakarta</artifactId>
+            <artifactId>swagger-core</artifactId>
             <version>${oap.deps.swagger.version}</version>
         </dependency>
         <dependency>

@@ -24,24 +24,22 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.Deserializers;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.module.SimpleModule;
 
-import java.io.IOException;
 
 class CustomValueModule extends SimpleModule {
-    static class CustomValueDeserializer extends JsonDeserializer<CustomValue<?>> {
+    static class CustomValueDeserializer extends ValueDeserializer<CustomValue<?>> {
         @Override
-        public CustomValue<?> deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException, JsonProcessingException {
-            var id = jsonParser.getCurrentName();
+        public CustomValue<?> deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) {
+            var id = jsonParser.currentName();
 
             var valueClass = TypeIdFactory.get( id );
 
@@ -55,8 +53,13 @@ class CustomValueModule extends SimpleModule {
 
     public static class CustomValueDeserializers extends Deserializers.Base {
         @Override
-        public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
-                                                         BeanDescription beanDesc ) throws JsonMappingException {
+        public boolean hasDeserializerFor( DeserializationConfig config, Class<?> valueType ) {
+            return CustomValue.class.equals( valueType );
+        }
+
+        @Override
+        public ValueDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
+                                                          BeanDescription.Supplier beanDesc ) throws DatabindException {
             final Class<?> raw = type.getRawClass();
             if( CustomValue.class.equals( raw ) ) {
                 return new CustomValueModule.CustomValueDeserializer();

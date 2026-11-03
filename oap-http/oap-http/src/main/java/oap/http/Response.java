@@ -1,6 +1,5 @@
 package oap.http;
 
-import com.fasterxml.jackson.databind.MappingIterator;
 import com.google.common.io.ByteStreams;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -12,6 +11,7 @@ import oap.util.BiStream;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.function.Try;
+import tools.jackson.databind.MappingIterator;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

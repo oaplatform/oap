@@ -150,18 +150,18 @@ public class Remote implements HttpHandler {
                     dos.writeBoolean( ex == null );
 
                     if( ex != null ) {
-                        FstConsts.writeObjectWithSize( dos, ex );
+                        RemoteObjectCodec.writeObjectWithSize( dos, ex );
                     } else if( v instanceof Stream<?> ) {
                         dos.writeBoolean( true );
 
                         ( ( Stream<?> ) v ).forEach( Try.consume( obj -> {
                             dos.writeBoolean( true );
-                            FstConsts.writeObjectWithSize( dos, obj );
+                            RemoteObjectCodec.writeObjectWithSize( dos, obj );
                         } ) );
                         dos.writeBoolean( false );
                     } else {
                         dos.writeBoolean( false );
-                        FstConsts.writeObjectWithSize( dos, v );
+                        RemoteObjectCodec.writeObjectWithSize( dos, v );
                     }
                 } catch( Throwable e ) {
                     log.error( "invocation {}", finalInvocation, e );
@@ -181,8 +181,9 @@ public class Remote implements HttpHandler {
     public RemoteInvocation getRemoteInvocation( InputStream body ) throws IOException {
         DataInputStream dis = new DataInputStream( body );
         int version = dis.readInt();
+        if( version != RemoteInvocation.VERSION ) throw new IOException( "Unsupported RPC protocol version: " + version );
 
-        RemoteInvocation invocation = FstConsts.<RemoteInvocation>readObjectWithSize( dis );
+        RemoteInvocation invocation = RemoteObjectCodec.<RemoteInvocation>readObjectWithSize( dis );
         log.trace( "invoke v{} - {}", version, invocation );
         return invocation;
     }

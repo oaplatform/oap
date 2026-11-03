@@ -24,8 +24,6 @@
 
 package oap.storage.mongo;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.SneakyThrows;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
@@ -36,6 +34,8 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 import java.util.function.Function;
 

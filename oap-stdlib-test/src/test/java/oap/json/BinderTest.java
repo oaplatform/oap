@@ -26,8 +26,6 @@ package oap.json;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.concurrent.LongAdder;
@@ -42,6 +40,8 @@ import oap.util.Maps;
 import oap.util.Pair;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import tools.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

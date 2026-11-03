@@ -24,7 +24,7 @@
 
 package oap.json.ext;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.module.SimpleModule;
 
 public class ExtModule extends SimpleModule {
     @SuppressWarnings( "unchecked" )

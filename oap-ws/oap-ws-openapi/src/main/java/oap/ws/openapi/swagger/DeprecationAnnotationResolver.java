@@ -24,10 +24,6 @@
 
 package oap.ws.openapi.swagger;
 
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedField;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
-import com.fasterxml.jackson.databind.type.SimpleType;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverterContext;
@@ -49,6 +45,10 @@ import oap.util.Pair;
 import oap.util.Strings;
 import oap.ws.openapi.OpenApiDescription;
 import oap.ws.openapi.OpenApiIgnore;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedField;
+import tools.jackson.databind.introspect.BeanPropertyDefinition;
+import tools.jackson.databind.type.SimpleType;
 
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;

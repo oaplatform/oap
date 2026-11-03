@@ -1,25 +1,24 @@
 package oap.json.properties;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.configuration.ConfigurationLoader;
 import oap.json.ClassDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.TokenStreamContext;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 @Slf4j
-public class PropertiesDeserializer extends JsonDeserializer<Object> {
+public class PropertiesDeserializer extends ValueDeserializer<Object> {
     private static volatile HashMap<Class<?>, Configuration.ClassConfiguration> propertiesMap;
 
     private static void init() {
@@ -45,16 +44,16 @@ public class PropertiesDeserializer extends JsonDeserializer<Object> {
     }
 
     @Override
-    public Object deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException {
+    public Object deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) {
         init();
 
-        String currentName = jsonParser.getCurrentName();
-        JsonStreamContext parsingContext = jsonParser.getParsingContext();
-        JsonStreamContext parent = parsingContext.getParent();
-        Object currentValue = parent.getCurrentValue();
+        String currentName = jsonParser.currentName();
+        TokenStreamContext parsingContext = jsonParser.streamReadContext();
+        TokenStreamContext parent = parsingContext.getParent();
+        Object currentValue = parent.currentValue();
 
         if( currentValue == null ) { // not list/map
-            currentValue = parsingContext.getCurrentValue();
+            currentValue = parsingContext.currentValue();
         }
 
         Configuration.ClassConfiguration classConfiguration = propertiesMap.get( currentValue.getClass() );

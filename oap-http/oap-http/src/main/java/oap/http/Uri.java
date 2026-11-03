@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.apache.http.client.utils.URIBuilder;
-import org.yaml.snakeyaml.util.UriEncoder;
+import org.snakeyaml.engine.v2.common.UriEncoder;
 
 import java.net.URI;
 import java.net.URISyntaxException;

@@ -24,16 +24,17 @@
 
 package oap.ws.sso;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTCreationException;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import java.util.Date;
 
-import static org.joda.time.DateTimeZone.UTC;
-
 public class JwtTokenGenerator {
-
     private final String accessSecret;
     private final String refreshSecret;
     private final String issuer;
@@ -48,42 +49,30 @@ public class JwtTokenGenerator {
         this.refreshSecretExpiration = refreshSecretExpiration;
     }
 
-    public Authentication.Token generateAccessToken( User user ) throws JWTCreationException {
-        Algorithm algorithm = Algorithm.HMAC256( accessSecret );
-        Date expiresAt = new org.joda.time.DateTime( System.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
-        return new Authentication.Token( expiresAt, JWT.create()
-            .withClaim( "id", user.getId() )
-            .withClaim( "user", user.getEmail() )
-            .withClaim( "roles", user.getRoles() )
-            .withClaim( "counter", user.getCounter() )
-            .withIssuer( issuer )
-            .withExpiresAt( expiresAt )
-            .sign( algorithm ) );
+    public Authentication.Token generateAccessToken( User user ) {
+        return sign( claims( user, accessSecretExpiration ).claim( "roles", user.getRoles() ).build(), accessSecret );
     }
 
-    public Authentication.Token generateAccessTokenWithActiveOrgId( User user, String activeOrganization ) throws JWTCreationException {
-        Algorithm algorithm = Algorithm.HMAC256( accessSecret );
-        Date expiresAt = new org.joda.time.DateTime( System.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
-        return new Authentication.Token( expiresAt, JWT.create()
-            .withClaim( "id", user.getId() )
-            .withClaim( "user", user.getEmail() )
-            .withClaim( "roles", user.getRoles() )
-            .withClaim( "counter", user.getCounter() )
-            .withClaim( "org_id", activeOrganization )
-            .withIssuer( issuer )
-            .withExpiresAt( expiresAt )
-            .sign( algorithm ) );
+    public Authentication.Token generateAccessTokenWithActiveOrgId( User user, String activeOrganization ) {
+        return sign( claims( user, accessSecretExpiration ).claim( "roles", user.getRoles() ).claim( "org_id", activeOrganization ).build(), accessSecret );
     }
 
-    public Authentication.Token generateRefreshToken( User user ) throws JWTCreationException {
-        Algorithm algorithm = Algorithm.HMAC256( refreshSecret );
-        Date expiresAt = new org.joda.time.DateTime( System.currentTimeMillis() + refreshSecretExpiration, UTC ).toDate();
-        return new Authentication.Token( expiresAt, JWT.create()
-            .withClaim( "id", user.getId() )
-            .withClaim( "user", user.getEmail() )
-            .withClaim( "counter", user.getCounter() )
-            .withIssuer( issuer )
-            .withExpiresAt( expiresAt )
-            .sign( algorithm ) );
+    public Authentication.Token generateRefreshToken( User user ) {
+        return sign( claims( user, refreshSecretExpiration ).build(), refreshSecret );
+    }
+
+    private JWTClaimsSet.Builder claims( User user, long expiration ) {
+        return new JWTClaimsSet.Builder().claim( "id", user.getId() ).claim( "user", user.getEmail() )
+            .claim( "counter", user.getCounter() ).issuer( issuer ).expirationTime( new Date( System.currentTimeMillis() + expiration ) );
+    }
+
+    private Authentication.Token sign( JWTClaimsSet claims, String secret ) {
+        try {
+            var jwt = new SignedJWT( new JWSHeader.Builder( JWSAlgorithm.HS256 ).type( JOSEObjectType.JWT ).build(), claims );
+            jwt.sign( new MACSigner( JwtHmac.key( secret ) ) );
+            return new Authentication.Token( claims.getExpirationTime(), jwt.serialize() );
+        } catch( JOSEException e ) {
+            throw new IllegalStateException( "Cannot sign JWT", e );
+        }
     }
 }

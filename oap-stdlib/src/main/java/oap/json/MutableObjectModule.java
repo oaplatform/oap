@@ -24,24 +24,23 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.Deserializers;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.Serializers;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.commons.lang3.mutable.MutableObject;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.Serializers;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -53,20 +52,20 @@ public class MutableObjectModule {
         }
 
         @Override
-        public void serialize( MutableObject value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
-            gen.writeObject( value.getValue() );
+        public void serialize( MutableObject value, JsonGenerator gen, SerializationContext serializers ) {
+            gen.writePOJO( value.getValue() );
         }
     }
 
     public static class MutableObjectSerializers extends Serializers.Base {
         @Override
-        public JsonSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription beanDesc ) {
+        public ValueSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription.Supplier beanDesc, com.fasterxml.jackson.annotation.JsonFormat.Value formatOverrides ) {
             Class<?> raw = type.getRawClass();
             if( MutableObject.class.isAssignableFrom( raw ) ) {
                 return new MutableObjectSerializer( type );
             }
 
-            return super.findSerializer( config, type, beanDesc );
+            return super.findSerializer( config, type, beanDesc, formatOverrides );
         }
     }
 
@@ -79,7 +78,7 @@ public class MutableObjectModule {
         }
 
         @Override
-        public MutableObject<?> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+        public MutableObject<?> deserialize( JsonParser p, DeserializationContext ctxt ) {
 
             try {
                 MutableObject<?> mutableObject = ( MutableObject<?> ) _valueClass.getDeclaredConstructor().newInstance();
@@ -94,7 +93,7 @@ public class MutableObjectModule {
 
         @Override
         @SuppressWarnings( "unchecked" )
-        public MutableObject<?> deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException {
+        public MutableObject<?> deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) {
             intoValue.setValue( ctxt.readValue( p, refType ) );
 
             return intoValue;
@@ -103,8 +102,13 @@ public class MutableObjectModule {
 
     public static class MutableObjectDeserializers extends Deserializers.Base {
         @Override
-        public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
-                                                         BeanDescription beanDesc ) throws JsonMappingException {
+        public boolean hasDeserializerFor( DeserializationConfig config, Class<?> valueType ) {
+            return MutableObject.class.isAssignableFrom( valueType );
+        }
+
+        @Override
+        public ValueDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
+                                                          BeanDescription.Supplier beanDesc ) throws DatabindException {
             Class<?> raw = type.getRawClass();
             if( MutableObject.class.isAssignableFrom( raw ) ) {
                 Type[] actualTypeArguments = ( ( ParameterizedType ) raw.getGenericSuperclass() ).getActualTypeArguments();

@@ -1,8 +1,5 @@
 package oap.logstream.formats.rowbinary;
 
-import com.clickhouse.client.api.Client;
-import com.clickhouse.client.api.insert.InsertSettings;
-import com.clickhouse.data.ClickHouseFormat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import lombok.extern.slf4j.Slf4j;
 import oap.template.Types;
@@ -18,7 +15,15 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
@@ -82,85 +87,89 @@ public class RowBinaryTest extends Fixtures {
     }
 
     @Test
-    public void testFormat() {
-        try( Client client = new Client.Builder().addEndpoint( "http://localhost:" + container.getMappedPort( HTTP_PORT ) + "/" )
-            .setUsername( "default" )
-            .setPassword( "" )
-            .build() ) {
+    public void testFormat() throws IOException, InterruptedException {
+        try( HttpClient client = HttpClient.newHttpClient() ) {
 
-            assertThat( client.execute( "CREATE TABLE TEST ( b Bool, bt UInt8, i Int32, l Int64, f Float32, d Float64, dt DateTime, date Date, ls Array(String) ) ENGINE=Memory" ) )
-                .succeedsWithin( Duration.ofSeconds( 10 ) );
+            query( client, "CREATE TABLE TEST ( b Bool, bt UInt8, i Int32, l Int64, f Float32, d Float64, dt DateTime, date Date, ls Array(String) ) ENGINE=Memory", new byte[0] );
 
-            assertThat( client.insert( "TEST", out -> {
-                RowBinaryOutputStream rowBinaryOutputStream = new RowBinaryOutputStream( out, List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ), new byte[][] {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            RowBinaryOutputStream rowBinaryOutputStream = new RowBinaryOutputStream( out, List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ), new byte[][] {
+                { Types.BOOLEAN.id }, { Types.BYTE.id }, { Types.INTEGER.id }, { Types.LONG.id }, { Types.FLOAT.id }, { Types.DOUBLE.id }, { Types.DATETIME.id }, { Types.DATE.id }, { Types.LIST.id, Types.STRING.id }
+            } );
+            rowBinaryOutputStream.writeBoolean( true );
+            rowBinaryOutputStream.writeByte( ( byte ) 134 );
+            rowBinaryOutputStream.writeInt( 12345 );
+            rowBinaryOutputStream.writeLong( 1234567890123456789L );
+            rowBinaryOutputStream.writeFloat( 123.45f );
+            rowBinaryOutputStream.writeDouble( 123.4578901 );
+            rowBinaryOutputStream.writeDateTime( new DateTime( 2025, 7, 10, 19, 21, 38, 123, UTC ) );
+            rowBinaryOutputStream.writeDate( new Date( new DateTime( 2025, 7, 10, 19, 21, 38, 123, UTC ).getMillis() ) );
+            rowBinaryOutputStream.writeList( List.of( "a", "b", "bb" ) );
+
+            rowBinaryOutputStream.writeBoolean( false );
+            rowBinaryOutputStream.writeByte( ( byte ) 1 );
+            rowBinaryOutputStream.writeInt( 0 );
+            rowBinaryOutputStream.writeLong( -123L );
+            rowBinaryOutputStream.writeFloat( 0.045f );
+            rowBinaryOutputStream.writeDouble( -10234567 );
+            rowBinaryOutputStream.writeDateTime( new DateTime( 2025, 7, 10, 19, 21, 39, 124, UTC ) );
+            rowBinaryOutputStream.writeDate( new Date( new DateTime( 2025, 7, 10, 19, 21, 39, 123, UTC ).getMillis() ) );
+            rowBinaryOutputStream.writeList( List.of() );
+            query( client, "INSERT INTO TEST FORMAT RowBinaryWithNamesAndTypes", out.toByteArray() );
+
+            try( RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( new ByteArrayInputStream(
+                query( client, "SELECT * FROM TEST FORMAT RowBinaryWithNamesAndTypes", new byte[0] ) ) ) ) {
+                assertThat( rowBinaryInputStream.headers ).isEqualTo( new String[] { "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" } );
+                assertThat( rowBinaryInputStream.types ).isEqualTo( new byte[][] {
                     { Types.BOOLEAN.id }, { Types.BYTE.id }, { Types.INTEGER.id }, { Types.LONG.id }, { Types.FLOAT.id }, { Types.DOUBLE.id }, { Types.DATETIME.id }, { Types.DATE.id }, { Types.LIST.id, Types.STRING.id }
                 } );
-                rowBinaryOutputStream.writeBoolean( true );
-                rowBinaryOutputStream.writeByte( ( byte ) 134 );
-                rowBinaryOutputStream.writeInt( 12345 );
-                rowBinaryOutputStream.writeLong( 1234567890123456789L );
-                rowBinaryOutputStream.writeFloat( 123.45f );
-                rowBinaryOutputStream.writeDouble( 123.4578901 );
-                rowBinaryOutputStream.writeDateTime( new DateTime( 2025, 7, 10, 19, 21, 38, 123, UTC ) );
-                rowBinaryOutputStream.writeDate( new Date( new DateTime( 2025, 7, 10, 19, 21, 38, 123, UTC ).getMillis() ) );
-                rowBinaryOutputStream.writeList( List.of( "a", "b", "bb" ) );
 
-                rowBinaryOutputStream.writeBoolean( false );
-                rowBinaryOutputStream.writeByte( ( byte ) 1 );
-                rowBinaryOutputStream.writeInt( 0 );
-                rowBinaryOutputStream.writeLong( -123L );
-                rowBinaryOutputStream.writeFloat( 0.045f );
-                rowBinaryOutputStream.writeDouble( -10234567 );
-                rowBinaryOutputStream.writeDateTime( new DateTime( 2025, 7, 10, 19, 21, 39, 124, UTC ) );
-                rowBinaryOutputStream.writeDate( new Date( new DateTime( 2025, 7, 10, 19, 21, 39, 123, UTC ).getMillis() ) );
-                rowBinaryOutputStream.writeList( List.of() );
-            }, ClickHouseFormat.RowBinaryWithNamesAndTypes, new InsertSettings() ) )
-                .succeedsWithin( Duration.ofSeconds( 10 ) );
+                assertThat( rowBinaryInputStream.readRow() )
+                    .isEqualTo( List.of(
+                        true,
+                        ( byte ) 134,
+                        12345,
+                        1234567890123456789L,
+                        123.45f,
+                        123.4578901d,
+                        new DateTime( 2025, 7, 10, 19, 21, 38, UTC ),
+                        new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
+                        List.of( "a", "b", "bb" ) ) );
 
-            assertThat( client.query( "SELECT * FROM TEST FORMAT " + ClickHouseFormat.RowBinaryWithNamesAndTypes ) )
-                .succeedsWithin( Duration.ofSeconds( 10 ) )
-                .satisfies( resp -> {
-                    RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( resp.getInputStream() );
-                    assertThat( rowBinaryInputStream.headers ).isEqualTo( new String[] { "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" } );
-                    assertThat( rowBinaryInputStream.types ).isEqualTo( new byte[][] {
-                        { Types.BOOLEAN.id }, { Types.BYTE.id }, { Types.INTEGER.id }, { Types.LONG.id }, { Types.FLOAT.id }, { Types.DOUBLE.id }, { Types.DATETIME.id }, { Types.DATE.id }, { Types.LIST.id, Types.STRING.id }
-                    } );
+                assertThat( rowBinaryInputStream.readRow() )
+                    .isEqualTo( List.of(
+                        false,
+                        ( byte ) 1,
+                        0,
+                        -123L,
+                        0.045f,
+                        -10234567d,
+                        new DateTime( 2025, 7, 10, 19, 21, 39, UTC ),
+                        new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
+                        List.of() ) );
+            }
 
-                    assertThat( rowBinaryInputStream.readRow() )
-                        .isEqualTo( List.of(
-                            true,
-                            ( byte ) 134,
-                            12345,
-                            1234567890123456789L,
-                            123.45f,
-                            123.4578901d,
-                            new DateTime( 2025, 7, 10, 19, 21, 38, UTC ),
-                            new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
-                            List.of( "a", "b", "bb" ) ) );
-
-                    assertThat( rowBinaryInputStream.readRow() )
-                        .isEqualTo( List.of(
-                            false,
-                            ( byte ) 1,
-                            0,
-                            -123L,
-                            0.045f,
-                            -10234567d,
-                            new DateTime( 2025, 7, 10, 19, 21, 39, UTC ),
-                            new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
-                            List.of() ) );
-                } );
-
-            assertThat( client.query( "SELECT * FROM TEST FORMAT " + ClickHouseFormat.CSVWithNames ) )
-                .succeedsWithin( Duration.ofSeconds( 10 ) )
-                .satisfies( resp -> {
-                    BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( resp.getInputStream(), UTF_8 ) );
-                    String csv = bufferedReader.lines().collect( Collectors.joining( "\n" ) );
-                    assertThat( csv ).isEqualTo( """
-                        "b","bt","i","l","f","d","dt","date","ls"
-                        true,134,12345,1234567890123456789,123.45,123.4578901,"2025-07-10 19:21:38","2025-07-10","['a','b','bb']"
-                        false,1,0,-123,0.045,-10234567,"2025-07-10 19:21:39","2025-07-10","[]\"""" );
-                } );
+            try( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( new ByteArrayInputStream(
+                query( client, "SELECT * FROM TEST FORMAT CSVWithNames", new byte[0] ) ), UTF_8 ) ) ) {
+                String csv = bufferedReader.lines().collect( Collectors.joining( "\n" ) );
+                assertThat( csv ).isEqualTo( """
+                    "b","bt","i","l","f","d","dt","date","ls"
+                    true,134,12345,1234567890123456789,123.45,123.4578901,"2025-07-10 19:21:38","2025-07-10","['a','b','bb']"
+                    false,1,0,-123,0.045,-10234567,"2025-07-10 19:21:39","2025-07-10","[]\"""" );
+            }
         }
     }
+
+    private byte[] query( HttpClient client, String sql, byte[] body ) throws IOException, InterruptedException {
+        URI uri = URI.create( "http://" + container.getHost() + ":" + container.getMappedPort( HTTP_PORT )
+            + "/?query=" + URLEncoder.encode( sql, UTF_8 ) );
+        var request = HttpRequest.newBuilder( uri )
+            .timeout( Duration.ofSeconds( 10 ) )
+            .header( "X-ClickHouse-User", "default" )
+            .POST( HttpRequest.BodyPublishers.ofByteArray( body ) ).build();
+        var response = client.send( request, HttpResponse.BodyHandlers.ofByteArray() );
+        assertThat( response.statusCode() ).as( new String( response.body(), UTF_8 ) ).isEqualTo( 200 );
+        return response.body();
+    }
+
 }

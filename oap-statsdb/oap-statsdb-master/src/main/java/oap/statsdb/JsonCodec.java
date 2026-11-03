@@ -1,7 +1,5 @@
 package oap.statsdb;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.SneakyThrows;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
@@ -12,6 +10,8 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 /**
  * Created by igor.petrenko on 26.03.2019.

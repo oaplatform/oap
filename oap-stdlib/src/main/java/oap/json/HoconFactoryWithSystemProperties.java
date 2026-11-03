@@ -24,16 +24,11 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.io.IOContext;
-import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigParseOptions;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 
-import java.io.Reader;
 
 public class HoconFactoryWithSystemProperties extends OapHoconFactory {
     private final Logger log;
@@ -43,23 +38,13 @@ public class HoconFactoryWithSystemProperties extends OapHoconFactory {
 //        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
     }
 
-    @SneakyThrows
     @Override
-    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) {
-        ConfigParseOptions options = ConfigParseOptions.defaults();
-
-        Object rawContent = ctxt.contentReference().getRawContent();
-        log.trace( "rawContent {} rawContentClazz {}", rawContent, rawContent.getClass() );
-
-        options = fixClassLoader( log, rawContent, options );
-
-        Config config = ConfigFactory.parseReader( r, options );
-
+    protected Config resolve( Config config ) {
         Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
 //        log.trace( unresolvedConfig.root().render() );
         try {
             Config resolvedConfig = unresolvedConfig.resolve();
-            return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+            return resolvedConfig;
         } catch( ConfigException e ) {
             log.error( unresolvedConfig.root().render() );
             throw e;

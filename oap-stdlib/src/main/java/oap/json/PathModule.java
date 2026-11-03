@@ -24,23 +24,22 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.Deserializers;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.Serializers;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.Serializers;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -51,20 +50,20 @@ public class PathModule {
         }
 
         @Override
-        public void serialize( Path value, JsonGenerator gen, SerializerProvider provider ) throws IOException {
+        public void serialize( Path value, JsonGenerator gen, SerializationContext provider ) {
             gen.writeString( value.toString() );
         }
     }
 
     public static class PathSerializers extends Serializers.Base {
         @Override
-        public JsonSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription beanDesc ) {
+        public ValueSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription.Supplier beanDesc, com.fasterxml.jackson.annotation.JsonFormat.Value formatOverrides ) {
             final Class<?> raw = type.getRawClass();
             if( Path.class.isAssignableFrom( raw ) ) {
                 return new PathSerializer( type );
             }
 
-            return super.findSerializer( config, type, beanDesc );
+            return super.findSerializer( config, type, beanDesc, formatOverrides );
         }
     }
 
@@ -76,15 +75,20 @@ public class PathModule {
 
         @Override
         public Path deserialize( JsonParser p,
-                                 DeserializationContext ctxt ) throws IOException {
+                                 DeserializationContext ctxt ) {
             return Paths.get( p.getValueAsString() );
         }
     }
 
     public static class PathDeserializers extends Deserializers.Base {
         @Override
-        public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
-                                                         BeanDescription beanDesc ) throws JsonMappingException {
+        public boolean hasDeserializerFor( DeserializationConfig config, Class<?> valueType ) {
+            return valueType == Path.class;
+        }
+
+        @Override
+        public ValueDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
+                                                          BeanDescription.Supplier beanDesc ) throws DatabindException {
             final Class<?> raw = type.getRawClass();
             if( raw == Path.class ) {
                 return new PathDeserializer( type );
