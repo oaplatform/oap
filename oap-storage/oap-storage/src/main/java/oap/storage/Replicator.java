@@ -64,6 +64,8 @@ public class Replicator<I, T> implements Closeable {
     public final AtomicLong replicatorSizePartialSync = new AtomicLong();
     public final MemoryStorage<I, T> slave;
     public final ReplicationMaster<I, T> master;
+    @Nullable
+    public final ReplicatorFilter<I, T> filter;
     public final Scheduled scheduled;
     final ReentrantLock lock = new ReentrantLock();
     public String uniqueName = Cuid.UNIQUE.next();
@@ -72,10 +74,19 @@ public class Replicator<I, T> implements Closeable {
     public long timeBetweenLogs = Dates.m( 1 );
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
+        this( slave, master, interval, null );
+    }
+
+    /**
+     * @param filter optional; when set, an item is replicated into the slave only if the filter accepts it.
+     *               An already replicated item whose update no longer passes the filter is removed from the slave.
+     */
+    public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval, @Nullable ReplicatorFilter<I, T> filter ) {
         Preconditions.checkArgument( slave.transactionLog instanceof TransactionLogZero );
 
         this.slave = slave;
         this.master = master;
+        this.filter = filter;
 
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
             Pair<Long, Long> newTimestamp = replicate( timestamp );
@@ -147,16 +158,23 @@ public class Replicator<I, T> implements Closeable {
 
                     switch( transaction.operation ) {
                         case INSERT -> {
-                            added.add( __io( id, metadata ) );
-                            slave.memory.put( id, metadata );
+                            if( accept( id, metadata ) ) {
+                                added.add( __io( id, metadata ) );
+                                slave.memory.put( id, metadata );
+                            } else {
+                                removeFiltered( id, metadata, deleted );
+                            }
                         }
                         case UPDATE -> {
-                            if( updatedSince.type == FULL_SYNC ) {
+                            if( !accept( id, metadata ) ) {
+                                removeFiltered( id, metadata, deleted );
+                            } else if( updatedSince.type == FULL_SYNC ) {
                                 added.add( __io( id, metadata ) );
+                                slave.memory.put( id, metadata );
                             } else {
                                 updated.add( __io( id, metadata ) );
+                                slave.memory.put( id, metadata );
                             }
-                            slave.memory.put( id, metadata );
                         }
                         case DELETE -> {
                             deleted.add( __io( id, metadata ) );
@@ -182,6 +200,22 @@ public class Replicator<I, T> implements Closeable {
             }
         } finally {
             lock.unlock();
+        }
+    }
+
+    private boolean accept( I id, Metadata<T> metadata ) {
+        return filter == null || filter.test( id, metadata.object );
+    }
+
+    /**
+     * The item is rejected by the filter. If the slave still holds a previously replicated copy, drop it.
+     */
+    private void removeFiltered( I id, Metadata<T> metadata, ArrayList<IdObject<I, T>> deleted ) {
+        if( slave.memory.delete( id ).isPresent() ) {
+            log.trace( "[{}] {} rejected by filter, removed from slave", uniqueName, id );
+            deleted.add( __io( id, metadata ) );
+        } else {
+            log.trace( "[{}] {} rejected by filter", uniqueName, id );
         }
     }
 

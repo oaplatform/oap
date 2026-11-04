@@ -231,4 +231,126 @@ public class ReplicatorTest extends Fixtures {
         }
     }
 
+
+    @Test
+    public void filter() {
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
+
+        AtomicInteger a = new AtomicInteger();
+        AtomicInteger u = new AtomicInteger();
+        AtomicInteger d = new AtomicInteger();
+        slave.addDataListener( new Storage.DataListener<>() {
+            @Override
+            public void changed( List<IdObject<String, Bean>> added, List<IdObject<String, Bean>> updated, List<IdObject<String, Bean>> deleted ) {
+                a.addAndGet( added.size() );
+                u.addAndGet( updated.size() );
+                d.addAndGet( deleted.size() );
+            }
+        } );
+
+        ReplicatorFilter<String, Bean> filter = ( id, _ ) -> !"2".equals( id ) && !"4".equals( id );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000, filter ) ) {
+            DateTimeUtils.setCurrentMillisFixed( 1 );
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( replicator.replicatorCounterFullSync ).hasValue( 1L );
+            assertThat( slave.list() ).containsOnly( new Bean( "1" ) );
+            assertThat( a ).hasValue( 1 );
+            assertThat( u ).hasValue( 0 );
+            assertThat( d ).hasValue( 0 );
+
+            DateTimeUtils.setCurrentMillisFixed( 2 );
+            master.store( new Bean( "3" ), Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "4" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( replicator.replicatorCounterPartialSync ).hasValue( 1L );
+            assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "3" ) );
+            assertThat( a ).hasValue( 2 );
+            assertThat( u ).hasValue( 0 );
+            assertThat( d ).hasValue( 0 );
+        }
+    }
+
+    @Test
+    public void filterUpdateRemovesFromSlave() {
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
+
+        AtomicInteger a = new AtomicInteger();
+        AtomicInteger u = new AtomicInteger();
+        AtomicInteger d = new AtomicInteger();
+        slave.addDataListener( new Storage.DataListener<>() {
+            @Override
+            public void changed( List<IdObject<String, Bean>> added, List<IdObject<String, Bean>> updated, List<IdObject<String, Bean>> deleted ) {
+                a.addAndGet( added.size() );
+                u.addAndGet( updated.size() );
+                d.addAndGet( deleted.size() );
+            }
+        } );
+
+        ReplicatorFilter<String, Bean> filter = ( _, bean ) -> "aaa".equals( bean.s );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000, filter ) ) {
+            DateTimeUtils.setCurrentMillisFixed( 1 );
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( slave.getNullable( "1" ) ).isEqualTo( new Bean( "1" ) );
+            assertThat( a ).hasValue( 1 );
+            assertThat( d ).hasValue( 0 );
+
+            DateTimeUtils.setCurrentMillisFixed( 2 );
+            master.update( "1", b -> {
+                b.s = "bbb";
+                return b;
+            }, Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( slave.getNullable( "1" ) ).isNull();
+            assertThat( a ).hasValue( 1 );
+            assertThat( u ).hasValue( 0 );
+            assertThat( d ).hasValue( 1 );
+
+            DateTimeUtils.setCurrentMillisFixed( 3 );
+            master.update( "1", b -> {
+                b.s = "aaa";
+                return b;
+            }, Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( slave.getNullable( "1" ) ).isEqualTo( new Bean( "1" ) );
+            assertThat( a ).hasValue( 1 );
+            assertThat( u ).hasValue( 1 );
+            assertThat( d ).hasValue( 1 );
+        }
+    }
+
+    @Test
+    public void filterFullSync() {
+        Dates.setTimeFixed( 1 );
+
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
+
+        ReplicatorFilter<String, Bean> filter = ( id, _ ) -> !"2".equals( id );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000, filter ) ) {
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( slave.list() ).containsOnly( new Bean( "1" ) );
+
+            // restart
+            Dates.incFixed( 10 );
+            ( ( TransactionLogImpl<String, Bean> ) master.transactionLog ).reset();
+            master.store( new Bean( "3" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( replicator.replicatorCounterFullSync ).hasValue( 2L );
+            assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "3" ) );
+        }
+    }
 }
