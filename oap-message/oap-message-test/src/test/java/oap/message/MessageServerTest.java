@@ -29,6 +29,7 @@ import oap.application.testng.KernelFixture;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
+import oap.message.client.MessageAvailabilityReport;
 import oap.message.client.MessageSender;
 import oap.message.server.MessageHttpHandler;
 import oap.testng.Fixtures;
@@ -54,6 +55,7 @@ import static oap.message.client.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertNotNull;
 
 @Slf4j
@@ -632,6 +634,93 @@ public class MessageServerTest extends Fixtures {
             Dates.incFixed( 100 + 1 );
             client.syncMemory();
             assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+        }
+    }
+
+    @Test
+    public void availabilityReportMaxMessages() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.retryTimeout = 100;
+            client.maxMessages = 2;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            client
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "maxMessages 1", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "maxMessages 2", ofString() );
+
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "maxMessages 3", ofString() );
+
+            MessageAvailabilityReport report = client.availabilityReport( MessageListenerMock.MESSAGE_TYPE );
+            assertThat( report.state ).isEqualTo( FAILED );
+            assertThat( report.subsystemStates ).containsOnly(
+                entry( MessageSender.FAILURE_IO_STATE, OPERATIONAL ),
+                entry( MessageSender.FAILURE_MESSAGES_STATE, FAILED ),
+                entry( MessageSender.FAILURE_SHUTDOWN_STATE, OPERATIONAL ) );
+
+            listener1.setStatus( 300 );
+            client.syncMemory();
+
+            assertThat( client.getRetryMessages() ).isEqualTo( 3 );
+            report = client.availabilityReport( MessageListenerMock.MESSAGE_TYPE );
+            assertThat( report.state ).isEqualTo( FAILED );
+            assertThat( report.subsystemStates ).containsOnly(
+                entry( MessageSender.FAILURE_IO_STATE, FAILED ),
+                entry( MessageSender.FAILURE_MESSAGES_STATE, FAILED ),
+                entry( MessageSender.FAILURE_SHUTDOWN_STATE, OPERATIONAL ) );
+
+            listener1.setStatus( MessageProtocol.STATUS_OK );
+            Dates.incFixed( 100 + 1 );
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).hasSize( 3 );
+            report = client.availabilityReport( MessageListenerMock.MESSAGE_TYPE );
+            assertThat( report.state ).isEqualTo( OPERATIONAL );
+            assertThat( report.subsystemStates ).isEmpty();
+        }
+    }
+
+    @Test
+    public void sendConcurrent() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.concurrency = 4;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            List<TestMessage> expected = new ArrayList<>();
+            for( int i = 0; i < 100; i++ ) {
+                client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendConcurrent " + i, ofString() );
+                expected.add( new TestMessage( 1, "sendConcurrent " + i ) );
+            }
+
+            assertThat( client.syncMemory() ).isTrue();
+
+            assertThat( listener1.getMessages() ).containsExactlyInAnyOrderElementsOf( expected );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0 );
+            assertThat( client.getRetryMessages() ).isEqualTo( 0 );
+            assertThat( client.getInProgressMessages() ).isEqualTo( 0 );
         }
     }
 

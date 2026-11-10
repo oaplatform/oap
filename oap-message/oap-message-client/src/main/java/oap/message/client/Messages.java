@@ -69,7 +69,7 @@ class Messages {
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
-    public void retry() {
+    public synchronized void retry() {
         if( getRetryMessages() == 0 ) return;
         long now = DateTimeUtils.currentTimeMillis();
 
@@ -126,7 +126,14 @@ class Messages {
     }
 
     public void removeInProgress( MessageInfo messageInfo ) {
-        inProgress.remove( messageInfo.message.md5 );
+        inProgress.remove( messageInfo.message.md5, messageInfo );
+    }
+
+    /**
+     * @return number of messages held in memory: ready + retry + inprogress
+     */
+    public int size() {
+        return ready.size() + retry.size() + inProgress.size();
     }
 
     public void reset() {
