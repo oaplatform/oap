@@ -69,16 +69,27 @@ import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 @ToString
 public class MessageSender implements Closeable, AutoCloseable {
+    public static final String FAILURE_IO_STATE = "IO";
+    public static final String FAILURE_MESSAGES_STATE = "MESSAGES";
+    public static final String FAILURE_SHUTDOWN_STATE = "SHUTDOWN";
     private static final Pair<MessageStatus, Short> STATUS_OK = Pair.__( MessageStatus.OK, MessageProtocol.STATUS_OK );
     public final Object syncDiskLock = new Object();
     public final String host;
@@ -104,8 +115,18 @@ public class MessageSender implements Closeable, AutoCloseable {
     public Scheduled memorySyncScheduler;
     public AtomicLong networkAvailable = new AtomicLong( 0 );
     public int networkAvailableMaxErrors = 2;
-    public long ioExceptionStartRetryTimeout = -1;
+    public volatile long ioExceptionStartRetryTimeout = -1;
     public long timeBetweenLogs = Dates.m( 1 );
+    /**
+     * Number of parallel workers delivering messages to the server within one {@link #syncMemory()} run.
+     */
+    public int concurrency = 1;
+    /**
+     * When the number of messages held in memory (ready + retry + inprogress) exceeds this value,
+     * {@link #availabilityReport(byte)} reports {@link State#FAILED} ({@link #FAILURE_MESSAGES_STATE}).
+     * {@code <= 0} disables the check.
+     */
+    public int maxMessages = 5000;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
         this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
@@ -116,7 +137,7 @@ public class MessageSender implements Closeable, AutoCloseable {
         this.host = host;
         this.port = port;
         this.memorySyncPeriod = memorySyncPeriod;
-        messageUrl = "http://" + host + ":" + port + httpPrefix;
+        messageUrl = s( "http://${host}:${port}${httpPrefix}" );
         this.directory = persistenceDirectory;
         this.messageNoRetryStrategy = messageNoRetryStrategy;
 
@@ -151,6 +172,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             Dates.durationToString( keepAliveDuration ) );
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
+        log.info( "[{}] concurrency {} maxMessages {}", uniqueName, concurrency, maxMessages );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
 
         if( diskSyncPeriod > 0 )
@@ -244,10 +266,18 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public MessageAvailabilityReport availabilityReport( byte messageType ) {
-        boolean operational = networkAvailable.get() <= networkAvailableMaxErrors
-            && !closed
-            && lastStatus.getOrDefault( messageType, STATUS_OK )._1 != MessageStatus.ERROR;
-        return new MessageAvailabilityReport( operational ? State.OPERATIONAL : State.FAILED );
+        boolean ioFailed = networkAvailable.get() > networkAvailableMaxErrors
+            || lastStatus.getOrDefault( messageType, STATUS_OK )._1 == MessageStatus.ERROR;
+        boolean messagesFailed = maxMessages > 0 && messages.size() > maxMessages;
+        boolean shutdown = closed;
+
+        if( !ioFailed && !messagesFailed && !shutdown ) return new MessageAvailabilityReport( State.OPERATIONAL );
+
+        return new MessageAvailabilityReport( State.FAILED, Map.of(
+            FAILURE_IO_STATE, ioFailed ? State.FAILED : State.OPERATIONAL,
+            FAILURE_MESSAGES_STATE, messagesFailed ? State.FAILED : State.OPERATIONAL,
+            FAILURE_SHUTDOWN_STATE, shutdown ? State.FAILED : State.OPERATIONAL
+        ) );
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
@@ -389,22 +419,40 @@ public class MessageSender implements Closeable, AutoCloseable {
                 return true;
             }
 
-            long period = currentPeriod( now );
-
-            Messages.MessageInfo messageInfo = null;
-
             messages.retry();
 
-            do {
+            if( concurrency <= 1 ) return syncMemoryWorker();
+
+            List<Future<Boolean>> workers = new ArrayList<>( concurrency );
+            try( ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor() ) {
+                for( int i = 0; i < concurrency; i++ ) workers.add( executor.submit( this::syncMemoryWorker ) );
+            }
+
+            boolean result = true;
+            for( Future<Boolean> worker : workers ) result &= worker.get();
+            return result;
+        } catch( Exception e ) {
+            return false;
+        } finally {
+            log.trace(  "[{}] syncMemory... DONE", uniqueName );
+        }
+    }
+
+    private boolean syncMemoryWorker() {
+        try {
+            long now = DateTimeUtils.currentTimeMillis();
+            long period = currentPeriod( now );
+
+            Messages.MessageInfo messageInfo = messages.poll( true );
+
+            while( messageInfo != null ) {
                 now = DateTimeUtils.currentTimeMillis();
 
-                if( messageInfo != null ) {
-                    log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
-                    Messages.MessageInfo mi = send( messageInfo, now );
+                log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
+                Messages.MessageInfo mi = send( messageInfo, now );
 
-                    messages.removeInProgress( mi );
-                    log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
-                }
+                messages.removeInProgress( mi );
+                log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
 
                 if( isGlobalIoRetryTimeout( now ) ) {
                     log.trace( "skip, isGlobalIoRetryTimeout" );
@@ -418,13 +466,11 @@ public class MessageSender implements Closeable, AutoCloseable {
                 }
 
                 messageInfo = messages.poll( true );
-            } while( messageInfo != null );
+            }
 
             return true;
         } catch( Exception e ) {
             return false;
-        } finally {
-            log.trace(  "[{}] syncMemory... DONE", uniqueName );
         }
     }
 

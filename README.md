@@ -1783,6 +1783,8 @@ MessageSender (client process)
   send(type, data)
     │
     ├─ in-memory queue ──► syncMemory() ──► POST /messages ──► MessageHttpHandler
+    │   (maxMessages →      (concurrency                             │
+    │    availabilityReport) workers)                                │
     │                                                                │
     └─ disk (on shutdown/failure)                                   ├─ MD5 dedup (MessageHashStorage)
          syncDisk() reloads on restart                              │

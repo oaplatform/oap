@@ -33,6 +33,8 @@ sender.syncDisk();
 
 Both methods are called automatically when `start()` is used with the default scheduler configuration.
 
+`syncMemory()` drains the ready queue until it is empty. With `concurrency = 1` (default) messages are delivered one by one; with `concurrency = N` the run starts `N` workers on virtual threads that poll the shared ready queue in parallel. `syncMemory()` returns only after all workers finish, so scheduled runs never overlap. Delivery order is not guaranteed in either mode (retried messages are re-queued at the tail).
+
 ### Lifecycle
 
 ```java
@@ -46,9 +48,19 @@ sender.close();   // stops schedulers; spills any unsent in-memory messages to d
 ```java
 MessageAvailabilityReport report = sender.availabilityReport( MY_MESSAGE_TYPE );
 if( report.state == State.FAILED ) {
-    // last delivery attempt failed or too many consecutive network errors
+    // report.subsystemStates tells which subsystem failed
 }
 ```
+
+When everything is fine the report is `OPERATIONAL` with empty `subsystemStates`. Otherwise it is `FAILED` and `subsystemStates` contains all three subsystems:
+
+| Subsystem | Constant | `FAILED` when |
+|---|---|---|
+| `IO` | `MessageSender.FAILURE_IO_STATE` | more than `networkAvailableMaxErrors` consecutive network errors, or the last delivery of this message type returned a retryable error |
+| `MESSAGES` | `MessageSender.FAILURE_MESSAGES_STATE` | messages held in memory (ready + retry + inprogress) exceed `maxMessages` |
+| `SHUTDOWN` | `MessageSender.FAILURE_SHUTDOWN_STATE` | the sender is closed |
+
+`send` is never blocked or rejected by `maxMessages` — the limit is a signal for the caller (e.g. to stop producing or to fail a health check).
 
 ## Parameters
 
@@ -59,6 +71,8 @@ if( report.state == State.FAILED ) {
 | `httpPrefix` | `/messages` | URL path for the message endpoint |
 | `directory` | — | Directory for persisting unsent messages to disk |
 | `memorySyncPeriod` | `100` ms | How often to flush the in-memory queue (`-1` disables) |
+| `concurrency` | `1` | Number of parallel delivery workers in one `syncMemory()` run |
+| `maxMessages` | `5000` | Messages in memory (ready + retry + inprogress) above which `availabilityReport` returns `FAILED` / `MESSAGES` (`<= 0` disables) |
 | `diskSyncPeriod` | `1m` | How often to scan `directory` for persisted messages (`-1` disables) |
 | `retryTimeout` | `1s` | Delay before retrying a failed message |
 | `globalIoRetryTimeout` | `1s` | Global backoff after a host-unreachable error |
@@ -111,6 +125,8 @@ services {
     httpPrefix = /messages
     directory = /opt/oap/messages/sender
     memorySyncPeriod = 100
+    concurrency = 4
+    maxMessages = 5000
   }
 }
 ```

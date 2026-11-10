@@ -11,6 +11,8 @@ services {
       memorySyncPeriod = 100
       keepAliveDuration = 30d
       storageLockExpiration = 1h
+      concurrency = 1
+      maxMessages = 5000
       port = 8081
 
       //      host = <unknown>
