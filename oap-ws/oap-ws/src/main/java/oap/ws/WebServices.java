@@ -36,6 +36,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class WebServices {
     public final LinkedHashMap<String, Object> services = new LinkedHashMap<>();
@@ -71,7 +73,7 @@ public class WebServices {
             }
 
             List<Interceptor> interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
-                .orElseThrow( () -> new RuntimeException( "interceptor " + name + " not found" ) ) );
+                .orElseThrow( () -> new RuntimeException( s( "interceptor ${name} not found" ) ) ) );
 
             for( String path : config.ext.path ) {
                 bind( path, config.getInstance(),
@@ -106,7 +108,7 @@ public class WebServices {
         services.put( context, service );
         servicePorts.put( context, port );
         this.interceptors.put( context, interceptors );
-        bind( context, new WebService( service, sessionAware, sessionManager, interceptors, compressionSupport ), compressionSupport, blocking, port, portType );
+        bind( context, new WebService( service, sessionAware, sessionManager, interceptors ), compressionSupport, blocking, port, portType );
     }
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )

@@ -242,6 +242,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         for( int i = handlers.size() - 1; i >= 0; i-- ) {
             NioHandlerBuilder nioHandlerBuilder = handlers.get( i );
+            // compression is applied per bound path (see bind(..., compressionSupport, ...)), not per port
+            if( nioHandlerBuilder instanceof CompressionNioHandler ) continue;
             handler = nioHandlerBuilder.build( handler );
         }
 
@@ -308,7 +310,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             }
         };
 
-        if( !hasHandler( CompressionNioHandler.class ) && compressionSupport ) {
+        if( compressionSupport ) {
             httpHandler = new CompressionNioHandler().build( httpHandler );
         }
 

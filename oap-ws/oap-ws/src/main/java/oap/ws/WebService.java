@@ -48,7 +48,6 @@ import static org.joda.time.DateTimeZone.UTC;
 
 @Slf4j
 public class WebService implements HttpHandler {
-    public final boolean compressionSupport;
     private final boolean sessionAware;
     private final SessionManager sessionManager;
     private final List<? extends Interceptor> interceptors;
@@ -56,13 +55,12 @@ public class WebService implements HttpHandler {
     private final WsMethodMatcher methodMatcher;
 
     public WebService( Object instance, boolean sessionAware,
-                       SessionManager sessionManager, List<? extends Interceptor> interceptors, boolean compressionSupport ) {
+                       SessionManager sessionManager, List<? extends Interceptor> interceptors ) {
         this.instance = instance;
         this.methodMatcher = new WsMethodMatcher( instance.getClass() );
         this.sessionAware = sessionAware;
         this.sessionManager = sessionManager;
         this.interceptors = interceptors;
-        this.compressionSupport = compressionSupport;
     }
 
     private void wsError( HttpServerExchange exchange, Throwable e ) {
