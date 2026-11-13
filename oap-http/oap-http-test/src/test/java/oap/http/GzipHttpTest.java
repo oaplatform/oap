@@ -26,6 +26,7 @@ package oap.http;
 
 import oap.http.client.OapHttpClient;
 import oap.http.server.nio.NioHttpServer;
+import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.io.IoStreams;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
@@ -81,6 +82,32 @@ public class GzipHttpTest extends Fixtures {
                 .containsHeader( "Content-Encoding", "gzip" )
                 .body( bytes -> IoStreams.asString( new ByteArrayInputStream( bytes ), IoStreams.Encoding.GZIP ) )
                 .isEqualTo( "test" );
+        }
+    }
+
+    @Test
+    public void gzipOutputDisabledPerPath() throws Exception {
+        server.handlers.add( new CompressionNioHandler() );
+
+        server.bind( "/on", exchange -> exchange.responseOk( "on", true, TEXT_PLAIN ), true, true, NioHttpServer.DEFAULT_HTTP_PORT );
+        server.bind( "/off", exchange -> exchange.responseOk( "off", true, TEXT_PLAIN ), false, true, NioHttpServer.DEFAULT_HTTP_PORT );
+        server.start();
+
+        try( HttpClient httpClient = OapHttpClient.customHttpClient().build() ) {
+            // auto-decompression
+            httpClient.getContentDecoderFactories().clear();
+
+            assertGet( httpClient, "http://localhost:" + server.defaultPort.httpPort + "/on", Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) )
+                .isOk()
+                .containsHeader( "Content-Encoding", "gzip" )
+                .body( bytes -> IoStreams.asString( new ByteArrayInputStream( bytes ), IoStreams.Encoding.GZIP ) )
+                .isEqualTo( "on" );
+
+            assertGet( httpClient, "http://localhost:" + server.defaultPort.httpPort + "/off", Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) )
+                .isOk()
+                .doesNotContainHeader( "Content-Encoding" )
+                .body()
+                .isEqualTo( "off" );
         }
     }
 
