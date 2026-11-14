@@ -56,6 +56,7 @@ import oap.util.Result;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
 import java.io.Closeable;
@@ -94,7 +95,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public int maxVersions = 20;
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
+    public long usableSpaceCheckPeriod = Dates.s( 1 );
     public volatile boolean closed;
+    private volatile UsableSpace usableSpace;
     protected CopyOnWriteArrayList<FileWriterNotification> notifications = new CopyOnWriteArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
@@ -205,7 +208,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
     @Override
     public AvailabilityReport availabilityReport() {
-        long usableSpaceAtDirectory = Files.usableSpaceAtDirectory( logDirectory );
+        long usableSpaceAtDirectory = usableSpace();
         boolean enoughSpace = usableSpaceAtDirectory > requiredFreeSpace;
         if( !enoughSpace ) {
             LogConsolidated.log( log, Level.ERROR, Dates.s( 30 ),
@@ -213,6 +216,21 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
                 null );
         }
         return new AvailabilityReport( enoughSpace ? OPERATIONAL : FAILED );
+    }
+
+    /**
+     * statfs result cached for usableSpaceCheckPeriod (joda time, so tests can control it)
+     */
+    private long usableSpace() {
+        long now = DateTimeUtils.currentTimeMillis();
+        UsableSpace cached = usableSpace;
+        if( cached != null && now >= cached.checkedAt && now - cached.checkedAt < usableSpaceCheckPeriod ) {
+            return cached.bytes;
+        }
+
+        long bytes = Files.usableSpaceAtDirectory( logDirectory );
+        usableSpace = new UsableSpace( now, bytes );
+        return bytes;
     }
 
     public void refresh() {
@@ -267,4 +285,6 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             this.path = path;
         }
     }
+
+    private record UsableSpace( long checkedAt, long bytes ) {}
 }
