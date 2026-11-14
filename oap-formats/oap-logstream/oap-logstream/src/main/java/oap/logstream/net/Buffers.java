@@ -74,13 +74,13 @@ public class Buffers implements Closeable {
 
         currentBuffers.compute( id, ( _, slot ) -> {
             if( slot == null ) {
-                slot = new Slot( findConfiguration( id ) );
+                slot = new Slot( findConfiguration( id ), Buffer.encodeHeader( id ) );
             }
             int bufferSize = slot.conf.bufferSize;
 
             Buffer b = slot.buffer;
             if( b == null ) {
-                b = cache.get( id, protocolVersion, bufferSize );
+                b = cache.get( id, protocolVersion, bufferSize, slot.header );
             }
 
             if( bufferSize - b.headerLength() < length )
@@ -88,7 +88,7 @@ public class Buffers implements Closeable {
 
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
-                b = cache.get( id, protocolVersion, bufferSize );
+                b = cache.get( id, protocolVersion, bufferSize, slot.header );
             }
 
             b.put( buffer, offset, length );
@@ -178,16 +178,18 @@ public class Buffers implements Closeable {
     }
 
     /**
-     * buffer configuration + current buffer for a LogId; mutated only inside currentBuffers.compute*
+     * buffer configuration, serialized buffer header + current buffer for a LogId; mutated only inside currentBuffers.compute*
      */
-    @ToString
+    @ToString( exclude = "header" )
     @EqualsAndHashCode
     private static final class Slot {
         final BufferConfiguration conf;
+        final byte[] header;
         Buffer buffer;
 
-        Slot( BufferConfiguration conf ) {
+        Slot( BufferConfiguration conf, byte[] header ) {
             this.conf = conf;
+            this.header = header;
         }
     }
 
@@ -196,16 +198,16 @@ public class Buffers implements Closeable {
 
         private final HashMap<Integer, Queue<Buffer>> cache = new HashMap<>();
 
-        private Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize ) {
+        private Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize, byte[] header ) {
             lock.lock();
             try {
                 Queue<Buffer> list = cache.computeIfAbsent( bufferSize, bs -> new LinkedList<>() );
 
                 if( list.isEmpty() ) {
-                    return new Buffer( bufferSize, id, protocolVersion );
+                    return new Buffer( bufferSize, id, protocolVersion, header );
                 } else {
                     Buffer buffer = list.poll();
-                    buffer.reset( id );
+                    buffer.reset( id, header );
                     return buffer;
                 }
             } finally {
