@@ -98,7 +98,7 @@ public class LogFilePerftest extends Fixtures {
     private static LogId logId( String logType, String p ) {
         byte[][] types = new byte[HEADERS.length][];
         for( int i = 0; i < types.length; i++ ) types[i] = new byte[] { Types.STRING.id };
-        return new LogId( "", logType, "host", Map.of( "p", p ), HEADERS, types );
+        return new LogId( "", logType, Map.of( "p", p ), HEADERS, types );
     }
 
     /**

@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
+import oap.net.Inet;
 import oap.util.Cuid;
 import org.apache.commons.lang3.mutable.MutableLong;
 
@@ -136,17 +137,24 @@ public class Buffers implements Closeable {
     }
 
     public final void put( LogId key, ProtocolVersion protocolVersion, byte[] buffer ) {
-        put( key, protocolVersion, buffer, 0, buffer.length );
+        put( key, Inet.HOSTNAME, protocolVersion, buffer, 0, buffer.length );
     }
 
-    @SuppressWarnings( "checkstyle:ParameterAssignment" )
     public final void put( LogId id, ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
+        put( id, Inet.HOSTNAME, protocolVersion, buffer, offset, length );
+    }
+
+    /**
+     * @param clientHostname sent in the buffer header; the header of a LogId is serialized once, with the first hostname
+     */
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    public final void put( LogId id, String clientHostname, ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffer is already closed" );
 
         currentBuffers.compute( id, ( _, slot ) -> {
             int currentGeneration = generation;
             if( slot == null ) {
-                slot = new Slot( findConfiguration( id ), Buffer.encodeHeader( id ), currentGeneration );
+                slot = new Slot( findConfiguration( id ), Buffer.encodeHeader( id, clientHostname ), currentGeneration );
             } else if( slot.generation != currentGeneration ) {
                 slot.conf = findConfiguration( id );
                 slot.generation = currentGeneration;

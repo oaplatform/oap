@@ -90,7 +90,7 @@ public class RowBinaryWriterTest extends Fixtures {
             new byte[] { Types.LIST.id, Types.STRING.id },
             new byte[] { Types.DATETIME.id }
         };
-        LogId logId = new LogId( "", "log", "log",
+        LogId logId = new LogId( "", "log",
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
         try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost", null ) ) {
@@ -124,7 +124,7 @@ public class RowBinaryWriterTest extends Fixtures {
             new byte[] { Types.LIST.id, Types.STRING.id },
             new byte[] { Types.DATETIME.id }
         };
-        LogId logId = new LogId( "", "log", "log", Map.of( "p", "1" ), headers, types );
+        LogId logId = new LogId( "", "log", Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         int count = 10;
@@ -164,7 +164,7 @@ public class RowBinaryWriterTest extends Fixtures {
 
         String[] headers = new String[] { "COL1" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
-        LogId logId = new LogId( "", "log", "log", Map.of( "p", "1" ), headers, types );
+        LogId logId = new LogId( "", "log", Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         byte[] content1 = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "row1" ) ) ) );
@@ -202,7 +202,7 @@ public class RowBinaryWriterTest extends Fixtures {
     }
 
     private static LogId logId() {
-        return new LogId( "", "log", "log", Map.of( "p", "1" ), new String[] { "COL1", "COL2" },
+        return new LogId( "", "log", Map.of( "p", "1" ), new String[] { "COL1", "COL2" },
             new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.LONG.id } } );
     }
 

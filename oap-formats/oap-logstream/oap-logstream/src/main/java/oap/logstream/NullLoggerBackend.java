@@ -13,7 +13,7 @@ public class NullLoggerBackend extends AbstractLoggerBackend {
     @Override
     public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] row, int offset, int length ) {
-        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
+        LogId logId = new LogId( filePreffix, logType, properties, headers, types );
         return Result.success( logId.toString() );
     }
 

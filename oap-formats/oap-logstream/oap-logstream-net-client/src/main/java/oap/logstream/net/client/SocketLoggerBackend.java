@@ -232,8 +232,8 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     @Override
     public Result<String, LogstreamException> log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
-        buffers.put( logId, version, buffer, offset, length );
+        LogId logId = new LogId( filePreffix, logType, properties, headers, types );
+        buffers.put( logId, hostName, version, buffer, offset, length );
         return Result.success( logId.toString() );
     }
 

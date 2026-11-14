@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class BufferCompressorTest {
-    private static final LogId LOG_ID = new LogId( "prefix", "type", "client-host", Map.of( "p1", "v1" ),
+    private static final LogId LOG_ID = new LogId( "prefix", "type", Map.of( "p1", "v1" ),
         new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
 
     private static byte[] decompress( LogStreamCompression compression, byte[] data, int offset ) throws IOException {

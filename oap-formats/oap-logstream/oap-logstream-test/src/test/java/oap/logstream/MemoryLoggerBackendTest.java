@@ -44,11 +44,11 @@ public class MemoryLoggerBackendTest {
             backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of(), "type1",
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } }, "line2\n".getBytes( UTF_8 ) );
 
-            assertThat( backend.loggedLines( new LogId( "file1", "type1", "test1", Map.of(),
+            assertThat( backend.loggedLines( new LogId( "file1", "type1", Map.of(),
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ) ) )
                 .containsExactly( "line1", "line2" );
 
-            assertThat( backend.logged( new LogId( "file1", "type1", "test1", Map.of(),
+            assertThat( backend.logged( new LogId( "file1", "type1", Map.of(),
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ) ) )
                 .isEqualTo( "line1\nline2\n" );
 
@@ -67,7 +67,7 @@ public class MemoryLoggerBackendTest {
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", "test1", Map.of(), headers, types ).toString() );
+            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", Map.of(), headers, types ).toString() );
         }
     }
 }

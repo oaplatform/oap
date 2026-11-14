@@ -101,7 +101,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public final ScheduledExecutorService pool;
     public final String hostname;
     protected final TemplateEngine templateEngine;
-    public String filePattern = "{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}_{{ CLIENT_HOST }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz";
+    public String filePattern = "{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
     public long refreshInitDelay = Dates.s( 10 );
@@ -263,7 +263,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     }
 
     private void filePatternValidation( String type, String filePattern ) {
-        LogId logId = new LogId( "", type, "", Map.of(), new String[] {}, new byte[][] {} );
+        LogId logId = new LogId( "", type, Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
         String currentPattern = AbstractWriter.currentPattern( templateEngine, LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time, hostname );
@@ -300,7 +300,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         HostMetrics metrics = hostMetrics( hostName );
         metrics.counter.increment();
         metrics.buffers.record( length );
-        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
+        LogId logId = new LogId( filePreffix, logType, properties, headers, types );
         AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
 
         log.trace( "logging {} bytes to {}", length, writer );

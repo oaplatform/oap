@@ -62,7 +62,7 @@ public class BufferCompressionPerftest {
         String[] headers = { "TIMESTAMP", "REQUEST_ID", "COUNTRY", "DEVICE", "BID", "PRICE", "DOMAIN", "SEGMENTS" };
         byte[][] types = new byte[headers.length][];
         for( int i = 0; i < types.length; i++ ) types[i] = new byte[] { Types.STRING.id };
-        Buffer buffer = new Buffer( SIZE + 64 * 1024, new LogId( "prefix", "type", "host", Map.of(), headers, types ), ROW_BINARY_V4 );
+        Buffer buffer = new Buffer( SIZE + 64 * 1024, new LogId( "prefix", "type", Map.of(), headers, types ), ROW_BINARY_V4 );
 
         Random random = new Random( 1 );
         DateTime time = new DateTime( 2026, 11, 14, 13, 0, DateTimeZone.UTC );

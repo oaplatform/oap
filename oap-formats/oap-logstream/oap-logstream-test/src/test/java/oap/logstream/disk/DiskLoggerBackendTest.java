@@ -48,7 +48,6 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
-import static oap.net.Inet.HOSTNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -124,9 +123,9 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             assertThat( result.isSuccess() ).isTrue();
             assertThat( result.successValue )
-                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ).toString() );
+                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ).toString() );
 
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf(
                     List.of( "12345678", "rrrr5678" ),
                     List.of( "1", "2" )
@@ -177,7 +176,7 @@ public class DiskLoggerBackendTest extends Fixtures {
             Logger logger = new Logger( backend );
             Path next = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
             assertThat( next ).isNotEqualTo( file );
-            assertThat( next.getFileName().toString() ).contains( "-2_" );
+            assertThat( next.getFileName().toString() ).contains( "-2-2015" );
         }
     }
 

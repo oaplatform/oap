@@ -40,28 +40,25 @@ public class LogIdTest {
         var strTypes = new byte[][] { new byte[] { Types.STRING.id } };
         var dtTypes = new byte[][] { new byte[] { Types.DATETIME.id } };
 
-        var lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid2 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid3 = new LogId( "ln1", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid4 = new LogId( "ln", "lt1", "chn", Map.of(), h1Headers, strTypes );
-        var lid5 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid6 = new LogId( "ln", "lt", "chn", Map.of(), h2Headers, strTypes );
-        var lid7 = new LogId( "ln", "lt", "chn----!", Map.of(), h1Headers, strTypes );
-        var lid8 = new LogId( "ln", "lt", "chn----!", Map.of(), h1Headers, dtTypes );
+        var lid1 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
+        var lid2 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
+        var lid3 = new LogId( "ln1", "lt", Map.of(), h1Headers, strTypes );
+        var lid4 = new LogId( "ln", "lt1", Map.of(), h1Headers, strTypes );
+        var lid5 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
+        var lid6 = new LogId( "ln", "lt", Map.of(), h2Headers, strTypes );
+        var lid7 = new LogId( "ln", "lt", Map.of(), h1Headers, dtTypes );
 
         assertThat( lid1.hashCode() ).isEqualTo( lid2.hashCode() );
         assertThat( lid1.hashCode() ).isNotEqualTo( lid3.hashCode() );
         assertThat( lid1.hashCode() ).isNotEqualTo( lid4.hashCode() );
         assertThat( lid1.hashCode() ).isEqualTo( lid5.hashCode() );
         assertThat( lid1.hashCode() ).isNotEqualTo( lid6.hashCode() );
-        assertThat( lid1.hashCode() ).isEqualTo( lid7.hashCode() );
 
         assertThat( lid1 ).isEqualTo( lid2 );
         assertThat( lid1 ).isNotEqualTo( lid3 );
         assertThat( lid1 ).isNotEqualTo( lid4 );
         assertThat( lid1 ).isEqualTo( lid5 );
         assertThat( lid1 ).isNotEqualTo( lid6 );
-        assertThat( lid1 ).isEqualTo( lid7 );
-        assertThat( lid7 ).isNotEqualTo( lid8 );
+        assertThat( lid1 ).isNotEqualTo( lid7 );
     }
 }

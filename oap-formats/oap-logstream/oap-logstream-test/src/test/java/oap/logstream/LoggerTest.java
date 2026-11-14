@@ -57,7 +57,6 @@ import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_FREE_SPACE_REQUIRED;
 import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
-import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
 import static oap.util.Pair.__;
@@ -99,13 +98,13 @@ public class LoggerTest extends Fixtures {
             logger.log( "lfn1", Map.of(), "log", headers2, types2, line2 );
         }
 
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn2/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn2/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log2_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log2_v8a769cda0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v8a769cda0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
     }
 
@@ -145,7 +144,7 @@ public class LoggerTest extends Fixtures {
             client.syncMemory();
             assertEventually( 50, 100, () -> assertFalse( logger.isLoggingAvailable() ) );
 
-            assertFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz.rb.zst" ) )
                 .doesNotExist();
 
             serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
@@ -169,11 +168,11 @@ public class LoggerTest extends Fixtures {
         }
 
         assertEventually( 10, 1000, () ->
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
                 .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 ) );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn2/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn2/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
             .containsExactlyInAnyOrderEntriesOf( lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log2_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log2_v8a769cda0-1-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
     }
 
@@ -241,7 +240,7 @@ public class LoggerTest extends Fixtures {
             assertThat( clientBackend.getGzipLevel() ).isEqualTo( 9 );
         }
 
-        String prefix = "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz";
+        String prefix = "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz";
         assertEventually( 10, 1000, () ->
             assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf( lineData2 ) );
@@ -307,7 +306,7 @@ public class LoggerTest extends Fixtures {
             clientBackend.setFlushInterval( 100 );
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( 100L );
 
-            String prefix = "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz";
+            String prefix = "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz";
             List<Object>[] expected = expectedLines( lineData1, lineData2 );
             assertEventually( 100, 100, () -> {
                 client.syncMemory();

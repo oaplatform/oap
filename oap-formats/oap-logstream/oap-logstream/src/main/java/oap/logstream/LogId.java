@@ -40,7 +40,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 /**
- * equals/hashCode: all fields except clientHostname. hashCode is computed once (hot path: Buffers / writers maps).
+ * equals/hashCode: all fields. hashCode is computed once (hot path: Buffers / writers maps).
  */
 @ToString
 @Slf4j
@@ -49,7 +49,6 @@ public class LogId implements Serializable {
     private static final long serialVersionUID = -6026646143366760882L;
 
     public final String logType;
-    public final String clientHostname;
     public final byte[][] types;
     public final String[] headers;
 
@@ -61,13 +60,12 @@ public class LogId implements Serializable {
     @ToString.Exclude
     private transient int hash;
 
-    public LogId( String filePrefixPattern, String logType, String clientHostname,
+    public LogId( String filePrefixPattern, String logType,
                   Map<String, String> properties,
                   String[] headers,
                   byte[][] types ) {
         this.filePrefixPattern = filePrefixPattern;
         this.logType = logType;
-        this.clientHostname = clientHostname;
         this.types = types;
         this.properties.putAll( properties );
         this.headers = headers;
@@ -78,7 +76,7 @@ public class LogId implements Serializable {
     }
 
     /**
-     * same formula as the previous lombok @EqualsAndHashCode( exclude = "clientHostname" ) - hash values are unchanged
+     * same formula as lombok @EqualsAndHashCode - hash values are unchanged
      */
     private int computeHash() {
         final int prime = 59;

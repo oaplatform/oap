@@ -25,7 +25,6 @@
 package oap.logstream;
 
 import oap.kubernetes.ReplicaUtils;
-import oap.net.Inet;
 import oap.reflect.TypeRef;
 import oap.template.TemplateAccumulators;
 import oap.template.TemplateEngine;
@@ -33,6 +32,8 @@ import org.joda.time.DateTime;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
  * The LogIdTemplate class is used to render templates associated with the LogId object.
@@ -66,14 +67,12 @@ public class LogIdTemplate {
 
         context.putAll( variables );
 
-        return templateEngine.getTemplate( "LogIdTemplate_" + logId.logType, new TypeRef<Map<String, String>>() {}, template, TemplateAccumulators.STRING, null, null ).render( context ).get();
+        return templateEngine.getTemplate( s( "LogIdTemplate_${logId.logType}" ), new TypeRef<Map<String, String>>() {}, template, TemplateAccumulators.STRING, null, null ).render( context ).get();
     }
 
     public void init( Map<String, String> context, DateTime time, Timestamp timestamp, int version, String hostname ) {
         context.put( "LOG_TYPE", logId.logType );
         context.put( "LOG_VERSION", getHashWithVersion( version, hostname ) );
-        context.put( "SERVER_HOST", Inet.HOSTNAME );
-        context.put( "CLIENT_HOST", logId.clientHostname );
         context.put( "YEAR", String.valueOf( time.getYear() ) );
         context.put( "MONTH", print2Chars( time.getMonthOfYear() ) );
         context.put( "DAY", print2Chars( time.getDayOfMonth() ) );
@@ -91,6 +90,6 @@ public class LogIdTemplate {
     }
 
     private String print2Chars( int v ) {
-        return v > 9 ? String.valueOf( v ) : "0" + v;
+        return v > 9 ? String.valueOf( v ) : s( "0${v}" );
     }
 }

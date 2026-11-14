@@ -35,7 +35,7 @@ public class LogFileRecoveryTest extends Fixtures {
     }
 
     private static LogId logId() {
-        return new LogId( "fpp", "type", "host", Map.of(), new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
+        return new LogId( "fpp", "type", Map.of(), new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
     }
 
     @DataProvider

@@ -76,17 +76,19 @@ public class BuffersTest {
 
     @BeforeClass
     public void beforeClass() {
-        var buffer = new Buffer( 1024, new LogId( "x/y", "", "", Map.of(),
+        var buffer = new Buffer( 1024, new LogId( "x/y", "", Map.of(),
             HEADERS, TYPES ), BINARY_V2 );
         header = buffer.length();
     }
 
-    @Test( expectedExceptions = IllegalArgumentException.class,
-        expectedExceptionsMessageRegExp = "buffer size is too big: 2 for buffer of 34; headers = 33" )
+    @Test
     public void length() {
         Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         try( Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 1 ) ) ) {
-            buffers.put( new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } );
+            // the header length depends on the client hostname
+            assertThatThrownBy( () -> buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessage( "buffer size is too big: 2 for buffer of " + ( header + 1 ) + "; headers = " + header );
         }
     }
 
@@ -94,23 +96,23 @@ public class BuffersTest {
     public void foreach() {
         Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
-        buffers.put( new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3 } );
-        buffers.put( new LogId( "x/z", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
-        buffers.put( new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 4, 5, 6 } );
-        buffers.put( new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 7, 8, 9 } );
-        buffers.put( new LogId( "x/z", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
-        buffers.put( new LogId( "x/z", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 16 } );
+        buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3 } );
+        buffers.put( new LogId( "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
+        buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 4, 5, 6 } );
+        buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 7, 8, 9 } );
+        buffers.put( new LogId( "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
+        buffers.put( new LogId( "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 16 } );
 
         List<Buffer> expected = List.of(
-            buffer( BINARY_V2, header + 4, 1, new LogId( "x/y", "", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 1, new LogId( "x/y", "", Map.of(),
                 HEADERS, TYPES ), new byte[] { 1, 2, 3 } ),
-            buffer( BINARY_V2, header + 4, 2, new LogId( "x/y", "", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 2, new LogId( "x/y", "", Map.of(),
                 HEADERS, TYPES ), new byte[] { 4, 5, 6 } ),
-            buffer( BINARY_V2, header + 4, 3, new LogId( "x/z", "", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 3, new LogId( "x/z", "", Map.of(),
                 HEADERS, TYPES ), new byte[] { 11, 12, 13 } ),
-            buffer( BINARY_V2, header + 4, 4, new LogId( "x/z", "", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 4, new LogId( "x/z", "", Map.of(),
                 HEADERS, TYPES ), new byte[] { 14, 15, 16 } ),
-            buffer( BINARY_V2, header + 4, 5, new LogId( "x/y", "", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 5, new LogId( "x/y", "", Map.of(),
                 HEADERS, TYPES ), new byte[] { 7, 8, 9 } )
         );
         assertReadyData( buffers, expected );
@@ -124,17 +126,17 @@ public class BuffersTest {
             c( "x_y", ".+y", header + 2 ),
             c( "x_z", ".+z", header + 4 )
         ) );
-        buffers.put( new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1 } );
-        buffers.put( new LogId( "", "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
-        buffers.put( new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 2 } );
-        buffers.put( new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 3 } );
-        buffers.put( new LogId( "", "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
+        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1 } );
+        buffers.put( new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
+        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 2 } );
+        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 3 } );
+        buffers.put( new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
 
         List<Buffer> expected = List.of(
-            buffer( BINARY_V2, header + 2, 1, new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES ), new byte[] { 1, 2 } ),
-            buffer( BINARY_V2, header + 4, 2, new LogId( "", "x/z", "", Map.of(), HEADERS, TYPES ), new byte[] { 11, 12, 13 } ),
-            buffer( BINARY_V2, header + 4, 3, new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES ), new byte[] { 3 } ),
-            buffer( BINARY_V2, header + 2, 4, new LogId( "", "x/z", "", Map.of(), HEADERS, TYPES ), new byte[] { 14, 15 } )
+            buffer( BINARY_V2, header + 2, 1, new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), new byte[] { 1, 2 } ),
+            buffer( BINARY_V2, header + 4, 2, new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), new byte[] { 11, 12, 13 } ),
+            buffer( BINARY_V2, header + 4, 3, new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), new byte[] { 3 } ),
+            buffer( BINARY_V2, header + 2, 4, new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), new byte[] { 14, 15 } )
         );
         assertReadyData( buffers, expected );
         assertReadyData( buffers, Lists.empty() );
@@ -156,8 +158,8 @@ public class BuffersTest {
             c( "x_y", ".+y", header + 2 ),
             c( "x_z", ".+z", header + 4 )
         ) );
-        LogId y = new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES );
-        LogId z = new LogId( "", "x/z", "", Map.of(), HEADERS, TYPES );
+        LogId y = new LogId( "", "x/y", Map.of(), HEADERS, TYPES );
+        LogId z = new LogId( "", "x/z", Map.of(), HEADERS, TYPES );
 
         buffers.put( y, BINARY_V2, new byte[] { 1 } );
         buffers.put( z, BINARY_V2, new byte[] { 11 } );
@@ -186,8 +188,8 @@ public class BuffersTest {
         buffers.setBufferSize( header + 8 );
         assertThat( buffers.bufferSizes() ).containsOnly( Map.entry( "x_y", header + 8 ), Map.entry( "x_z", header + 8 ) );
 
-        buffers.put( new LogId( "", "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 } );
-        buffers.put( new LogId( "", "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13, 14, 15, 16, 17 } );
+        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 } );
+        buffers.put( new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13, 14, 15, 16, 17 } );
 
         assertThat( readyData( buffers ) ).containsExactlyInAnyOrder(
             tuple( "x/y", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, header + 8 ),
@@ -205,7 +207,7 @@ public class BuffersTest {
         assertThat( buffers.bufferSizes() ).containsOnly( Map.entry( "DEFAULT", header + 4 ) );
 
         buffers.setBufferSize( header + 1 );
-        assertThatThrownBy( () -> buffers.put( new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
+        assertThatThrownBy( () -> buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
             .isInstanceOf( IllegalArgumentException.class );
     }
 
@@ -225,7 +227,7 @@ public class BuffersTest {
     @Test
     public void sentBufferIsReused() {
         Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
-        LogId id = new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES );
+        LogId id = new LogId( "x/y", "", Map.of(), HEADERS, TYPES );
 
         buffers.put( id, BINARY_V2, new byte[] { 1 } );
         assertThat( readyData( buffers ) ).hasSize( 1 );
@@ -241,7 +243,7 @@ public class BuffersTest {
     @Test
     public void bufferOfOldSizeIsNotPooled() {
         Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
-        LogId id = new LogId( "x/y", "", "", Map.of(), HEADERS, TYPES );
+        LogId id = new LogId( "x/y", "", Map.of(), HEADERS, TYPES );
 
         buffers.put( id, BINARY_V2, new byte[] { 1 } );
         assertThat( readyData( buffers ) ).hasSize( 1 );

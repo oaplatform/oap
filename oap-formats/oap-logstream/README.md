@@ -120,7 +120,7 @@ Each `buffer` passed to `AbstractLoggerBackend.log(...)` (and therefore to `back
 | `timestamp` | (required)                                                                                                                                                | Bucket cadence (`BPH_1` … `BPH_12`) |
 | `bufferSize` | `102400` (100 KB)                                                                                                                                         | Per-writer in-memory write buffer |
 | `writerConfiguration` | `new WriterConfiguration()`                                                                                                                              | Currently just `tsv.dateTime32Format` — date format used for TSV `DATETIME32` columns |
-| `filePattern` | `{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}_{{ CLIENT_HOST }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz` | Output path template — the codec extension (`.rb.gz` / `.rb.lz4` / `.rb.zst`) is always appended on top of this, so the actual default gzip output extension is `.tsv.gz.rb.gz` |
+| `filePattern` | `{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz` | Output path template — the codec extension (`.rb.gz` / `.rb.lz4` / `.rb.zst`) is always appended on top of this, so the actual default gzip output extension is `.tsv.gz.rb.gz` |
 | `requiredFreeSpace` | 2 GB                                                                                                                                                      | Minimum free space; backend reports FAILED below this threshold |
 | `maxVersions` | 20                                                                                                                                                        | Maximum concurrent file versions per log ID |
 | `refreshInitDelay` | 10 s                                                                                                                                                      | Delay before first writer flush |
@@ -141,8 +141,6 @@ Predefined variables:
 |--------------------------------------------------------|---|
 | `{{ LOG_TYPE }}`                                       | Log type string from `log()` call |
 | `{{ LOG_VERSION }}`                                    | Content hash + replica id + file version (required) |
-| `{{ CLIENT_HOST }}`                                    | Source hostname |
-| `{{ SERVER_HOST }}`                                    | Hostname of the process running the backend |
 | `{{ YEAR }}`, `{{ MONTH }}`, `{{ DAY }}`, `{{ HOUR }}` | UTC date components |
 | `{{ MINUTE }}`                                         | Current UTC minute-of-hour (zero-padded) — **not** related to `{{ INTERVAL }}` |
 | `{{ INTERVAL }}`                                       | Zero-padded bucket index within the hour (required — must be present to detect bucket rotation) |

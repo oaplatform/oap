@@ -123,7 +123,8 @@ public class SocketLoggerServerTest {
     }
 
     private static byte[] payload( LogStreamCompression compression ) {
-        Buffer buffer = new Buffer( 1024, new LogId( "prefix", "type", "client-host", Map.of( "p1", "v1" ), HEADERS, TYPES ), ROW_BINARY_V4 );
+        LogId id = new LogId( "prefix", "type", Map.of( "p1", "v1" ), HEADERS, TYPES );
+        Buffer buffer = new Buffer( 1024, id, ROW_BINARY_V4, Buffer.encodeHeader( id, "client-host" ) );
         assertThat( buffer.put( ROW ) ).isTrue();
         buffer.close( 1L );
 
