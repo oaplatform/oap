@@ -63,14 +63,21 @@ import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -100,6 +107,18 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     public long usableSpaceCheckPeriod = Dates.s( 1 );
+    /**
+     * when the written data is synced to the device, see {@link SyncMode}
+     */
+    public SyncMode syncMode = SyncMode.ALWAYS;
+    /**
+     * {@link SyncMode#PERIODIC} sync period
+     */
+    public long syncInterval = Dates.s( 1 );
+    /**
+     * repair the files left without .metadata.completed by a crash on start, see {@link LogFile#recover()}
+     */
+    public boolean recoverOnStart = true;
     public volatile boolean closed;
     private volatile UsableSpace usableSpace;
     private final ConcurrentHashMap<String, HostMetrics> hostMetrics = new ConcurrentHashMap<>();
@@ -138,7 +157,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
                     log.trace( "new writer id '{}' compression {} filePattern '{}'", id, key.compression(), fp );
 
-                    return new RowBinaryWriter( templateEngine, key.compression(), DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
+                    return new RowBinaryWriter( templateEngine, key.compression(), syncMode, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
@@ -151,13 +170,96 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         log.info( "default file pattern {}", filePattern );
         log.info( "file patterns by type {}", filePatternByType );
         log.info( "refreshInitDelay {} refreshPeriod {}", Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ) );
+        log.info( "syncMode {} syncInterval {} recoverOnStart {}", syncMode, Dates.durationToString( syncInterval ), recoverOnStart );
 
         filePatternValidation( "*", filePattern );
         filePatternByType.forEach( ( k, v ) -> filePatternValidation( k, v.path ) );
 
         filePatternByType.keySet().forEach( key -> Preconditions.checkArgument( key.equals( key.toUpperCase() ), key + " must be uppercase" ) );
 
+        if( recoverOnStart ) recover();
+
         pool.scheduleWithFixedDelay( () -> refresh( false ), refreshInitDelay, refreshPeriod, MILLISECONDS );
+        if( syncMode == SyncMode.PERIODIC ) {
+            pool.scheduleWithFixedDelay( this::sync, syncInterval, syncInterval, MILLISECONDS );
+        }
+    }
+
+    /**
+     * Repairs the files under logDirectory left without .metadata.completed (crash), including the files of the previous
+     * versions with .metadata.transaction, see {@link LogFile#recover()}. Files open by the writers are not touched.
+     * Recovered files are reported to the {@link FileWriterNotification} listeners registered at that moment.
+     */
+    public void recover() {
+        if( !java.nio.file.Files.isDirectory( logDirectory ) ) return;
+
+        Set<Path> open = new HashSet<>();
+        for( AbstractWriter writer : writers.asMap().values() ) {
+            Path file = writer.currentFile();
+            if( file != null ) open.add( file );
+        }
+
+        Set<Path> candidates = new LinkedHashSet<>();
+        try( Stream<Path> files = java.nio.file.Files.walk( logDirectory ) ) {
+            files.filter( java.nio.file.Files::isRegularFile ).forEach( path -> {
+                String name = path.getFileName().toString();
+                if( name.endsWith( ".tmp" ) ) return;
+                if( name.endsWith( LogFile.EXTENSION_LOG_METADATA ) || name.endsWith( LogFile.EXTENSION_LOG_TRANSACTION )
+                    || name.endsWith( LogFile.EXTENSION_LOG_COMPLETED ) || LogFile.compressionOf( path ).isPresent() ) {
+                    candidates.add( LogFile.loadFromPath( path ).outFilename );
+                }
+            } );
+        } catch( IOException | UncheckedIOException e ) {
+            log.error( "recovery: cannot list {}", logDirectory, e );
+            return;
+        }
+
+        int recovered = 0;
+        int deleted = 0;
+        for( Path candidate : candidates ) {
+            if( open.contains( candidate ) ) continue;
+
+            LogFile logFile = new LogFile( candidate );
+            try {
+                if( logFile.isCompleted() ) {
+                    if( logFile.isLegacy() && java.nio.file.Files.exists( candidate ) ) {
+                        OptionalLong committed = logFile.legacyCommittedPosition();
+                        long size = logFile.getDataSize();
+                        if( committed.isEmpty() || committed.getAsLong() != size ) {
+                            log.warn( "[{}] completed legacy file: committed offset {} != size {}", candidate,
+                                committed.isPresent() ? committed.getAsLong() : "<none>", size );
+                        }
+                    }
+                    continue;
+                }
+
+                switch( logFile.recover() ) {
+                    case RECOVERED -> {
+                        recovered++;
+                        fileClosed( candidate );
+                    }
+                    case DELETED -> deleted++;
+                    case SKIPPED -> { }
+                }
+            } catch( Exception e ) {
+                log.error( "[{}] recovery failed", candidate, e );
+            }
+        }
+
+        if( recovered > 0 || deleted > 0 ) log.info( "recovery {}: {} recovered, {} deleted", logDirectory, recovered, deleted );
+    }
+
+    /**
+     * fdatasync of the open files ({@link SyncMode#PERIODIC})
+     */
+    public void sync() {
+        for( AbstractWriter writer : writers.asMap().values() ) {
+            try {
+                writer.sync();
+            } catch( Exception e ) {
+                log.error( "Cannot sync {}", writer, e );
+            }
+        }
     }
 
     private void filePatternValidation( String type, String filePattern ) {

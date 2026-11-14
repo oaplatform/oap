@@ -1,8 +1,8 @@
 package oap.logstream.disk;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.logstream.LogId;
 import oap.compression.Compression;
+import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol;
@@ -14,12 +14,19 @@ import oap.template.TemplateEngine;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class RowBinaryWriter extends AbstractWriter {
     public final LogStreamCompression compression;
+    public final SyncMode syncMode;
+    /**
+     * RowBinary header (column names and types) compressed with the file codec; depends only on (LogId, compression)
+     */
+    private final byte[] header;
 
     public RowBinaryWriter( TemplateEngine templateEngine, Path logDirectory, String filePattern, LogId logId,
                             int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification ) {
@@ -31,65 +38,107 @@ public class RowBinaryWriter extends AbstractWriter {
      */
     public RowBinaryWriter( TemplateEngine templateEngine, LogStreamCompression compression, Path logDirectory, String filePattern, LogId logId,
                             int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification ) {
-        super( templateEngine, compression.logFormat, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
-        this.compression = compression;
+        this( templateEngine, compression, SyncMode.ALWAYS, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
     }
 
-    private byte[] compressHeader( byte[] header, int length ) throws IOException {
-        return switch( compression ) {
-            case GZIP -> Compression.gzip( header, 0, length );
-            case LZ4 -> Compression.lz4( header, 0, length );
-            case ZSTD -> Compression.zstd( header, 0, length, LogStreamCompression.ZSTD.defaultLevel );
-        };
+    public RowBinaryWriter( TemplateEngine templateEngine, LogStreamCompression compression, SyncMode syncMode, Path logDirectory, String filePattern, LogId logId,
+                            int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification ) {
+        super( templateEngine, compression.logFormat, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
+        this.compression = compression;
+        this.syncMode = syncMode;
+        this.header = compressedHeader( logId, compression );
+    }
+
+    private static byte[] compressedHeader( LogId logId, LogStreamCompression compression ) throws LoggerException {
+        try {
+            FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
+            RowBinaryOutputStream rbOut = new RowBinaryOutputStream( outputStream, List.of( logId.headers ), logId.types );
+            rbOut.close();
+
+            return switch( compression ) {
+                case GZIP -> Compression.gzip( outputStream.array, 0, outputStream.length );
+                case LZ4 -> Compression.lz4( outputStream.array, 0, outputStream.length );
+                case ZSTD -> Compression.zstd( outputStream.array, 0, outputStream.length, LogStreamCompression.ZSTD.defaultLevel );
+            };
+        } catch( IOException e ) {
+            throw new LoggerException( e );
+        }
     }
 
     @Override
     public String write( LogStreamProtocol.ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+        boolean sync = syncMode == SyncMode.ALWAYS;
+
         lock.lock();
         try {
             refresh();
-            Path filename = filename();
+
+            ByteBuffer payload = ByteBuffer.wrap( buffer, offset, length );
+
             if( logFile == null ) {
-                LogFile checkLogFile = new LogFile( filename );
-                if( !checkLogFile.existsAndValid() && !checkLogFile.isCompleted() ) {
-                    log.debug( "[{}] open new file v{}", filename, fileVersion );
-                    logFile = checkLogFile.create( logId );
+                Path filename = openNewFile();
 
-                    LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
-                    logFile.addProperty( "VERSION", logIdTemplate.getHashWithVersion( fileVersion, Inet.hostname() ) );
-
-                    log.trace( "[{}] write headers {}", filename, logId.headers );
-
-                    FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
-                    RowBinaryOutputStream rbOut = new RowBinaryOutputStream( outputStream, List.of( logId.headers ), logId.types );
-                    rbOut.close();
-
-                    byte[] header = compressHeader( outputStream.array, outputStream.length );
-                    logFile.writeAndCommitTransaction( header, 0, header.length );
-                } else {
-                    log.debug( "[{}] file exists v{}", filename, fileVersion );
-                    fileVersion += 1;
-                    if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
-                    return write( protocolVersion, buffer, offset, length );
+                log.trace( "[{}] write headers {} and {} bytes", filename, logId.headers, length );
+                try {
+                    logFile.append( sync, ByteBuffer.wrap( header ), payload );
+                } catch( LoggerException e ) {
+                    // nothing has been written: free the version
+                    log.error( "[{}] {}", filename, e.getMessage(), e );
+                    try {
+                        logFile.close();
+                    } catch( Exception closeError ) {
+                        e.addSuppressed( closeError );
+                    } finally {
+                        logFile.delete();
+                        logFile = null;
+                    }
+                    throw e;
                 }
+
+                return filename.toString();
             }
 
             log.trace( "writing {} bytes to {}", length, this );
 
-            logFile.beginTransactionWriteAndCommitTransaction( buffer, offset, length );
-
-            return filename.toString();
-
-        } catch( IOException e ) {
-            log.error( e.getMessage(), e );
             try {
-                closeOutput();
-            } finally {
-                logFile = null;
+                logFile.append( sync, payload );
+            } catch( LoggerException e ) {
+                // the file is truncated to the last complete frame: close it, the next write goes to the next version
+                log.error( "[{}] {}", logFile.outFilename, e.getMessage(), e );
+                try {
+                    closeOutput();
+                } catch( Exception closeError ) {
+                    e.addSuppressed( closeError );
+                } finally {
+                    logFile = null;
+                }
+                throw e;
             }
-            throw new LoggerException( e );
+
+            return logFile.outFilename.toString();
         } finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * creates a file for the first free version: a version is taken if any of its files (data, metadata, completed, legacy transaction) exists
+     */
+    private Path openNewFile() {
+        while( true ) {
+            Path filename = filename();
+            LogFile checkLogFile = new LogFile( filename );
+            if( !checkLogFile.exists() ) {
+                log.debug( "[{}] open new file v{}", filename, fileVersion );
+                String version = new LogIdTemplate( logId ).getHashWithVersion( fileVersion, Inet.hostname() );
+                logFile = checkLogFile.create( logId, Map.of( "VERSION", version ) );
+                return filename;
+            }
+
+            log.debug( "[{}] file exists v{}", filename, fileVersion );
+            fileVersion += 1;
+            if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
+            refresh();
         }
     }
 }

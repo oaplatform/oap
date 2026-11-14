@@ -28,6 +28,7 @@ import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdCompressCtx;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.xxhash.XXHash32;
 import net.jpountz.xxhash.XXHashFactory;
 import oap.logstream.LogStreamCompression;
 
@@ -54,9 +55,10 @@ public class BufferCompressor implements Closeable {
 
     private static final int LZ4_MAGIC = 0x184D2204;
     /**
-     * version 01, block independence, no block checksum, no content size, no content checksum
+     * version 01, block independence, no block checksum, no content size, content checksum
+     * (the server recovery tells a torn or corrupted frame from a valid one by the checksum)
      */
-    private static final byte LZ4_FLG = 0x60;
+    private static final byte LZ4_FLG = 0x64;
     /**
      * block max size 4 MB
      */
@@ -65,6 +67,8 @@ public class BufferCompressor implements Closeable {
     private static final int LZ4_UNCOMPRESSED_BLOCK = 0x80000000;
     private static final int LZ4_FRAME_HEADER_LENGTH = 7;
     private static final int LZ4_END_MARK_LENGTH = 4;
+    private static final int LZ4_CONTENT_CHECKSUM_LENGTH = 4;
+    private static final XXHash32 XXHASH32 = XXHashFactory.fastestInstance().hash32();
     private static final byte LZ4_HC = ( byte ) ( ( XXHashFactory.safeInstance().hash32().hash( new byte[] { LZ4_FLG, LZ4_BD }, 0, 2, 0 ) >> 8 ) & 0xFF );
 
     private final CRC32 crc32 = new CRC32();
@@ -155,7 +159,7 @@ public class BufferCompressor implements Closeable {
 
         int blocks = ( length + LZ4_BLOCK_MAX_SIZE - 1 ) / LZ4_BLOCK_MAX_SIZE;
         int maxBlockLength = lz4Compressor.maxCompressedLength( Math.min( length, LZ4_BLOCK_MAX_SIZE ) );
-        ensureCapacity( offset + LZ4_FRAME_HEADER_LENGTH + blocks * ( 4 + maxBlockLength ) + LZ4_END_MARK_LENGTH );
+        ensureCapacity( offset + LZ4_FRAME_HEADER_LENGTH + blocks * ( 4 + maxBlockLength ) + LZ4_END_MARK_LENGTH + LZ4_CONTENT_CHECKSUM_LENGTH );
 
         int pos = offset;
         writeIntLE( scratch, pos, LZ4_MAGIC );
@@ -181,14 +185,18 @@ public class BufferCompressor implements Closeable {
         }
 
         writeIntLE( scratch, pos, 0 );
+        pos += LZ4_END_MARK_LENGTH;
 
-        return pos + LZ4_END_MARK_LENGTH;
+        writeIntLE( scratch, pos, XXHASH32.hash( data, offset, length, 0 ) );
+
+        return pos + LZ4_CONTENT_CHECKSUM_LENGTH;
     }
 
     private int zstd( byte[] data, int offset, int length, int level ) {
         if( zstdCtx == null ) {
             zstdCtx = new ZstdCompressCtx();
-            zstdCtx.setChecksum( false );
+            // the server recovery tells a torn or corrupted frame from a valid one by the checksum
+            zstdCtx.setChecksum( true );
             zstdCtx.setContentSize( true );
         }
         if( zstdLevel != level ) {

@@ -167,4 +167,27 @@ public class BufferCompressorTest {
                 .isInstanceOf( IllegalArgumentException.class );
         }
     }
+
+    /**
+     * the frame carries the content checksum: a flipped byte in stored (incompressible) content is detected on decompression
+     */
+    @Test( dataProvider = "compressions" )
+    public void contentChecksum( LogStreamCompression compression, int level ) throws IOException {
+        try( BufferCompressor compressor = new BufferCompressor() ) {
+            Buffer buffer = buffer( random( 100_000 ) );
+            int headerLength = buffer.headerLength();
+            byte[] data = compressor.compress( buffer, compression, level );
+
+            switch( compression ) {
+                case LZ4 -> assertThat( data[headerLength + 4] & 0x04 ).as( "FLG content checksum" ).isNotZero();
+                case ZSTD -> assertThat( data[headerLength + 4] & 0x04 ).as( "FHD content checksum" ).isNotZero();
+                case GZIP -> { }
+            }
+
+            int middle = headerLength + ( data.length - headerLength ) / 2;
+            data[middle] ^= 0x55;
+
+            assertThatThrownBy( () -> decompress( compression, data, headerLength ) ).isInstanceOf( IOException.class );
+        }
+    }
 }

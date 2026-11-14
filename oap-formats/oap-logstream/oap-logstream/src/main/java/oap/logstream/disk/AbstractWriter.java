@@ -170,6 +170,30 @@ public abstract class AbstractWriter implements Closeable {
         return logDirectory.resolve( lastPattern );
     }
 
+    /**
+     * the file open for writing, null - none
+     */
+    public Path currentFile() {
+        lock.lock();
+        try {
+            return logFile != null ? logFile.outFilename : null;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * fdatasync of the data written without sync ({@link SyncMode#PERIODIC}, {@link SyncMode#ON_CLOSE})
+     */
+    public void sync() throws LoggerException {
+        lock.lock();
+        try {
+            if( logFile != null ) logFile.sync();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     protected void closeOutput() throws LoggerException {
         lock.lock();
         try {

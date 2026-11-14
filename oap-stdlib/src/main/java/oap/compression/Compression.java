@@ -73,11 +73,12 @@ public class Compression {
     }
 
     /**
-     * LZ4 frame format (lz4 CLI / ClickHouse compatible)
+     * LZ4 frame format (lz4 CLI / ClickHouse compatible), independent blocks, content checksum
      */
     public static byte[] lz4( byte[] bytes, int offset, int length ) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try( LZ4FrameOutputStream out = new LZ4FrameOutputStream( baos, LZ4FrameOutputStream.BLOCKSIZE.SIZE_256KB ) ) {
+        try( LZ4FrameOutputStream out = new LZ4FrameOutputStream( baos, LZ4FrameOutputStream.BLOCKSIZE.SIZE_256KB,
+            LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE, LZ4FrameOutputStream.FLG.Bits.CONTENT_CHECKSUM ) ) {
             out.write( bytes, offset, length );
         }
         return baos.toByteArray();
@@ -104,6 +105,7 @@ public class Compression {
         try( ZstdCompressCtx ctx = new ZstdCompressCtx() ) {
             ctx.setLevel( level );
             ctx.setContentSize( true );
+            ctx.setChecksum( true );
             byte[] dst = new byte[( int ) Zstd.compressBound( length )];
             int size = ctx.compressByteArray( dst, 0, dst.length, bytes, offset, length );
             return Arrays.copyOf( dst, size );
