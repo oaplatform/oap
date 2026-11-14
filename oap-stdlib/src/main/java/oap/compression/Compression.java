@@ -23,7 +23,12 @@
  */
 package oap.compression;
 
+import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdCompressCtx;
+import com.github.luben.zstd.ZstdInputStream;
 import lombok.SneakyThrows;
+import net.jpountz.lz4.LZ4FrameInputStream;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
@@ -31,6 +36,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -64,6 +70,63 @@ public class Compression {
     public static void ungzip( byte[] bytes, int offset, int length, OutputStream out ) throws IOException {
         GZIPInputStream gzipInputStream = new GZIPInputStream( new ByteArrayInputStream( bytes, offset, length ) );
         IOUtils.copy( gzipInputStream, out );
+    }
+
+    /**
+     * LZ4 frame format (lz4 CLI / ClickHouse compatible), independent blocks, content checksum
+     */
+    public static byte[] lz4( byte[] bytes, int offset, int length ) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try( LZ4FrameOutputStream out = new LZ4FrameOutputStream( baos, LZ4FrameOutputStream.BLOCKSIZE.SIZE_256KB,
+            LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE, LZ4FrameOutputStream.FLG.Bits.CONTENT_CHECKSUM ) ) {
+            out.write( bytes, offset, length );
+        }
+        return baos.toByteArray();
+    }
+
+    public static byte[] lz4( byte[] bytes ) throws IOException {
+        return lz4( bytes, 0, bytes.length );
+    }
+
+    /**
+     * supports concatenated frames
+     */
+    public static byte[] unlz4( byte[] bytes, int offset, int length ) throws IOException {
+        try( LZ4FrameInputStream in = new LZ4FrameInputStream( new ByteArrayInputStream( bytes, offset, length ) ) ) {
+            return in.readAllBytes();
+        }
+    }
+
+    public static byte[] unlz4( byte[] bytes ) throws IOException {
+        return unlz4( bytes, 0, bytes.length );
+    }
+
+    public static byte[] zstd( byte[] bytes, int offset, int length, int level ) {
+        try( ZstdCompressCtx ctx = new ZstdCompressCtx() ) {
+            ctx.setLevel( level );
+            ctx.setContentSize( true );
+            ctx.setChecksum( true );
+            byte[] dst = new byte[( int ) Zstd.compressBound( length )];
+            int size = ctx.compressByteArray( dst, 0, dst.length, bytes, offset, length );
+            return Arrays.copyOf( dst, size );
+        }
+    }
+
+    public static byte[] zstd( byte[] bytes ) {
+        return zstd( bytes, 0, bytes.length, Zstd.defaultCompressionLevel() );
+    }
+
+    /**
+     * supports concatenated frames
+     */
+    public static byte[] unzstd( byte[] bytes, int offset, int length ) throws IOException {
+        try( ZstdInputStream in = new ZstdInputStream( new ByteArrayInputStream( bytes, offset, length ) ) ) {
+            return in.readAllBytes();
+        }
+    }
+
+    public static byte[] unzstd( byte[] bytes ) throws IOException {
+        return unzstd( bytes, 0, bytes.length );
     }
 
     public static class ContentWriter {

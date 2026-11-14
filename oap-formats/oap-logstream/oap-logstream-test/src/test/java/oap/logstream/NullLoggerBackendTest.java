@@ -22,7 +22,7 @@ public class NullLoggerBackendTest {
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", "test1", Map.of( "p1", "v1" ), headers, types ).toString() );
+            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", Map.of( "p1", "v1" ), headers, types ).toString() );
         }
     }
 }

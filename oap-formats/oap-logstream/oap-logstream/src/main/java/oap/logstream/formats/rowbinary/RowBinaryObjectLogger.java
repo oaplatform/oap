@@ -298,8 +298,9 @@ public class RowBinaryObjectLogger {
         }
 
         public void log( D data, String filePreffix, Map<String, String> properties, String logType ) {
-            byte[] bytes = renderer.render( data, true ).getBytes();
-            backend.log( LogStreamProtocol.ProtocolVersion.ROW_BINARY_V3, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, bytes );
+            // render() creates a new accumulator per call, backends copy the buffer synchronously -> no toByteArray() copy
+            FastByteArrayOutputStream out = renderer.render( data, true ).baos;
+            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, out.array, 0, out.length );
         }
     }
 }

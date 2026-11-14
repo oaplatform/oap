@@ -37,14 +37,17 @@ import oap.util.Result;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
-import static oap.net.Inet.HOSTNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -120,13 +123,119 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             assertThat( result.isSuccess() ).isTrue();
             assertThat( result.successValue )
-                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ).toString() );
+                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ).toString() );
 
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf(
                     List.of( "12345678", "rrrr5678" ),
                     List.of( "1", "2" )
                 );
+        }
+    }
+
+    /**
+     * the state after a crash: the file is written (and synced), .metadata.completed is missing, a torn buffer at the end
+     *
+     * @return the data file and its size before the torn buffer
+     */
+    private Path crashedFile( byte[] lines, byte[] torn, String[] headers, byte[][] types ) throws IOException {
+        Path file;
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+            Logger logger = new Logger( backend );
+            file = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
+        }
+
+        Files.delete( new LogFile( file ).getCompletedFile() );
+        Files.write( file, torn, StandardOpenOption.APPEND );
+        return file;
+    }
+
+    @Test
+    public void recoveryOnStart() throws IOException {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+        String[] headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+        byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
+
+        Path file = crashedFile( lines, java.util.Arrays.copyOf( lines, lines.length / 2 ), headers, types );
+        long sizeBeforeTorn = Files.size( file ) - lines.length / 2;
+
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+            CopyOnWriteArrayList<Path> closed = new CopyOnWriteArrayList<>();
+            backend.addNotificationListener( closed::add );
+            backend.start();
+
+            assertThat( closed ).containsExactly( file );
+            assertThat( Files.size( file ) ).isEqualTo( sizeBeforeTorn );
+            assertThat( new LogFile( file ).isCompleted() ).isTrue();
+            assertRowBinaryFile( file, GZIP ).containsExactlyInAnyOrderEntriesOf(
+                List.of( "12345678", "rrrr5678" ),
+                List.of( "1", "2" )
+            );
+
+            Logger logger = new Logger( backend );
+            Path next = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
+            assertThat( next ).isNotEqualTo( file );
+            assertThat( next.getFileName().toString() ).contains( "-2-2015" );
+        }
+    }
+
+    /**
+     * a file of the previous version (with .metadata.transaction) left by a crash: truncated to the committed offset,
+     * completed; the new data goes to the next version
+     */
+    @Test
+    @SuppressWarnings( "deprecation" )
+    public void recoveryOfLegacyFileOnStart() throws IOException {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+        String[] headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+        byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
+        byte[] uncommitted = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "not", "committed" ) ) ) );
+
+        // a complete frame after the committed offset: written, but not committed
+        Path file = crashedFile( lines, uncommitted, headers, types );
+        long committed = Files.size( file ) - uncommitted.length;
+        LogFile logFile = new LogFile( file );
+        Files.writeString( logFile.getTransactionFile(), String.valueOf( committed ) );
+
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+            backend.start();
+
+            assertThat( Files.size( file ) ).isEqualTo( committed );
+            assertThat( logFile.isCompleted() ).isTrue();
+            assertThat( logFile.getTransactionFile() ).exists();
+            assertRowBinaryFile( file, GZIP ).containsExactlyInAnyOrderEntriesOf(
+                List.of( "12345678", "rrrr5678" ),
+                List.of( "1", "2" )
+            );
+
+            Logger logger = new Logger( backend );
+            Path next = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
+            assertThat( next ).isNotEqualTo( file );
+            assertThat( Files.size( file ) ).isEqualTo( committed );
+        }
+    }
+
+    @Test
+    public void periodicSync() throws IOException {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+        String[] headers = new String[] { "REQUEST_ID" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
+        byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "1" ) ) ) );
+
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+            backend.syncMode = SyncMode.PERIODIC;
+            backend.syncInterval = Dates.h( 1 );
+            backend.start();
+
+            new Logger( backend ).log( "lfn1", Map.of(), "log", headers, types, lines );
+
+            AbstractWriter writer = backend.writers.asMap().values().iterator().next();
+            assertThat( writer.logFile.hasUnsyncedData() ).isTrue();
+
+            backend.sync();
+            assertThat( writer.logFile.hasUnsyncedData() ).isFalse();
         }
     }
 }

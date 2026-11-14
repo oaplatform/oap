@@ -48,7 +48,7 @@ public class AbstractWriterTest extends Fixtures {
         String[] h1Headers = new String[] { "h1" };
         byte[][] strTypes = new byte[][] { new byte[] { Types.STRING.id } };
 
-        LogId lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid1 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
 
         Dates.setTimeFixed( 2023, 1, 23, 21, 6, 0 );
 
@@ -71,11 +71,11 @@ public class AbstractWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2023, 1, 23, 21, 6, 0 );
 
-        LogId lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid1 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
         assertThat( AbstractWriter.currentPattern( templateEngineFixture.templateEngine, LogFormat.TSV_GZ, "{{% if ORGANIZATION and ACCOUNT }}{{ ORGANIZATION }}/{{ ACCOUNT }}/{{% end }}{{ INTERVAL }}-{{ LOG_VERSION }}.{{ LOG_FORMAT }}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
             .isEqualTo( "ln/01-855943970-1.tsv.gz.rb.gz" );
 
-        lid1 = new LogId( "ln", "lt", "chn", Map.of( "ORGANIZATION", "org1", "ACCOUNT", "acc1" ), h1Headers, strTypes );
+        lid1 = new LogId( "ln", "lt", Map.of( "ORGANIZATION", "org1", "ACCOUNT", "acc1" ), h1Headers, strTypes );
         assertThat( AbstractWriter.currentPattern( templateEngineFixture.templateEngine, LogFormat.PARQUET, "{{% if ORGANIZATION and ACCOUNT }}{{ ORGANIZATION }}/{{ ACCOUNT }}/{{% end }}{{ INTERVAL }}-{{ LOG_VERSION }}.{{ LOG_FORMAT }}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
             .isEqualTo( "ln/org1/acc1/01-855943970-1.parquet.rb.gz" );
     }

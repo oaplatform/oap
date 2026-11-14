@@ -103,10 +103,14 @@ DiskLoggerBackend backend = new DiskLoggerBackend(
 
 ### On-disk write model
 
-Each `buffer` passed to `AbstractLoggerBackend.log(...)` (and therefore to `backend.log()` / `Logger.log()`) must already be a **complete, standalone gzip member** — e.g. built with `oap.compression.Compression.gzip(...)`, as every test that exercises `DiskLoggerBackend`/`RowBinaryWriter` end-to-end does (`RowBinaryWriterTest.java`, `DiskLoggerBackendTest.java`). The writer never compresses `buffer` itself.
+Each `buffer` passed to `AbstractLoggerBackend.log(...)` (and therefore to `backend.log()` / `Logger.log()`) must already be a **complete, standalone compressed frame** of the writer's codec — a gzip member, an LZ4 frame or a zstd frame (`LogStreamCompression`; `log(...)` without a codec means gzip). E.g. built with `oap.compression.Compression.gzip(...)` / `lz4(...)` / `zstd(...)`, or by the client's `BufferCompressor`. The writer never compresses `buffer` itself. The codec defines the file: `.rb.gz`, `.rb.lz4`, `.rb.zst`, one writer per `(LogId, codec)`.
 
-- **Gzip concatenation.** On first write for a file, `RowBinaryWriter` writes one gzip member containing just the RowBinary column header (`RowBinaryOutputStream` wrapped in a `GZIPOutputStream`, closed immediately with zero rows — `RowBinaryWriter.java:43-48`). Every subsequent `write()` call then appends the caller-supplied `buffer` — itself a complete gzip member — directly onto the file as raw bytes (`RowBinaryWriter.java:59` → `LogFile.beginTransactionWriteAndCommitTransaction`). The result is a sequence of independently-compressed gzip members concatenated back-to-back in one file. This is valid per [RFC 1952](https://www.rfc-editor.org/rfc/rfc1952): any standard gzip decoder (Java's `GZIPInputStream`, the `gzip`/`zcat` CLI, ClickHouse, `oap.compression.Compression.ungzip(...)`) reads a multi-member file transparently as one continuous decompressed stream — confirmed by `RowBinaryWriterTest.testWrite`, which writes two separately-gzipped row batches and reads the whole file back with a single `Compression.ungzip(...)` call.
-- **Transactional write.** `LogFile` tracks the byte offset already durably committed in a sidecar `<file>.metadata.transaction` file. Each write: reads the last committed offset (`LogFile.beginTransaction()`), seeks the `FileChannel` to that exact offset, writes `buffer`, `force(true)`-fsyncs it, then atomically rewrites the transaction file with the new offset (`commitTransaction()`, via `Files.move(..., ATOMIC_MOVE)`) — `LogFile.java:77-118`, `:148-177`. Because every write re-seeks to the last *committed* offset rather than blindly appending, a crash between the data write and the transaction-offset update is safely retried/overwritten at the same position on the next write — combined with each write being a self-contained gzip member, every prefix of the file up to the last committed offset stays valid, decodable gzip at all times. A `.metadata.yaml` sidecar carries the `LogId`/schema (`LogFile.syncLogMetadata`), and a `.metadata.completed` marker (written by `AbstractWriter.closeOutput()` → `LogFile.readyForUpload()`) signals the file is done rotating and ready for pickup.
+- **Frame concatenation.** A new file starts with one frame holding just the RowBinary column header (compressed once per writer); it is written together with the first `buffer` in a single gathering write. Every later `write()` appends the caller-supplied frame as raw bytes. The file is a sequence of independent frames, which every standard decoder reads as one stream ([RFC 1952](https://www.rfc-editor.org/rfc/rfc1952) multi-member gzip, concatenated LZ4 / zstd frames): `GZIPInputStream`, `zcat`, `lz4 -d`, `zstd -d`, ClickHouse, `oap.compression.Compression.ungzip/unlz4/unzstd(...)`.
+- **Commit = sync of the data.** `LogFile.append(...)` writes at the end of the last complete frame and, with `SyncMode.ALWAYS` (default), `fdatasync`s before `write()` returns, i.e. before the client is acknowledged. There is no separate commit record. If a write fails the file is truncated back to the previous end, closed (`.metadata.completed`) and the next buffer goes to the next file version.
+- **Sidecars.** `<file>.metadata.yaml` carries the `LogId`/schema and properties (`VERSION`), written once when the file is created. `<file>.metadata.completed` (written by `AbstractWriter.closeOutput()` → `LogFile.readyForUpload()`) means the file is closed and the **whole** file is valid — ready for pickup.
+- **Crash recovery.** `DiskLoggerBackend.start()` (`recoverOnStart`, default `true`; also `recover()`) walks the log directory and repairs every file left without `.metadata.completed`: `FrameScanner` walks the frames from the start, verifies them by decompression and by the content checksum (gzip CRC32; LZ4 and zstd frames are written with the content checksum), the file is truncated to the end of the last valid frame, synced and marked completed (the `FileWriterNotification` listeners registered at that moment are notified). A file with no data frames (only the header) is deleted. Files open by a writer are not touched.
+- **Files of the previous versions.** They have a `<file>.metadata.transaction` sidecar with the committed offset. A completed one is left as is and is still moved / deleted with all its sidecars (`LogFile.moveTo`, `delete`). A non-completed one is recovered to its committed offset if the scan confirms it is a frame boundary (the data written after it was never acknowledged, the client resends it — no duplicates), otherwise to the scan result; `.metadata.transaction` is kept. LZ4 / zstd frames without the content checksum (old files, not yet updated clients) are accepted on structure and decompression. A version that has any of the files (data, metadata, completed, transaction) is never reused.
+- **Sync modes** (`syncMode`): `ALWAYS` — every buffer is synced before the ACK, nothing acknowledged is lost; `PERIODIC` — synced every `syncInterval` and on close, an OS crash / power loss may lose up to `syncInterval` of acknowledged data; `ON_CLOSE` — synced on rotation / shutdown only. A process crash loses nothing in any mode (page cache + recovery). Delivery is at-least-once: a buffer written but not acknowledged is resent by the client.
 
 ### Key parameters
 
@@ -116,11 +120,14 @@ Each `buffer` passed to `AbstractLoggerBackend.log(...)` (and therefore to `back
 | `timestamp` | (required)                                                                                                                                                | Bucket cadence (`BPH_1` … `BPH_12`) |
 | `bufferSize` | `102400` (100 KB)                                                                                                                                         | Per-writer in-memory write buffer |
 | `writerConfiguration` | `new WriterConfiguration()`                                                                                                                              | Currently just `tsv.dateTime32Format` — date format used for TSV `DATETIME32` columns |
-| `filePattern` | `{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}_{{ CLIENT_HOST }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz` | Output path template — `.rb.gz` is always appended on top of this, so the actual default output extension is `.tsv.gz.rb.gz` |
+| `filePattern` | `{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz` | Output path template — the codec extension (`.rb.gz` / `.rb.lz4` / `.rb.zst`) is always appended on top of this, so the actual default gzip output extension is `.tsv.gz.rb.gz` |
 | `requiredFreeSpace` | 2 GB                                                                                                                                                      | Minimum free space; backend reports FAILED below this threshold |
 | `maxVersions` | 20                                                                                                                                                        | Maximum concurrent file versions per log ID |
 | `refreshInitDelay` | 10 s                                                                                                                                                      | Delay before first writer flush |
 | `refreshPeriod` | 10 s                                                                                                                                                      | How often writers are flushed and evicted |
+| `syncMode` | `ALWAYS`                                                                                                                                                  | When the written data is synced to the device: `ALWAYS`, `PERIODIC`, `ON_CLOSE` (see above) |
+| `syncInterval` | 1 s                                                                                                                                                       | `PERIODIC` sync period |
+| `recoverOnStart` | `true`                                                                                                                                                    | Repair the files left without `.metadata.completed` by a crash on `start()` |
 
 ### File pattern tokens
 
@@ -134,10 +141,8 @@ Predefined variables:
 |--------------------------------------------------------|---|
 | `{{ LOG_TYPE }}`                                       | Log type string from `log()` call |
 | `{{ LOG_VERSION }}`                                    | Content hash + replica id + file version (required) |
-| `{{ CLIENT_HOST }}`                                    | Source hostname |
-| `{{ SERVER_HOST }}`                                    | Hostname of the process running the backend |
 | `{{ YEAR }}`, `{{ MONTH }}`, `{{ DAY }}`, `{{ HOUR }}` | UTC date components |
-| `{{ MINUTE }}`, `{{ SECOND }}`                         | Current UTC minute-of-hour / second-of-minute (zero-padded) — **not** related to `{{ INTERVAL }}` |
+| `{{ MINUTE }}`                                         | Current UTC minute-of-hour (zero-padded) — **not** related to `{{ INTERVAL }}` |
 | `{{ INTERVAL }}`                                       | Zero-padded bucket index within the hour (required — must be present to detect bucket rotation) |
 | `{{ LOG_TIME_INTERVAL }}`                              | Bucket length in minutes (`60 / bucketsPerHour`) |
 | `{{ REGION }}`                                         | `REGION` environment variable |
@@ -166,12 +171,15 @@ SocketLoggerBackend backend = new SocketLoggerBackend(
 );
 ```
 
-| Parameter | Description |
-|---|---|
-| `sender` | `MessageSender` from `oap-message-client` — handles TCP connection and retry |
-| `bufferSize` | Per-log-ID in-memory buffer; rows are accumulated until the buffer is full or the flush interval fires |
-| `flushInterval` | How often buffered rows are sent to the server (milliseconds) |
-| `maxBuffers` | Maximum number of in-flight buffers before the backend reports FAILED (default 5000) |
+| Parameter | Description | Runtime change |
+|---|---|---|
+| `sender` | `MessageSender` from `oap-message-client` — handles TCP connection and retry | — |
+| `bufferSize` | Per-log-ID in-memory buffer; rows are accumulated until the buffer is full or the flush interval fires. A `BufferConfigurationMap` gives different sizes by `logType` pattern (`DEFAULT` = one size for all) | `setBufferSize( name, size )` / `setBufferSize( size )` (all configurations), `getBufferSizes()` — the next buffer of every log ID has the new size; the current non-empty one is sent as is |
+| `flushInterval` | How often buffered rows are sent to the server (milliseconds); `<= 0` — no automatic sending, the application calls `sendAsync()` | `setFlushInterval( ms )`, `getFlushInterval()` — rescheduled immediately |
+| `maxBuffers` | Maximum number of ready (not yet sent) buffers before the backend reports FAILED (default 5000) | `setMaxBuffers( n )`, `getMaxBuffers()` — from the next `availabilityReport()` |
+| `compression` | Payload codec: `ZSTD` (default, level 1), `LZ4`, `GZIP` | `setCompression( codec )`, `setGzipLevel` / `setLz4Level` / `setZstdLevel` — from the next `sendAsync()` |
+
+All setters validate the value (`IllegalArgumentException`) and log the change; `setFlushInterval` after `close()` throws `IllegalStateException`. Buffers that are already ready are sent unchanged.
 
 ---
 

@@ -42,8 +42,8 @@ public class BufferTest {
 
     @Test
     public void data() throws IOException {
-        var buffer = new Buffer( 200, new LogId( "s", "l", "h", Map.of(),
-            new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ), BINARY_V2 );
+        var id = new LogId( "s", "l", Map.of(), new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
+        var buffer = new Buffer( 200, id, BINARY_V2, Buffer.encodeHeader( id, "h" ) );
 
         assertTrue( buffer.putInt( 10 ) );
         assertTrue( buffer.putLong( 10 ) );
@@ -57,6 +57,7 @@ public class BufferTest {
 
         assertThat( dis.readLong() ).isEqualTo( 1L );
         assertThat( dis.readInt() ).isEqualTo( 26 );
+        assertThat( dis.readByte() ).isEqualTo( ( byte ) 0 ); // compression (reserved, set by BufferCompressor)
         assertThat( dis.readUTF() ).isEqualTo( "s" ); // filePrefixPattern
         assertThat( dis.readUTF() ).isEqualTo( "l" ); // logType
         assertThat( dis.readUTF() ).isEqualTo( "h" ); // clientHostname

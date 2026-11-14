@@ -26,53 +26,95 @@ package oap.logstream.net;
 import lombok.SneakyThrows;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
+import oap.net.Inet;
 import oap.util.FastByteArrayOutputStream;
 
+import java.io.DataOutputStream;
 import java.io.Serializable;
-import java.util.zip.GZIPOutputStream;
+import java.util.Map;
 
 public class Buffer implements Serializable {
     public static final int DIGESTION_POSITION = 0;
     public static final int DATE_LENGTH_POSITION = 8;
-    public final LogId id;
+    public static final int COMPRESSION_POSITION = 12;
     public final ProtocolVersion protocolVersion;
     private final byte[] data;
+    public LogId id;
     private int position = DIGESTION_POSITION;
     private volatile boolean closed = false;
     private int dataStart;
 
     Buffer( int size, LogId id, ProtocolVersion protocolVersion ) {
+        this( size, id, protocolVersion, encodeHeader( id, Inet.HOSTNAME ) );
+    }
+
+    Buffer( int size, LogId id, ProtocolVersion protocolVersion, byte[] header ) {
         this.id = id;
         this.data = new byte[size];
         this.protocolVersion = protocolVersion;
-        initMetadata( id );
+        initMetadata( header );
     }
 
-    private void initMetadata( LogId id ) {
-        if( position != DIGESTION_POSITION ) throw new IllegalStateException( "metadata could be set for empty buffer only!" );
-        boolean result = putLong( DIGESTION_POSITION ); //reserved for digestion control
-        result &= putInt( DIGESTION_POSITION ); //reserved for data length
-        result &= putUTF( id.filePrefixPattern );
-        result &= putUTF( id.logType );
-        result &= putUTF( id.clientHostname );
-        result &= putInt( id.headers.length );
-        for( var header : id.headers )
-            result &= putUTF( header );
+    /**
+     * {@link ProtocolVersion#ROW_BINARY_V4} header: digestion control (long, reserved), data length (int, reserved),
+     * compression (byte, reserved), filePrefixPattern, logType, clientHostname, headers, types, properties.
+     * Strings - modified UTF-8 (DataInputStream.readUTF on the server).
+     */
+    @SneakyThrows
+    public static byte[] encodeHeader( LogId id, String clientHostname ) {
+        FastByteArrayOutputStream baos = new FastByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream( baos );
+
+        out.writeLong( 0 ); //reserved for digestion control
+        out.writeInt( 0 ); //reserved for data length
+        out.writeByte( 0 ); //reserved for compression
+        out.writeUTF( id.filePrefixPattern );
+        out.writeUTF( id.logType );
+        out.writeUTF( clientHostname );
+        out.writeInt( id.headers.length );
+        for( String header : id.headers ) {
+            out.writeUTF( header );
+        }
 
         for( byte[] type : id.types ) {
-            result &= putByte( ( byte ) type.length );
-            for( var t : type ) {
-                result &= putByte( t );
-            }
+            out.writeByte( type.length );
+            out.write( type );
         }
-        result &= putByte( ( byte ) id.properties.size() );
 
-        id.properties.forEach( ( key, value ) -> {
-            putUTF( key );
-            putUTF( value );
-        } );
-        this.dataStart = this.position;
-        if( !result ) throw new IllegalArgumentException( "buffer is too small! Provided " + data.length + " bytes" );
+        out.writeByte( id.properties.size() );
+        for( Map.Entry<String, String> entry : id.properties.entrySet() ) {
+            out.writeUTF( entry.getKey() );
+            out.writeUTF( entry.getValue() );
+        }
+        out.flush();
+
+        return baos.toByteArray();
+    }
+
+    private static void writeInt( byte[] array, int pos, int i ) {
+        array[pos] = ( byte ) ( i >>> 24 );
+        array[pos + 1] = ( byte ) ( i >>> 16 );
+        array[pos + 2] = ( byte ) ( i >>> 8 );
+        array[pos + 3] = ( byte ) i;
+    }
+
+    private static void writeLong( byte[] array, int pos, long v ) {
+        array[pos] = ( byte ) ( v >>> 56 );
+        array[pos + 1] = ( byte ) ( v >>> 48 );
+        array[pos + 2] = ( byte ) ( v >>> 40 );
+        array[pos + 3] = ( byte ) ( v >>> 32 );
+        array[pos + 4] = ( byte ) ( v >>> 24 );
+        array[pos + 5] = ( byte ) ( v >>> 16 );
+        array[pos + 6] = ( byte ) ( v >>> 8 );
+        array[pos + 7] = ( byte ) v;
+    }
+
+    private void initMetadata( byte[] header ) {
+        if( header.length > data.length ) throw new IllegalArgumentException( "buffer is too small! Provided " + data.length + " bytes" );
+
+        System.arraycopy( header, 0, data, 0, header.length );
+        this.position = header.length;
+        this.dataStart = header.length;
     }
 
     public final boolean put( byte[] buf ) {
@@ -80,70 +122,61 @@ public class Buffer implements Serializable {
     }
 
     public final boolean put( byte[] buf, int offset, int length ) {
-        if( closed ) throw new IllegalStateException( "buffer is closed" );
-        if( !available( length ) ) return false;
+        if( !checkWrite( length ) ) return false;
         System.arraycopy( buf, offset, this.data, this.position, length );
         this.position += length;
         return true;
     }
 
+    private boolean checkWrite( int length ) {
+        if( closed ) throw new IllegalStateException( "buffer is closed" );
+        return available( length );
+    }
+
     public final boolean putInt( int i ) {
-        return put( encodeInt( i ) );
+        if( !checkWrite( 4 ) ) return false;
+        writeInt( data, position, i );
+        position += 4;
+        return true;
     }
 
     public final boolean putByte( byte i ) {
-        return put( new byte[] { i } );
-    }
-
-    private byte[] encodeInt( int i ) {
-        return new byte[] {
-            ( byte ) ( ( i >>> 24 ) & 0xFF ),
-            ( byte ) ( ( i >>> 16 ) & 0xFF ),
-            ( byte ) ( ( i >>> DATE_LENGTH_POSITION ) & 0xFF ),
-            ( byte ) ( i & 0xFF )
-        };
+        if( !checkWrite( 1 ) ) return false;
+        data[position++] = i;
+        return true;
     }
 
     public final boolean putLong( long v ) {
-        return put( encodeLong( v ) );
-    }
-
-    private byte[] encodeLong( long v ) {
-        return new byte[] {
-            ( byte ) ( v >>> 56 ),
-            ( byte ) ( v >>> 48 ),
-            ( byte ) ( v >>> 40 ),
-            ( byte ) ( v >>> 32 ),
-            ( byte ) ( v >>> 24 ),
-            ( byte ) ( v >>> 16 ),
-            ( byte ) ( v >>> DATE_LENGTH_POSITION ),
-            ( byte ) v
-        };
+        if( !checkWrite( 8 ) ) return false;
+        writeLong( data, position, v );
+        position += 8;
+        return true;
     }
 
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public final boolean putUTF( String str ) {
         int strlen = str.length();
-        int utflen = DIGESTION_POSITION;
-        int c, count = DIGESTION_POSITION;
+        int utflen = 0;
+        int c;
 
         /* use charAt instead of copying String to char array */
-        for( int i = DIGESTION_POSITION; i < strlen; i++ ) {
+        for( int i = 0; i < strlen; i++ ) {
             c = str.charAt( i );
             if( ( c >= 0x0001 ) && ( c <= 0x007F ) ) utflen++;
             else if( c > 0x07FF ) utflen += 3;
             else utflen += 2;
         }
 
-        if( !available( utflen ) ) return false;
+        if( !checkWrite( utflen + 2 ) ) return false;
 
-        byte[] buffer = new byte[utflen + 2];
+        byte[] buffer = this.data;
+        int count = position;
 
-        buffer[count++] = ( byte ) ( ( utflen >>> DATE_LENGTH_POSITION ) & 0xFF );
+        buffer[count++] = ( byte ) ( ( utflen >>> 8 ) & 0xFF );
         buffer[count++] = ( byte ) ( utflen & 0xFF );
 
         int i;
-        for( i = DIGESTION_POSITION; i < strlen; i++ ) {
+        for( i = 0; i < strlen; i++ ) {
             c = str.charAt( i );
             if( !( ( c >= 0x0001 ) && ( c <= 0x007F ) ) ) break;
             buffer[count++] = ( byte ) c;
@@ -162,7 +195,9 @@ public class Buffer implements Serializable {
                 buffer[count++] = ( byte ) ( 0x80 | ( c & 0x3F ) );
             }
         }
-        return put( buffer, DIGESTION_POSITION, utflen + 2 );
+
+        position = count;
+        return true;
     }
 
     public final boolean available( int length ) {
@@ -174,9 +209,13 @@ public class Buffer implements Serializable {
     }
 
     public final void reset( LogId id ) {
+        reset( id, encodeHeader( id, Inet.HOSTNAME ) );
+    }
+
+    final void reset( LogId id, byte[] header ) {
         this.closed = false;
-        this.position = DIGESTION_POSITION;
-        initMetadata( id );
+        this.id = id;
+        initMetadata( header );
     }
 
     public final boolean isEmpty() {
@@ -187,13 +226,17 @@ public class Buffer implements Serializable {
         return position;
     }
 
+    /**
+     * size of the underlying array (the configured buffer size)
+     */
+    public final int capacity() {
+        return data.length;
+    }
+
     public final void close( long digestionId ) {
         this.closed = true;
-        byte[] digestion = encodeLong( digestionId );
-
-        byte[] length = encodeInt( dataLength() );
-        System.arraycopy( digestion, DIGESTION_POSITION, this.data, DIGESTION_POSITION, digestion.length );
-        System.arraycopy( length, DIGESTION_POSITION, this.data, DATE_LENGTH_POSITION, length.length );
+        writeLong( this.data, DIGESTION_POSITION, digestionId );
+        writeInt( this.data, DATE_LENGTH_POSITION, dataLength() );
     }
 
     public final int dataLength() {
@@ -207,24 +250,5 @@ public class Buffer implements Serializable {
     @Override
     public final String toString() {
         return id + "," + position;
-    }
-
-    @SneakyThrows
-    public FastByteArrayOutputStream compress() {
-        FastByteArrayOutputStream fastByteArrayOutputStream = new FastByteArrayOutputStream( length() );
-
-        fastByteArrayOutputStream.write( data, DIGESTION_POSITION, dataStart );
-
-        try( GZIPOutputStream gzipOutputStream = new GZIPOutputStream( fastByteArrayOutputStream ) ) {
-            gzipOutputStream.write( data, dataStart, dataLength() );
-        }
-
-        int newDataLength = fastByteArrayOutputStream.length - dataStart;
-
-        byte[] bytes = encodeInt( newDataLength );
-
-        System.arraycopy( bytes, DIGESTION_POSITION, fastByteArrayOutputStream.array, DATE_LENGTH_POSITION, bytes.length );
-
-        return fastByteArrayOutputStream;
     }
 }

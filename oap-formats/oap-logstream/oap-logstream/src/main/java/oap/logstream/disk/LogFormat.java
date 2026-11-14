@@ -32,6 +32,8 @@ public enum LogFormat {
     TSV_GZ( "tsv" + Encoding.GZIP.extension ),
     TSV_ZSTD( "tsv" + Encoding.ZSTD.extension ),
     ROW_BINARY_GZ( "rb" + Encoding.GZIP.extension ),
+    ROW_BINARY_LZ4( "rb" + Encoding.LZ4.extension ),
+    ROW_BINARY_ZSTD( "rb" + Encoding.ZSTD.extension ),
     PARQUET( "parquet" );
 
     public final String extension;
