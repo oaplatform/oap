@@ -53,8 +53,7 @@ public class Buffers implements Closeable {
 
     public final ReentrantLock lock = new ReentrantLock();
     //    private final int bufferSize;
-    private final ConcurrentHashMap<LogId, Buffer> currentBuffers = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<LogId, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LogId, Slot> currentBuffers = new ConcurrentHashMap<>();
     private final BufferConfigurationMap configurations;
     public BufferCache cache;
     ReadyQueue readyBuffers = new ReadyQueue();
@@ -73,10 +72,13 @@ public class Buffers implements Closeable {
     public final void put( LogId id, ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffer is already closed" );
 
-        BufferConfiguration conf = configurationForSelector.computeIfAbsent( id, this::findConfiguration );
-        int bufferSize = conf.bufferSize;
+        currentBuffers.compute( id, ( _, slot ) -> {
+            if( slot == null ) {
+                slot = new Slot( findConfiguration( id ) );
+            }
+            int bufferSize = slot.conf.bufferSize;
 
-        currentBuffers.compute( id, ( _, b ) -> {
+            Buffer b = slot.buffer;
             if( b == null ) {
                 b = cache.get( id, protocolVersion, bufferSize );
             }
@@ -90,8 +92,9 @@ public class Buffers implements Closeable {
             }
 
             b.put( buffer, offset, length );
+            slot.buffer = b;
 
-            return b;
+            return slot;
         } );
     }
 
@@ -103,13 +106,15 @@ public class Buffers implements Closeable {
     }
 
     public void flush() {
-        for( LogId internSelector : currentBuffers.keySet() ) {
-            Buffer buffer = currentBuffers.remove( internSelector );
-            if( buffer != null && !buffer.isEmpty() ) {
-                readyBuffers.ready( buffer );
-            }
+        for( LogId id : currentBuffers.keySet() ) {
+            currentBuffers.computeIfPresent( id, ( _, slot ) -> {
+                if( slot.buffer != null && !slot.buffer.isEmpty() ) {
+                    readyBuffers.ready( slot.buffer );
+                    slot.buffer = null;
+                }
+                return slot;
+            } );
         }
-
     }
 
     public final boolean isEmpty() {
@@ -148,7 +153,12 @@ public class Buffers implements Closeable {
 
     public void report() {
         report( readyBuffers.buffers, "true" );
-        report( currentBuffers.values(), "false" );
+        ArrayList<Buffer> current = new ArrayList<>();
+        for( Slot slot : currentBuffers.values() ) {
+            Buffer buffer = slot.buffer;
+            if( buffer != null ) current.add( buffer );
+        }
+        report( current, "false" );
     }
 
     private void report( Collection<Buffer> in, String ready ) {
@@ -165,6 +175,20 @@ public class Buffers implements Closeable {
 
     public final int readyBuffers() {
         return readyBuffers.size();
+    }
+
+    /**
+     * buffer configuration + current buffer for a LogId; mutated only inside currentBuffers.compute*
+     */
+    @ToString
+    @EqualsAndHashCode
+    private static final class Slot {
+        final BufferConfiguration conf;
+        Buffer buffer;
+
+        Slot( BufferConfiguration conf ) {
+            this.conf = conf;
+        }
     }
 
     public static class BufferCache {
