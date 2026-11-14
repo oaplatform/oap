@@ -26,6 +26,7 @@ package oap.logstream.net.client;
 
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
+import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
@@ -47,6 +48,7 @@ import oap.util.Result;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static oap.logstream.AvailabilityReport.State.FAILED;
 import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
@@ -61,18 +63,37 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     public static final String FAILURE_SHUTDOWN_STATE = "SHUTDOWN";
 
     private final MessageSender sender;
-    private final Scheduled scheduled;
     private final Buffers buffers;
     @ToString.Exclude
     private final BufferCompressor compressor = new BufferCompressor();
-    public int maxBuffers = 5000;
+    /**
+     * guards scheduled / flushInterval; not the object monitor - sendAsync() holds it while sending
+     */
+    @ToString.Exclude
+    private final ReentrantLock scheduleLock = new ReentrantLock();
+    /**
+     * runtime parameter: the backend reports FAILED when the number of ready (not sent) buffers reaches it
+     */
+    @Getter
+    public volatile int maxBuffers = 5000;
     private volatile boolean closed = false;
+    @ToString.Exclude
+    private Scheduled scheduled;
+    /**
+     * runtime parameter, ms; &lt;= 0 - no automatic sending
+     */
+    @Getter
+    private volatile long flushInterval;
     /**
      * runtime parameters, see {@link LogStreamCompression} for level ranges
      */
+    @Getter
     private volatile LogStreamCompression compression = LogStreamCompression.ZSTD;
+    @Getter
     private volatile int gzipLevel = LogStreamCompression.GZIP.defaultLevel;
+    @Getter
     private volatile int lz4Level = LogStreamCompression.LZ4.defaultLevel;
+    @Getter
     private volatile int zstdLevel = LogStreamCompression.ZSTD.defaultLevel;
 
     public SocketLoggerBackend( MessageSender sender, int bufferSize, long flushInterval ) {
@@ -84,13 +105,8 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
 
         this.sender = sender;
         this.buffers = new Buffers( configurations );
-        this.scheduled = flushInterval > 0
-            ? Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::sendAsync )
-            : null;
-        configurations.forEach( ( name, conf ) -> Metrics.gauge( "logstream_logging_buffers_cache",
-            buffers.cache,
-            c -> c.size( conf.bufferSize )
-        ) );
+        reschedule( flushInterval );
+        Metrics.gauge( "logstream_logging_buffers_cache", buffers.cache, Buffers.BufferCache::size );
         log.info( "SocketLoggerBackend '{}' is ready", sender == null ? "no-name" : sender.uniqueName );
     }
 
@@ -102,8 +118,60 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         this( sender, configurations, 5000 );
     }
 
-    public LogStreamCompression getCompression() {
-        return compression;
+    /**
+     * configuration name ({@link BufferConfigurationMap}) -&gt; buffer size
+     */
+    public Map<String, Integer> getBufferSizes() {
+        return buffers.bufferSizes();
+    }
+
+    /**
+     * runtime change: the next buffer of every log id of the configuration has the new size,
+     * the current non-empty one is sent with the next {@link #sendAsync()}
+     */
+    public void setBufferSize( String configurationName, int bufferSize ) {
+        buffers.setBufferSize( configurationName, bufferSize );
+    }
+
+    /**
+     * {@link #setBufferSize(String, int)} for all configurations
+     */
+    public void setBufferSize( int bufferSize ) {
+        buffers.setBufferSize( bufferSize );
+    }
+
+    /**
+     * runtime change, applied starting from the next {@link #availabilityReport()}
+     */
+    public void setMaxBuffers( int maxBuffers ) {
+        Preconditions.checkArgument( maxBuffers > 0, "maxBuffers must be > 0, but %s", maxBuffers );
+        log.info( "maxBuffers {} -> {}", this.maxBuffers, maxBuffers );
+        this.maxBuffers = maxBuffers;
+    }
+
+    /**
+     * runtime change: the periodic sending is rescheduled immediately
+     *
+     * @param flushInterval ms; &lt;= 0 - no automatic sending ({@link #sendAsync()} is called by the application)
+     */
+    public void setFlushInterval( long flushInterval ) {
+        log.info( "flushInterval {} -> {}", durationToString( this.flushInterval ), durationToString( flushInterval ) );
+        reschedule( flushInterval );
+    }
+
+    private void reschedule( long flushInterval ) {
+        scheduleLock.lock();
+        try {
+            if( closed ) throw new IllegalStateException( "already closed" );
+
+            Scheduled.cancel( scheduled );
+            scheduled = flushInterval > 0
+                ? Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::sendAsync )
+                : null;
+            this.flushInterval = flushInterval;
+        } finally {
+            scheduleLock.unlock();
+        }
     }
 
     /**
@@ -115,28 +183,16 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         this.compression = compression;
     }
 
-    public int getGzipLevel() {
-        return gzipLevel;
-    }
-
     public void setGzipLevel( int gzipLevel ) {
         LogStreamCompression.GZIP.checkLevel( gzipLevel );
         log.info( "gzipLevel {} -> {}", this.gzipLevel, gzipLevel );
         this.gzipLevel = gzipLevel;
     }
 
-    public int getLz4Level() {
-        return lz4Level;
-    }
-
     public void setLz4Level( int lz4Level ) {
         LogStreamCompression.LZ4.checkLevel( lz4Level );
         log.info( "lz4Level {} -> {}", this.lz4Level, lz4Level );
         this.lz4Level = lz4Level;
-    }
-
-    public int getZstdLevel() {
-        return zstdLevel;
     }
 
     public void setZstdLevel( int zstdLevel ) {
@@ -183,8 +239,14 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
 
     @Override
     public synchronized void close() {
-        closed = true;
-        Scheduled.cancel( scheduled );
+        scheduleLock.lock();
+        try {
+            closed = true;
+            Scheduled.cancel( scheduled );
+            scheduled = null;
+        } finally {
+            scheduleLock.unlock();
+        }
         Closeables.close( buffers );
         try {
             sendAsync( true );

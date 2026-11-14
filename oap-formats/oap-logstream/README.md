@@ -173,12 +173,15 @@ SocketLoggerBackend backend = new SocketLoggerBackend(
 );
 ```
 
-| Parameter | Description |
-|---|---|
-| `sender` | `MessageSender` from `oap-message-client` — handles TCP connection and retry |
-| `bufferSize` | Per-log-ID in-memory buffer; rows are accumulated until the buffer is full or the flush interval fires |
-| `flushInterval` | How often buffered rows are sent to the server (milliseconds) |
-| `maxBuffers` | Maximum number of in-flight buffers before the backend reports FAILED (default 5000) |
+| Parameter | Description | Runtime change |
+|---|---|---|
+| `sender` | `MessageSender` from `oap-message-client` — handles TCP connection and retry | — |
+| `bufferSize` | Per-log-ID in-memory buffer; rows are accumulated until the buffer is full or the flush interval fires. A `BufferConfigurationMap` gives different sizes by `logType` pattern (`DEFAULT` = one size for all) | `setBufferSize( name, size )` / `setBufferSize( size )` (all configurations), `getBufferSizes()` — the next buffer of every log ID has the new size; the current non-empty one is sent as is |
+| `flushInterval` | How often buffered rows are sent to the server (milliseconds); `<= 0` — no automatic sending, the application calls `sendAsync()` | `setFlushInterval( ms )`, `getFlushInterval()` — rescheduled immediately |
+| `maxBuffers` | Maximum number of ready (not yet sent) buffers before the backend reports FAILED (default 5000) | `setMaxBuffers( n )`, `getMaxBuffers()` — from the next `availabilityReport()` |
+| `compression` | Payload codec: `ZSTD` (default, level 1), `LZ4`, `GZIP` | `setCompression( codec )`, `setGzipLevel` / `setLz4Level` / `setZstdLevel` — from the next `sendAsync()` |
+
+All setters validate the value (`IllegalArgumentException`) and log the change; `setFlushInterval` after `close()` throws `IllegalStateException`. Buffers that are already ready are sent unchanged.
 
 ---
 

@@ -225,6 +225,13 @@ public class Buffer implements Serializable {
         return position;
     }
 
+    /**
+     * size of the underlying array (the configured buffer size)
+     */
+    public final int capacity() {
+        return data.length;
+    }
+
     public final void close( long digestionId ) {
         this.closed = true;
         writeLong( this.data, DIGESTION_POSITION, digestionId );
