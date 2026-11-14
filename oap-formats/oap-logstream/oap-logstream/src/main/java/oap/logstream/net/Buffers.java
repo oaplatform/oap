@@ -38,11 +38,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -139,11 +139,11 @@ public class Buffers implements Closeable {
             flush();
             report();
             log.trace( "buffers to go {}", readyBuffers.size() );
-            Iterator<Buffer> iterator = readyBuffers.iterator();
-            while( iterator.hasNext() ) {
-                Buffer buffer = iterator.next();
+            // single consumer under lock, ready() only appends to the tail -> poll() removes the peeked buffer
+            Buffer buffer;
+            while( ( buffer = readyBuffers.peek() ) != null ) {
                 consumer.accept( buffer );
-                iterator.remove();
+                readyBuffers.poll();
                 cache.release( buffer );
             }
         } finally {
@@ -234,23 +234,34 @@ public class Buffers implements Closeable {
 
         private final ReentrantLock lock = new ReentrantLock();
         private final ConcurrentLinkedQueue<Buffer> buffers = new ConcurrentLinkedQueue<>();
+        /**
+         * ConcurrentLinkedQueue.size() is O(n)
+         */
+        private final AtomicInteger size = new AtomicInteger();
 
         public final void ready( Buffer buffer ) {
             lock.lock();
             try {
                 buffer.close( digestionIds.nextLong() );
                 buffers.offer( buffer );
+                size.incrementAndGet();
             } finally {
                 lock.unlock();
             }
         }
 
-        public final Iterator<Buffer> iterator() {
-            return buffers.iterator();
+        public final Buffer peek() {
+            return buffers.peek();
+        }
+
+        public final Buffer poll() {
+            Buffer buffer = buffers.poll();
+            if( buffer != null ) size.decrementAndGet();
+            return buffer;
         }
 
         public final int size() {
-            return buffers.size();
+            return size.get();
         }
 
         public final boolean isEmpty() {
