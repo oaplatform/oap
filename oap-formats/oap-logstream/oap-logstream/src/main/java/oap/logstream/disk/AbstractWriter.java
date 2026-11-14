@@ -91,7 +91,12 @@ public abstract class AbstractWriter implements Closeable {
         String pattern = logId.filePrefixPattern + suffix;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
 
-        pattern = pattern + ".rb.gz";
+        // files are always RowBinary; for other formats logFormat is only a template variable (LOG_FORMAT)
+        LogFormat fileFormat = switch( logFormat ) {
+            case ROW_BINARY_LZ4, ROW_BINARY_ZSTD -> logFormat;
+            case ROW_BINARY_GZ, TSV_GZ, TSV_ZSTD, PARQUET -> LogFormat.ROW_BINARY_GZ;
+        };
+        pattern = pattern + "." + fileFormat.extension;
 
         LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
 

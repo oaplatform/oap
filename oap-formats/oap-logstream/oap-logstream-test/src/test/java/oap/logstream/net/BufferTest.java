@@ -57,6 +57,7 @@ public class BufferTest {
 
         assertThat( dis.readLong() ).isEqualTo( 1L );
         assertThat( dis.readInt() ).isEqualTo( 26 );
+        assertThat( dis.readByte() ).isEqualTo( ( byte ) 0 ); // compression (reserved, set by BufferCompressor)
         assertThat( dis.readUTF() ).isEqualTo( "s" ); // filePrefixPattern
         assertThat( dis.readUTF() ).isEqualTo( "l" ); // logType
         assertThat( dis.readUTF() ).isEqualTo( "h" ); // clientHostname

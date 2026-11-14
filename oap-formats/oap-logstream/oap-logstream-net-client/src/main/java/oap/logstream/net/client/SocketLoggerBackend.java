@@ -24,6 +24,7 @@
 
 package oap.logstream.net.client;
 
+import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -33,13 +34,14 @@ import oap.io.Closeables;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
+import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.disk.LogstreamException;
+import oap.logstream.net.BufferCompressor;
 import oap.logstream.net.BufferConfigurationMap;
 import oap.logstream.net.Buffers;
 import oap.message.client.MessageAvailabilityReport;
 import oap.message.client.MessageSender;
-import oap.util.FastByteArrayOutputStream;
 import oap.util.Result;
 
 import java.util.HashMap;
@@ -61,8 +63,17 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     private final MessageSender sender;
     private final Scheduled scheduled;
     private final Buffers buffers;
+    @ToString.Exclude
+    private final BufferCompressor compressor = new BufferCompressor();
     public int maxBuffers = 5000;
     private volatile boolean closed = false;
+    /**
+     * runtime parameters, see {@link LogStreamCompression} for level ranges
+     */
+    private volatile LogStreamCompression compression = LogStreamCompression.ZSTD;
+    private volatile int gzipLevel = LogStreamCompression.GZIP.defaultLevel;
+    private volatile int lz4Level = LogStreamCompression.LZ4.defaultLevel;
+    private volatile int zstdLevel = LogStreamCompression.ZSTD.defaultLevel;
 
     public SocketLoggerBackend( MessageSender sender, int bufferSize, long flushInterval ) {
         this( sender, BufferConfigurationMap.defaultMap( bufferSize ), flushInterval );
@@ -91,16 +102,69 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         this( sender, configurations, 5000 );
     }
 
+    public LogStreamCompression getCompression() {
+        return compression;
+    }
+
+    /**
+     * runtime switch, applied starting from the next {@link #sendAsync()}
+     */
+    public void setCompression( LogStreamCompression compression ) {
+        Preconditions.checkNotNull( compression );
+        log.info( "compression {} -> {}", this.compression, compression );
+        this.compression = compression;
+    }
+
+    public int getGzipLevel() {
+        return gzipLevel;
+    }
+
+    public void setGzipLevel( int gzipLevel ) {
+        LogStreamCompression.GZIP.checkLevel( gzipLevel );
+        log.info( "gzipLevel {} -> {}", this.gzipLevel, gzipLevel );
+        this.gzipLevel = gzipLevel;
+    }
+
+    public int getLz4Level() {
+        return lz4Level;
+    }
+
+    public void setLz4Level( int lz4Level ) {
+        LogStreamCompression.LZ4.checkLevel( lz4Level );
+        log.info( "lz4Level {} -> {}", this.lz4Level, lz4Level );
+        this.lz4Level = lz4Level;
+    }
+
+    public int getZstdLevel() {
+        return zstdLevel;
+    }
+
+    public void setZstdLevel( int zstdLevel ) {
+        LogStreamCompression.ZSTD.checkLevel( zstdLevel );
+        log.info( "zstdLevel {} -> {}", this.zstdLevel, zstdLevel );
+        this.zstdLevel = zstdLevel;
+    }
+
+    public int getCompressionLevel( LogStreamCompression compression ) {
+        return switch( compression ) {
+            case GZIP -> gzipLevel;
+            case LZ4 -> lz4Level;
+            case ZSTD -> zstdLevel;
+        };
+    }
+
     public synchronized boolean sendAsync() {
         return sendAsync( false );
     }
 
     private boolean sendAsync( boolean shutdown ) {
         if( shutdown || !closed ) {
+            LogStreamCompression compression = this.compression;
+            int level = getCompressionLevel( compression );
             buffers.forEachReadyData( b -> {
-                log.trace( "Sending {}", b );
-                FastByteArrayOutputStream data = b.compress();
-                sender.send( MESSAGE_TYPE, ( short ) b.protocolVersion.version, data.array, 0, data.length );
+                log.trace( "Sending {} {}/{}", b, compression, level );
+                byte[] data = compressor.compress( b, compression, level );
+                sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V4.version, data, 0, data.length );
             } );
             log.trace( "Data sent to server" );
             return true;
@@ -122,7 +186,11 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         closed = true;
         Scheduled.cancel( scheduled );
         Closeables.close( buffers );
-        sendAsync( true );
+        try {
+            sendAsync( true );
+        } finally {
+            compressor.close();
+        }
     }
 
     @Override

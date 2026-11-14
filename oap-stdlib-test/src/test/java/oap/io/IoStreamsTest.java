@@ -24,6 +24,7 @@
 package oap.io;
 
 import lombok.SneakyThrows;
+import oap.compression.Compression;
 import oap.concurrent.Times;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;
@@ -31,6 +32,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Arrays;
 import oap.util.Lists;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -106,6 +108,21 @@ public class IoStreamsTest extends Fixtures {
         }
 
         assertFile( path ).hasContent( "12345", LZ4 );
+    }
+
+    /**
+     * logstream file = concatenated frames produced by lz4-java / zstd-jni, read by IoStreams
+     */
+    @Test
+    public void concatenatedFrames() throws IOException {
+        Path lz4 = testDirectoryFixture.testPath( "frames.lz4" );
+        java.nio.file.Files.write( lz4, ArrayUtils.addAll( Compression.lz4( "123".getBytes() ), Compression.lz4( "45".getBytes() ) ) );
+        assertFile( lz4 ).hasContent( "12345", LZ4 );
+
+        Path zstd = testDirectoryFixture.testPath( "frames.zst" );
+        java.nio.file.Files.write( zstd, ArrayUtils.addAll(
+            Compression.zstd( "123".getBytes(), 0, 3, -1 ), Compression.zstd( "45".getBytes(), 0, 2, 3 ) ) );
+        assertFile( zstd ).hasContent( "12345", ZSTD );
     }
 
     @Test

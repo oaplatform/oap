@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 
 import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.LZ4;
+import static oap.io.IoStreams.Encoding.ZSTD;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_FREE_SPACE_REQUIRED;
@@ -55,6 +57,8 @@ import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -137,7 +141,7 @@ public class LoggerTest extends Fixtures {
             client.syncMemory();
             assertEventually( 50, 100, () -> assertFalse( logger.isLoggingAvailable() ) );
 
-            assertFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ) )
                 .doesNotExist();
 
             serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
@@ -161,11 +165,85 @@ public class LoggerTest extends Fixtures {
         }
 
         assertEventually( 10, 1000, () ->
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
                 .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 ) );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn2/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn2/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
             .containsExactlyInAnyOrderEntriesOf( lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log2_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log2_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.zst" ), ZSTD )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
+    }
+
+    @Test
+    public void netCompressionRuntimeSwitch() throws IOException {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        List<Object> lineData1 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
+        byte[] line1 = RowBinaryUtils.line( lineData1 );
+        List<Object> lineData2 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "abc", "def" );
+        byte[] line2 = RowBinaryUtils.line( lineData2 );
+        String[] headers = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
+        byte[][] types = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+
+        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
+             SocketLoggerServer server = new SocketLoggerServer( serverBackend );
+             NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
+             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, 256, -1 ) ) {
+
+            mServer.start();
+            messageHttpHandler.preStart();
+            client.start();
+
+            Logger logger = new Logger( clientBackend );
+
+            assertThat( clientBackend.getCompression() ).isEqualTo( LogStreamCompression.ZSTD );
+            assertThat( clientBackend.getZstdLevel() ).isEqualTo( 1 );
+            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+
+            clientBackend.setCompression( LogStreamCompression.LZ4 );
+            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+            clientBackend.setLz4Level( 9 );
+            logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+
+            clientBackend.setCompression( LogStreamCompression.ZSTD );
+            clientBackend.setZstdLevel( 3 );
+            logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+            clientBackend.setZstdLevel( -5 );
+            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+
+            clientBackend.setCompression( LogStreamCompression.GZIP );
+            clientBackend.setGzipLevel( 9 );
+            logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+
+            assertThatThrownBy( () -> clientBackend.setGzipLevel( 10 ) ).isInstanceOf( IllegalArgumentException.class );
+            assertThatThrownBy( () -> clientBackend.setLz4Level( -1 ) ).isInstanceOf( IllegalArgumentException.class );
+            assertThatThrownBy( () -> clientBackend.setZstdLevel( 23 ) ).isInstanceOf( IllegalArgumentException.class );
+            assertThat( clientBackend.getGzipLevel() ).isEqualTo( 9 );
+        }
+
+        String prefix = "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz";
+        assertEventually( 10, 1000, () ->
+            assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.gz" ), GZIP )
+                .containsExactlyInAnyOrderEntriesOf( lineData2 ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.lz4" ), LZ4 )
+            .containsExactlyInAnyOrderEntriesOf( lineData1, lineData2 );
+        assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.zst" ), ZSTD )
+            .containsExactlyInAnyOrderEntriesOf( lineData1, lineData2, lineData1 );
     }
 }

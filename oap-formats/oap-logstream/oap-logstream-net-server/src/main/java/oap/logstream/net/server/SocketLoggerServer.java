@@ -25,6 +25,7 @@ package oap.logstream.net.server;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.logstream.AbstractLoggerBackend;
+import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
@@ -69,7 +70,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         ByteArrayInputStream bais = new ByteArrayInputStream( data );
         try( DataInputStream in = new DataInputStream( bais ) ) {
             return switch( protocolVersion ) {
-                case 1, 2, 3 -> readBinaryV3( ProtocolVersion.valueOf( protocolVersion ), hostName, data, bais, in );
+                case 1, 2, 3, 4 -> readBinary( ProtocolVersion.valueOf( protocolVersion ), hostName, data, bais, in );
                 default -> LogStreamProtocol.INVALID_VERSION;
             };
         } catch( EOFException e ) {
@@ -84,9 +85,15 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         }
     }
 
-    private short readBinaryV3( ProtocolVersion version, String hostName, byte[] data, ByteArrayInputStream bais, DataInputStream in ) throws IOException {
+    /**
+     * v1-v3: gzip payload, v4: compression byte after the data length
+     */
+    private short readBinary( ProtocolVersion version, String hostName, byte[] data, ByteArrayInputStream bais, DataInputStream in ) throws IOException {
         in.readLong(); // digestion control
         int length = in.readInt();
+        LogStreamCompression compression = version == ProtocolVersion.ROW_BINARY_V4
+            ? LogStreamCompression.fromId( in.readByte() )
+            : LogStreamCompression.GZIP;
         String filePreffix = in.readUTF();
         String logType = in.readUTF();
         String clientHostname = in.readUTF();
@@ -120,7 +127,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         }
         int offset = data.length - remaining;
 
-        Result<String, LogstreamException> result = backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, data, offset, length );
+        Result<String, LogstreamException> result = backend.log( version, compression, clientHostname, filePreffix, properties, logType, headers, types, data, offset, length );
         if( result.isSuccess() ) {
             return MessageProtocol.STATUS_OK;
         } else {

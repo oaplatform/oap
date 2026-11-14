@@ -48,6 +48,7 @@ import oap.io.Files;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
+import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
@@ -89,7 +90,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public final Path logDirectory;
     public final Timestamp timestamp;
     public final int bufferSize;
-    public final LoadingCache<LogId, AbstractWriter> writers;
+    public final LoadingCache<WriterKey, AbstractWriter> writers;
     public final ScheduledExecutorService pool;
     public final String hostname;
     protected final TemplateEngine templateEngine;
@@ -131,12 +132,13 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             } )
             .build( new CacheLoader<>() {
                 @Override
-                public AbstractWriter load( LogId id ) {
+                public AbstractWriter load( WriterKey key ) {
+                    LogId id = key.id();
                     FilePatternConfiguration fp = filePatternByType.getOrDefault( id.logType.toUpperCase(), new FilePatternConfiguration( filePattern ) );
 
-                    log.trace( "new writer id '{}' filePattern '{}'", id, fp );
+                    log.trace( "new writer id '{}' compression {} filePattern '{}'", id, key.compression(), fp );
 
-                    return new RowBinaryWriter( templateEngine, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
+                    return new RowBinaryWriter( templateEngine, key.compression(), DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
@@ -172,9 +174,22 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         }
     }
 
+    /**
+     * buffer - gzip
+     */
+    @Override
+    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                                                   String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+        return log( protocolVersion, LogStreamCompression.GZIP, hostName, filePreffix, properties, logType, headers, types, buffer, offset, length );
+    }
+
+    /**
+     * buffer - compressed by compression, appended to the file of the corresponding format as is
+     */
     @Override
     @SneakyThrows
-    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName, String filePreffix,
+                                                   Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
@@ -183,7 +198,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         HostMetrics metrics = hostMetrics( hostName );
         metrics.counter.increment();
         metrics.buffers.record( length );
-        AbstractWriter writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
+        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
+        AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
@@ -301,6 +317,11 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             this.path = path;
         }
     }
+
+    /**
+     * the payload codec defines the file format, so a log id can have several files (one per codec) at the same time
+     */
+    public record WriterKey( LogId id, LogStreamCompression compression ) {}
 
     private record UsableSpace( long checkedAt, long bytes ) {}
 

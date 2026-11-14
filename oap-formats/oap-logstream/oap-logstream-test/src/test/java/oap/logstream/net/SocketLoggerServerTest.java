@@ -3,6 +3,7 @@ package oap.logstream.net;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
+import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
@@ -19,6 +20,7 @@ import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.logstream.LogStreamProtocol.ProtocolVersion.ROW_BINARY_V3;
+import static oap.logstream.LogStreamProtocol.ProtocolVersion.ROW_BINARY_V4;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -32,11 +34,12 @@ public class SocketLoggerServerTest {
         TestBackend backend = new TestBackend( Result.success( "log-id" ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
-        byte[] data = payload();
-        assertThat( server.run( ROW_BINARY_V3.version, "host", data.length, data, "md5" ) ).isEqualTo( LogStreamProtocol.STATUS_OK );
+        byte[] data = payload( LogStreamCompression.LZ4 );
+        assertThat( server.run( ROW_BINARY_V4.version, "host", data.length, data, "md5" ) ).isEqualTo( LogStreamProtocol.STATUS_OK );
 
         assertThat( backend.calls ).isEqualTo( 1 );
-        assertThat( backend.version ).isEqualTo( ROW_BINARY_V3 );
+        assertThat( backend.version ).isEqualTo( ROW_BINARY_V4 );
+        assertThat( backend.compression ).isEqualTo( LogStreamCompression.LZ4 );
         assertThat( backend.hostName ).isEqualTo( "client-host" );
         assertThat( backend.filePreffix ).isEqualTo( "prefix" );
         assertThat( backend.logType ).isEqualTo( "type" );
@@ -51,8 +54,8 @@ public class SocketLoggerServerTest {
         TestBackend backend = new TestBackend( Result.failure( new LogstreamException( new IOException( "retry" ), LogStreamProtocol.ErrorStatus.ERROR_RETRY ) ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
-        byte[] data = payload();
-        assertThat( server.run( ROW_BINARY_V3.version, "host", data.length, data, "md5" ) ).isEqualTo( MessageProtocol.STATUS_UNKNOWN_ERROR );
+        byte[] data = payload( LogStreamCompression.GZIP );
+        assertThat( server.run( ROW_BINARY_V4.version, "host", data.length, data, "md5" ) ).isEqualTo( MessageProtocol.STATUS_UNKNOWN_ERROR );
         assertThat( backend.calls ).isEqualTo( 1 );
     }
 
@@ -62,8 +65,8 @@ public class SocketLoggerServerTest {
         TestBackend backend = new TestBackend( Result.failure( new LogstreamException( cause, LogStreamProtocol.ErrorStatus.ERROR_NO_RETRY ) ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
-        byte[] data = payload();
-        assertThatThrownBy( () -> server.run( ROW_BINARY_V3.version, "host", data.length, data, "md5" ) )
+        byte[] data = payload( LogStreamCompression.GZIP );
+        assertThatThrownBy( () -> server.run( ROW_BINARY_V4.version, "host", data.length, data, "md5" ) )
             .isInstanceOf( LoggerException.class )
             .hasCause( cause );
         assertThat( backend.calls ).isEqualTo( 1 );
@@ -75,8 +78,8 @@ public class SocketLoggerServerTest {
         backend.state = AvailabilityReport.State.FAILED;
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
-        byte[] data = payload();
-        assertThat( server.run( ROW_BINARY_V3.version, "host", data.length, data, "md5" ) ).isEqualTo( LogStreamProtocol.STATUS_BACKEND_LOGGER_NOT_AVAILABLE );
+        byte[] data = payload( LogStreamCompression.GZIP );
+        assertThat( server.run( ROW_BINARY_V4.version, "host", data.length, data, "md5" ) ).isEqualTo( LogStreamProtocol.STATUS_BACKEND_LOGGER_NOT_AVAILABLE );
         assertThat( backend.calls ).isZero();
     }
 
@@ -85,17 +88,59 @@ public class SocketLoggerServerTest {
         TestBackend backend = new TestBackend( Result.success( "log-id" ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
-        byte[] data = payload();
+        byte[] data = payload( LogStreamCompression.GZIP );
         assertThat( server.run( 99, "host", data.length, data, "md5" ) ).isEqualTo( LogStreamProtocol.INVALID_VERSION );
         assertThat( backend.calls ).isZero();
     }
 
-    private static byte[] payload() {
-        Buffer buffer = new Buffer( 1024, new LogId( "prefix", "type", "client-host", Map.of( "p1", "v1" ), HEADERS, TYPES ), ROW_BINARY_V3 );
+    @Test
+    public void v3IsGzip() {
+        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        SocketLoggerServer server = new SocketLoggerServer( backend );
+
+        byte[] data = payloadV3();
+        assertThat( server.run( ROW_BINARY_V3.version, "host", data.length, data, "md5" ) ).isEqualTo( LogStreamProtocol.STATUS_OK );
+
+        assertThat( backend.calls ).isEqualTo( 1 );
+        assertThat( backend.version ).isEqualTo( ROW_BINARY_V3 );
+        assertThat( backend.compression ).isEqualTo( LogStreamCompression.GZIP );
+        assertThat( backend.hostName ).isEqualTo( "client-host" );
+        assertThat( backend.headers ).containsExactly( HEADERS );
+        assertThat( backend.buffer ).isEqualTo( ROW );
+    }
+
+    @Test
+    public void unknownCompression() {
+        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        SocketLoggerServer server = new SocketLoggerServer( backend );
+
+        byte[] data = payload( LogStreamCompression.GZIP );
+        data[Buffer.COMPRESSION_POSITION] = 99;
+        assertThatThrownBy( () -> server.run( ROW_BINARY_V4.version, "host", data.length, data, "md5" ) )
+            .isInstanceOf( LoggerException.class )
+            .hasRootCauseMessage( "unknown compression id 99" );
+        assertThat( backend.calls ).isZero();
+    }
+
+    private static byte[] payload( LogStreamCompression compression ) {
+        Buffer buffer = new Buffer( 1024, new LogId( "prefix", "type", "client-host", Map.of( "p1", "v1" ), HEADERS, TYPES ), ROW_BINARY_V4 );
         assertThat( buffer.put( ROW ) ).isTrue();
         buffer.close( 1L );
 
-        return Arrays.copyOf( buffer.data(), buffer.length() );
+        byte[] data = Arrays.copyOf( buffer.data(), buffer.length() );
+        data[Buffer.COMPRESSION_POSITION] = compression.id;
+        return data;
+    }
+
+    /**
+     * v4 header without the compression byte
+     */
+    private static byte[] payloadV3() {
+        byte[] v4 = payload( LogStreamCompression.GZIP );
+        byte[] v3 = new byte[v4.length - 1];
+        System.arraycopy( v4, 0, v3, 0, Buffer.COMPRESSION_POSITION );
+        System.arraycopy( v4, Buffer.COMPRESSION_POSITION + 1, v3, Buffer.COMPRESSION_POSITION, v4.length - Buffer.COMPRESSION_POSITION - 1 );
+        return v3;
     }
 
     private static class TestBackend extends AbstractLoggerBackend {
@@ -103,6 +148,7 @@ public class SocketLoggerServerTest {
         private AvailabilityReport.State state = AvailabilityReport.State.OPERATIONAL;
         private int calls;
         private ProtocolVersion version;
+        private LogStreamCompression compression;
         private String hostName;
         private String filePreffix;
         private Map<String, String> properties;
@@ -113,6 +159,14 @@ public class SocketLoggerServerTest {
 
         private TestBackend( Result<String, LogstreamException> result ) {
             this.result = result;
+        }
+
+        @Override
+        public Result<String, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression, String hostName, String filePreffix,
+                                                       Map<String, String> properties, String logType,
+                                                       String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+            this.compression = compression;
+            return log( version, hostName, filePreffix, properties, logType, headers, types, buffer, offset, length );
         }
 
         @Override

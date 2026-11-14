@@ -2,7 +2,9 @@ package oap.logstream.disk;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.logstream.LogId;
+import oap.compression.Compression;
 import oap.logstream.LogIdTemplate;
+import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
@@ -14,13 +16,31 @@ import oap.util.FastByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.zip.GZIPOutputStream;
 
 @Slf4j
 public class RowBinaryWriter extends AbstractWriter {
+    public final LogStreamCompression compression;
+
     public RowBinaryWriter( TemplateEngine templateEngine, Path logDirectory, String filePattern, LogId logId,
                             int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification ) {
-        super( templateEngine, LogFormat.ROW_BINARY_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
+        this( templateEngine, LogStreamCompression.GZIP, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
+    }
+
+    /**
+     * @param compression codec of the incoming payload; the payload is appended to the file as is
+     */
+    public RowBinaryWriter( TemplateEngine templateEngine, LogStreamCompression compression, Path logDirectory, String filePattern, LogId logId,
+                            int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification ) {
+        super( templateEngine, compression.logFormat, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
+        this.compression = compression;
+    }
+
+    private byte[] compressHeader( byte[] header, int length ) throws IOException {
+        return switch( compression ) {
+            case GZIP -> Compression.gzip( header, 0, length );
+            case LZ4 -> Compression.lz4( header, 0, length );
+            case ZSTD -> Compression.zstd( header, 0, length, LogStreamCompression.ZSTD.defaultLevel );
+        };
     }
 
     @Override
@@ -41,11 +61,11 @@ public class RowBinaryWriter extends AbstractWriter {
                     log.trace( "[{}] write headers {}", filename, logId.headers );
 
                     FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
-                    GZIPOutputStream gzip = new GZIPOutputStream( outputStream );
-                    RowBinaryOutputStream rbOut = new RowBinaryOutputStream( gzip, List.of( logId.headers ), logId.types );
+                    RowBinaryOutputStream rbOut = new RowBinaryOutputStream( outputStream, List.of( logId.headers ), logId.types );
                     rbOut.close();
 
-                    logFile.writeAndCommitTransaction( outputStream.array, 0, outputStream.length );
+                    byte[] header = compressHeader( outputStream.array, outputStream.length );
+                    logFile.writeAndCommitTransaction( header, 0, header.length );
                 } else {
                     log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;

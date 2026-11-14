@@ -31,11 +31,11 @@ import oap.util.FastByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.util.Map;
-import java.util.zip.GZIPOutputStream;
 
 public class Buffer implements Serializable {
     public static final int DIGESTION_POSITION = 0;
     public static final int DATE_LENGTH_POSITION = 8;
+    public static final int COMPRESSION_POSITION = 12;
     public final ProtocolVersion protocolVersion;
     private final byte[] data;
     public LogId id;
@@ -55,8 +55,9 @@ public class Buffer implements Serializable {
     }
 
     /**
-     * digestion control (long, reserved), data length (int, reserved), filePrefixPattern, logType, clientHostname,
-     * headers, types, properties. Strings - modified UTF-8 (DataInputStream.readUTF on the server).
+     * {@link ProtocolVersion#ROW_BINARY_V4} header: digestion control (long, reserved), data length (int, reserved),
+     * compression (byte, reserved), filePrefixPattern, logType, clientHostname, headers, types, properties.
+     * Strings - modified UTF-8 (DataInputStream.readUTF on the server).
      */
     @SneakyThrows
     public static byte[] encodeHeader( LogId id ) {
@@ -65,6 +66,7 @@ public class Buffer implements Serializable {
 
         out.writeLong( 0 ); //reserved for digestion control
         out.writeInt( 0 ); //reserved for data length
+        out.writeByte( 0 ); //reserved for compression
         out.writeUTF( id.filePrefixPattern );
         out.writeUTF( id.logType );
         out.writeUTF( id.clientHostname );
@@ -240,21 +242,5 @@ public class Buffer implements Serializable {
     @Override
     public final String toString() {
         return id + "," + position;
-    }
-
-    @SneakyThrows
-    public FastByteArrayOutputStream compress() {
-        FastByteArrayOutputStream fastByteArrayOutputStream = new FastByteArrayOutputStream( length() );
-
-        fastByteArrayOutputStream.write( data, DIGESTION_POSITION, dataStart );
-
-        try( GZIPOutputStream gzipOutputStream = new GZIPOutputStream( fastByteArrayOutputStream ) ) {
-            gzipOutputStream.write( data, dataStart, dataLength() );
-        }
-
-        int newDataLength = fastByteArrayOutputStream.length - dataStart;
-        writeInt( fastByteArrayOutputStream.array, DATE_LENGTH_POSITION, newDataLength );
-
-        return fastByteArrayOutputStream;
     }
 }

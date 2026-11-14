@@ -27,10 +27,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 import io.airlift.compress.bzip2.BZip2HadoopStreams;
 import io.airlift.compress.gzip.JdkGzipHadoopStreams;
-import io.airlift.compress.lz4.Lz4HadoopStreams;
 import io.airlift.compress.zstd.ZstdHadoopStreams;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import net.jpountz.lz4.LZ4FrameInputStream;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -66,7 +67,6 @@ import static oap.util.function.Functions.empty.consume;
 public class IoStreams {
     public static final int DEFAULT_BUFFER = 8192;
     public static final BZip2HadoopStreams BZIP2_HADOOP_STREAMS = new BZip2HadoopStreams();
-    public static final Lz4HadoopStreams LZ4_HADOOP_STREAMS = new Lz4HadoopStreams();
     public static final ZstdHadoopStreams ZSTD_HADOOP_STREAMS = new ZstdHadoopStreams();
     public static final JdkGzipHadoopStreams GZIP_HADOOP_STREAMS = new JdkGzipHadoopStreams();
 
@@ -249,7 +249,7 @@ public class IoStreams {
                     zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                     yield zip;
                 }
-                case LZ4 -> LZ4_HADOOP_STREAMS.createOutputStream( fos );
+                case LZ4 -> new LZ4FrameOutputStream( fos, LZ4FrameOutputStream.BLOCKSIZE.SIZE_256KB );
                 case ZSTD -> {
                     OutputStream os = ZSTD_HADOOP_STREAMS.createOutputStream( fos );
                     yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
@@ -344,7 +344,7 @@ public class IoStreams {
                     return stream;
                 case LZ4:
                     try {
-                        return LZ4_HADOOP_STREAMS.createInputStream( stream );
+                        return new LZ4FrameInputStream( stream );
                     } catch( Exception e ) {
                         stream.close();
                         throw e;

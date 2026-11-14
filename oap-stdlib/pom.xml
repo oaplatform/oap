@@ -132,6 +132,11 @@
             <version>${oap.deps.luben-zstd-jni.version}</version>
         </dependency>
         <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>${oap.deps.lz4-java.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.github.itning</groupId>
             <artifactId>guava-retrying3</artifactId>
             <version>${oap.deps.guava-retrying.version}</version>
