@@ -79,7 +79,6 @@ public class LogIdTemplate {
         context.put( "DAY", print2Chars( time.getDayOfMonth() ) );
         context.put( "HOUR", print2Chars( time.getHourOfDay() ) );
         context.put( "MINUTE", print2Chars( time.getMinuteOfHour() ) );
-        context.put( "SECOND", print2Chars( time.getSecondOfMinute() ) );
         context.put( "INTERVAL", print2Chars( timestamp.currentBucket( time ) ) );
         context.put( "LOG_TIME_INTERVAL", String.valueOf( 60 / timestamp.bucketsPerHour ) );
         context.put( "REGION", System.getenv( "REGION" ) );

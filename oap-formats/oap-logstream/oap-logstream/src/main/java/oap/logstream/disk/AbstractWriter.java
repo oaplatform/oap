@@ -34,8 +34,9 @@ import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.template.TemplateEngine;
-import oap.util.Dates;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 
 import java.io.Closeable;
 import java.nio.file.Path;
@@ -59,6 +60,7 @@ public abstract class AbstractWriter implements Closeable {
     protected String lastPattern;
     protected int fileVersion = 1;
     protected boolean closed = false;
+    private volatile PatternCache patternCache;
 
     protected AbstractWriter( TemplateEngine templateEngine, LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
                               int maxVersions, String hostname, FileWriterNotification notification ) {
@@ -99,12 +101,24 @@ public abstract class AbstractWriter implements Closeable {
         return logIdTemplate.render( templateEngine, pattern, time, timestamp, version, hostname );
     }
 
+    /**
+     * File pattern variables have at most minute granularity, so the rendered pattern is cached per (epoch minute, version).
+     */
     protected String currentPattern( int version ) {
-        return currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, version, Dates.nowUtc(), hostname );
+        long now = DateTimeUtils.currentTimeMillis();
+        long minute = now / 60_000L;
+        PatternCache cache = patternCache;
+        if( cache != null && cache.minute == minute && cache.version == version ) {
+            return cache.pattern;
+        }
+
+        String pattern = currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, version, new DateTime( now, DateTimeZone.UTC ), hostname );
+        patternCache = new PatternCache( minute, version, pattern );
+        return pattern;
     }
 
     protected String currentPattern() {
-        return currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc(), hostname );
+        return currentPattern( fileVersion );
     }
 
     public void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {
@@ -192,4 +206,6 @@ public abstract class AbstractWriter implements Closeable {
     public String toString() {
         return getClass().getSimpleName() + "@" + filename();
     }
+
+    private record PatternCache( long minute, int version, String pattern ) {}
 }

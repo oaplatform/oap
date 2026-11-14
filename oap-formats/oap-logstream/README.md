@@ -137,7 +137,7 @@ Predefined variables:
 | `{{ CLIENT_HOST }}`                                    | Source hostname |
 | `{{ SERVER_HOST }}`                                    | Hostname of the process running the backend |
 | `{{ YEAR }}`, `{{ MONTH }}`, `{{ DAY }}`, `{{ HOUR }}` | UTC date components |
-| `{{ MINUTE }}`, `{{ SECOND }}`                         | Current UTC minute-of-hour / second-of-minute (zero-padded) — **not** related to `{{ INTERVAL }}` |
+| `{{ MINUTE }}`                                         | Current UTC minute-of-hour (zero-padded) — **not** related to `{{ INTERVAL }}` |
 | `{{ INTERVAL }}`                                       | Zero-padded bucket index within the hour (required — must be present to detect bucket rotation) |
 | `{{ LOG_TIME_INTERVAL }}`                              | Bucket length in minutes (`60 / bucketsPerHour`) |
 | `{{ REGION }}`                                         | `REGION` environment variable |

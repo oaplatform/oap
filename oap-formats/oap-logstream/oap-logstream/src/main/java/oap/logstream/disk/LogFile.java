@@ -21,7 +21,7 @@ import java.nio.file.StandardOpenOption;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@ToString( exclude = "out" )
+@ToString( of = "outFilename" )
 @EqualsAndHashCode( of = "outFilename" )
 public class LogFile implements AutoCloseable {
     public static final String EXTENSION_LOG_METADATA = ".metadata.yaml";
@@ -29,8 +29,16 @@ public class LogFile implements AutoCloseable {
     public static final String EXTENSION_LOG_COMPLETED = ".metadata.completed";
 
     public final Path outFilename;
+    private final Path transactionFile;
+    private final Path transactionTmpFile;
+    private final Path metadataFile;
+    private final Path completedFile;
     @Nullable
     protected FileChannel out;
+    /**
+     * cached transaction position; -1 - not yet loaded from disk
+     */
+    private long transactionPosition = -1;
 
     public LogFile( Path outFilename ) {
         this( outFilename, null );
@@ -39,6 +47,10 @@ public class LogFile implements AutoCloseable {
     protected LogFile( Path outFilename, @Nullable FileChannel out ) throws LoggerException {
         this.outFilename = outFilename;
         this.out = out;
+        this.transactionFile = pathFor( EXTENSION_LOG_TRANSACTION );
+        this.transactionTmpFile = pathFor( EXTENSION_LOG_TRANSACTION + ".tmp" );
+        this.metadataFile = pathFor( EXTENSION_LOG_METADATA );
+        this.completedFile = pathFor( EXTENSION_LOG_COMPLETED );
     }
 
     public static LogFile loadFromPath( Path path ) {
@@ -75,17 +87,14 @@ public class LogFile implements AutoCloseable {
     }
 
     public long beginTransaction() throws LoggerException {
+        if( transactionPosition >= 0 ) return transactionPosition;
+
         try {
-            Path path = getTransactionFile();
+            transactionPosition = Files.exists( transactionFile )
+                ? Long.parseLong( Files.readString( transactionFile, UTF_8 ) )
+                : 0;
 
-            long dataSize;
-            if( Files.exists( path ) ) {
-                dataSize = Long.parseLong( Files.readString( path, UTF_8 ) );
-            } else {
-                dataSize = 0;
-            }
-
-            return dataSize;
+            return transactionPosition;
         } catch( IOException e ) {
             throw new LoggerException( e );
         }
@@ -97,21 +106,12 @@ public class LogFile implements AutoCloseable {
 
     public void commitTransaction( int length ) throws LoggerException {
         try {
-            Path path = getTransactionFile();
-            Path tmpPath = pathFor( EXTENSION_LOG_TRANSACTION + ".tmp" );
+            long dataSize = beginTransaction() + length;
 
-            long dataSize;
-            if( Files.exists( path ) ) {
-                dataSize = Long.parseLong( Files.readString( path, UTF_8 ) );
-            } else {
-                dataSize = 0;
-            }
+            Files.writeString( transactionTmpFile, String.valueOf( dataSize ), UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
+            Files.move( transactionTmpFile, transactionFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE );
 
-
-            dataSize += length;
-
-            Files.writeString( tmpPath, String.valueOf( dataSize ), UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
-            Files.move( tmpPath, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE );
+            transactionPosition = dataSize;
         } catch( IOException e ) {
             throw new LoggerException( e );
         }
@@ -119,7 +119,7 @@ public class LogFile implements AutoCloseable {
 
     public void readyForUpload() throws LoggerException {
         try {
-            Files.createFile( pathFor( EXTENSION_LOG_COMPLETED ) );
+            Files.createFile( completedFile );
         } catch( FileAlreadyExistsException ignored ) {
         } catch( IOException e ) {
             throw new LoggerException( e );
@@ -224,10 +224,6 @@ public class LogFile implements AutoCloseable {
 
     public long getMaxModificationTime() throws LoggerException {
         try {
-            Path transactionFile = getTransactionFile();
-            Path metadataFile = getMetadataFile();
-            Path completedFile = getCompletedFile();
-
             boolean mainFile = Files.exists( outFilename );
             boolean transactionFileExists = Files.exists( transactionFile );
             boolean metadataFileExists = Files.exists( metadataFile );
@@ -255,18 +251,19 @@ public class LogFile implements AutoCloseable {
     }
 
     public Path getCompletedFile() {
-        return pathFor( EXTENSION_LOG_COMPLETED );
+        return completedFile;
     }
 
     public Path getMetadataFile() {
-        return pathFor( EXTENSION_LOG_METADATA );
+        return metadataFile;
     }
 
     public Path getTransactionFile() {
-        return pathFor( EXTENSION_LOG_TRANSACTION );
+        return transactionFile;
     }
 
     public void delete() throws LoggerException {
+        transactionPosition = -1;
         try {
             Files.deleteIfExists( outFilename );
             Files.deleteIfExists( getMetadataFile() );
@@ -278,9 +275,7 @@ public class LogFile implements AutoCloseable {
     }
 
     public void moveTo( Path destinationDirectory, Path baseDirectory ) throws LoggerException {
-        Path transactionFile = getTransactionFile();
-        Path metadataFile = getMetadataFile();
-        Path completedFile = getCompletedFile();
+        transactionPosition = -1;
 
         boolean mainFileExists = Files.exists( outFilename );
         boolean transactionFileExists = Files.exists( transactionFile );
