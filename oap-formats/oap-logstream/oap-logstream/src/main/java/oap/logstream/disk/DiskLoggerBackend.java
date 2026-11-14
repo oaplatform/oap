@@ -31,6 +31,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import lombok.EqualsAndHashCode;
@@ -65,6 +67,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -98,6 +101,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public long usableSpaceCheckPeriod = Dates.s( 1 );
     public volatile boolean closed;
     private volatile UsableSpace usableSpace;
+    private final ConcurrentHashMap<String, HostMetrics> hostMetrics = new ConcurrentHashMap<>();
     protected CopyOnWriteArrayList<FileWriterNotification> notifications = new CopyOnWriteArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
@@ -176,8 +180,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             throw new LoggerException( "already closed!" );
         }
 
-        Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", hostName ) ) ).increment();
-        Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", hostName ) ) ).record( length );
+        HostMetrics metrics = hostMetrics( hostName );
+        metrics.counter.increment();
+        metrics.buffers.record( length );
         AbstractWriter writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
@@ -194,6 +199,17 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
             throw e;
         }
+    }
+
+    private HostMetrics hostMetrics( String hostName ) {
+        HostMetrics metrics = hostMetrics.get( hostName );
+        if( metrics != null ) {
+            return metrics;
+        }
+
+        return hostMetrics.computeIfAbsent( hostName, h -> new HostMetrics(
+            Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", h ) ) ),
+            Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", h ) ) ) ) );
     }
 
     @Override
@@ -287,4 +303,6 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     }
 
     private record UsableSpace( long checkedAt, long bytes ) {}
+
+    private record HostMetrics( Counter counter, DistributionSummary buffers ) {}
 }
