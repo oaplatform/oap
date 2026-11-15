@@ -25,6 +25,7 @@
 package oap.logstream.disk;
 
 import oap.compression.Compression;
+import oap.logstream.LogId;
 import oap.logstream.Logger;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
@@ -119,11 +120,13 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             Logger logger = new Logger( backend );
             //log a line to lfn1
-            Result<String, LogstreamException> result = logger.log( "lfn1", Map.of(), "log", headers, types, lines );
+            Result<LogId, LogstreamException> result = logger.log( "lfn1", Map.of(), "log", headers, types, lines );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue )
-                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ).toString() );
+            assertThat( result.successValue ).isEqualTo( new LogId( "lfn1", "log", Map.of(), headers, types ) );
+            assertThat( backend.getLogFile( result.successValue ).outFilename )
+                .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ) );
+            assertThat( backend.getLogFile( new LogId( "unknown", "log", Map.of(), headers, types ) ) ).isNull();
 
             assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf(
@@ -142,7 +145,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         Path file;
         try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
             Logger logger = new Logger( backend );
-            file = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
+            file = backend.getLogFile( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue ).outFilename;
         }
 
         Files.delete( new LogFile( file ).getCompletedFile() );
@@ -174,7 +177,7 @@ public class DiskLoggerBackendTest extends Fixtures {
             );
 
             Logger logger = new Logger( backend );
-            Path next = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
+            Path next = backend.getLogFile( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue ).outFilename;
             assertThat( next ).isNotEqualTo( file );
             assertThat( next.getFileName().toString() ).contains( "-2-2015" );
         }
@@ -211,7 +214,7 @@ public class DiskLoggerBackendTest extends Fixtures {
             );
 
             Logger logger = new Logger( backend );
-            Path next = Path.of( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue );
+            Path next = backend.getLogFile( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue ).outFilename;
             assertThat( next ).isNotEqualTo( file );
             assertThat( Files.size( file ) ).isEqualTo( committed );
         }

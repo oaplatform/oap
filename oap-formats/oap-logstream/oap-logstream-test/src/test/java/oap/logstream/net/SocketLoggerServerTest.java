@@ -28,10 +28,11 @@ public class SocketLoggerServerTest {
     private static final String[] HEADERS = new String[] { "h1" };
     private static final byte[][] TYPES = new byte[][] { new byte[] { Types.STRING.id } };
     private static final byte[] ROW = "line1\n".getBytes( UTF_8 );
+    private static final LogId LOG_ID = new LogId( "prefix", "type", Map.of( "p1", "v1" ), HEADERS, TYPES );
 
     @Test
     public void success() {
-        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payload( LogStreamCompression.LZ4 );
@@ -74,7 +75,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void backendNotAvailable() {
-        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
         backend.state = AvailabilityReport.State.FAILED;
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
@@ -85,7 +86,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void invalidVersion() {
-        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payload( LogStreamCompression.GZIP );
@@ -95,7 +96,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void v3IsGzip() {
-        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payloadV3();
@@ -111,7 +112,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void unknownCompression() {
-        TestBackend backend = new TestBackend( Result.success( "log-id" ) );
+        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payload( LogStreamCompression.GZIP );
@@ -145,7 +146,7 @@ public class SocketLoggerServerTest {
     }
 
     private static class TestBackend extends AbstractLoggerBackend {
-        private final Result<String, LogstreamException> result;
+        private final Result<LogId, LogstreamException> result;
         private AvailabilityReport.State state = AvailabilityReport.State.OPERATIONAL;
         private int calls;
         private ProtocolVersion version;
@@ -158,12 +159,12 @@ public class SocketLoggerServerTest {
         private byte[][] types;
         private byte[] buffer;
 
-        private TestBackend( Result<String, LogstreamException> result ) {
+        private TestBackend( Result<LogId, LogstreamException> result ) {
             this.result = result;
         }
 
         @Override
-        public Result<String, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression, String hostName, String filePreffix,
+        public Result<LogId, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression, String hostName, String filePreffix,
                                                        Map<String, String> properties, String logType,
                                                        String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
             this.compression = compression;
@@ -171,7 +172,7 @@ public class SocketLoggerServerTest {
         }
 
         @Override
-        public Result<String, LogstreamException> log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+        public Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
                                                        String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
             this.calls++;
             this.version = version;

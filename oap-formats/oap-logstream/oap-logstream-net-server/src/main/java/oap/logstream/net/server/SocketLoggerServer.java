@@ -25,6 +25,7 @@ package oap.logstream.net.server;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.logstream.AbstractLoggerBackend;
+import oap.logstream.LogId;
 import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
@@ -127,7 +128,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         }
         int offset = data.length - remaining;
 
-        Result<String, LogstreamException> result = backend.log( version, compression, clientHostname, filePreffix, properties, logType, headers, types, data, offset, length );
+        Result<LogId, LogstreamException> result = backend.log( version, compression, clientHostname, filePreffix, properties, logType, headers, types, data, offset, length );
         if( result.isSuccess() ) {
             return MessageProtocol.STATUS_OK;
         } else {

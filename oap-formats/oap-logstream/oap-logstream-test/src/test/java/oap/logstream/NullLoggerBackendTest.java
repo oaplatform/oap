@@ -18,11 +18,11 @@ public class NullLoggerBackendTest {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         try( NullLoggerBackend backend = new NullLoggerBackend() ) {
-            Result<String, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of( "p1", "v1" ), "type1",
+            Result<LogId, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of( "p1", "v1" ), "type1",
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", Map.of( "p1", "v1" ), headers, types ).toString() );
+            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", Map.of( "p1", "v1" ), headers, types ) );
         }
     }
 }

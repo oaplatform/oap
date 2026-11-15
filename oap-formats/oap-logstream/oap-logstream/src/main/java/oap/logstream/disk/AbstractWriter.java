@@ -38,6 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -168,6 +169,19 @@ public abstract class AbstractWriter implements Closeable {
 
     protected Path filename() {
         return logDirectory.resolve( lastPattern );
+    }
+
+    /**
+     * the file open for writing, null - none
+     */
+    @Nullable
+    public LogFile getLogFile() {
+        lock.lock();
+        try {
+            return logFile;
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**

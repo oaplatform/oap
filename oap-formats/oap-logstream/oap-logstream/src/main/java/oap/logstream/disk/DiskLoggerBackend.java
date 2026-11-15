@@ -62,6 +62,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -280,7 +281,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * buffer - gzip
      */
     @Override
-    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         return log( protocolVersion, LogStreamCompression.GZIP, hostName, filePreffix, properties, logType, headers, types, buffer, offset, length );
     }
@@ -290,7 +291,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      */
     @Override
     @SneakyThrows
-    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName, String filePreffix,
+    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName, String filePreffix,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
@@ -305,7 +306,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
-            return Result.success( writer.write( protocolVersion, buffer, offset, length ) );
+            writer.write( protocolVersion, buffer, offset, length );
+            return Result.success( logId );
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
             for( int i = 0; i < headers.length; i++ ) {
@@ -317,6 +319,23 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
             throw e;
         }
+    }
+
+    /**
+     * @return the file currently open for writing for the log id ( gzip payload ), null - none
+     */
+    @Nullable
+    public LogFile getLogFile( LogId logId ) {
+        return getLogFile( logId, LogStreamCompression.GZIP );
+    }
+
+    /**
+     * @return the file currently open for writing for the log id and the compression, null - none
+     */
+    @Nullable
+    public LogFile getLogFile( LogId logId, LogStreamCompression compression ) {
+        AbstractWriter writer = writers.getIfPresent( new WriterKey( logId, compression ) );
+        return writer != null ? writer.getLogFile() : null;
     }
 
     private HostMetrics hostMetrics( String hostName ) {
