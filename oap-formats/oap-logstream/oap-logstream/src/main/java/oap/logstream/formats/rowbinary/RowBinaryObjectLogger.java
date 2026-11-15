@@ -286,9 +286,13 @@ public class RowBinaryObjectLogger {
     }
 
     public class TypedRowBinaryLogger<D> {
+        private static final int INITIAL_SIZE_HINT = 256;
+
         public final String[] headers;
         public final byte[][] types;
         private final Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer;
+        // max rendered row size seen so far; benign race - worst case is one extra regrowth
+        private volatile int sizeHint = INITIAL_SIZE_HINT;
 
         public TypedRowBinaryLogger( Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer, String[] headers, byte[][] types ) {
             this.renderer = renderer;
@@ -298,8 +302,10 @@ public class RowBinaryObjectLogger {
         }
 
         public void log( D data, String filePreffix, Map<String, String> properties, String logType ) {
-            // render() creates a new accumulator per call, backends copy the buffer synchronously -> no toByteArray() copy
-            FastByteArrayOutputStream out = renderer.render( data, true ).baos;
+            // sized from the hint -> single allocation without regrowth; backends copy the buffer synchronously -> no toByteArray() copy
+            FastByteArrayOutputStream out = new FastByteArrayOutputStream( sizeHint );
+            renderer.render( data, true, out );
+            if( out.length > sizeHint ) sizeHint = out.length;
             backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, out.array, 0, out.length );
         }
     }

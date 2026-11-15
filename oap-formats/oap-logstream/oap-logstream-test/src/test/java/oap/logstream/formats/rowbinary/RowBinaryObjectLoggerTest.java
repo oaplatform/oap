@@ -108,6 +108,54 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
     }
 
     @Test
+    public void testLogSizeHint() {
+        String datamodel = """
+            name = model
+            values {
+              MODEL1 {
+                values {
+                  a {
+                    path = a
+                    type = STRING
+                    default = ""
+                  }
+                  b {
+                    path = b
+                    type = INTEGER
+                    default = 0
+                  }
+                }
+              }
+            }
+            """;
+
+        MemoryLoggerBackend memoryLoggerBackend = new MemoryLoggerBackend();
+        RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( DictionaryParser.parseFromString( datamodel ), memoryLoggerBackend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
+
+        RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1", false );
+
+        // larger than the initial size hint: 1st call regrows the buffer, 2nd one is allocated from the grown hint
+        String large = "x".repeat( 1000 );
+        String larger = "y".repeat( 5000 );
+
+        logger.log( new TestData( "small", null, 1, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
+        logger.log( new TestData( large, null, 2, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
+        logger.log( new TestData( large, null, 3, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
+        logger.log( new TestData( larger, null, 4, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
+        logger.log( new TestData( "small", null, 5, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
+
+        memoryLoggerBackend
+            .assertRowBinary( _ -> true )
+            .containsExactlyInAnyOrderEntriesOf(
+                List.of( "small", 1 ),
+                List.of( large, 2 ),
+                List.of( large, 3 ),
+                List.of( larger, 4 ),
+                List.of( "small", 5 )
+            );
+    }
+
+    @Test
     public void testOptimization() {
         String datamodel = """
             name = model
