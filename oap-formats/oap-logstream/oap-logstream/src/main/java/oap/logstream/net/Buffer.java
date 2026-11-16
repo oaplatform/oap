@@ -59,8 +59,8 @@ public class Buffer implements Serializable {
     }
 
     /**
-     * {@link ProtocolVersion#ROW_BINARY_V4} header: digestion control (long, reserved), data length (int, reserved),
-     * compression (byte, reserved), filePrefixPattern, logType, clientHostname, headers, types, properties.
+     * {@link ProtocolVersion#ROW_BINARY_V5} header: digestion control (long, reserved), data length (int, reserved),
+     * compression (byte, reserved), logType, clientHostname, headers, types, properties.
      * Strings - modified UTF-8 (DataInputStream.readUTF on the server).
      */
     @SneakyThrows
@@ -71,7 +71,6 @@ public class Buffer implements Serializable {
         out.writeLong( 0 ); //reserved for digestion control
         out.writeInt( 0 ); //reserved for data length
         out.writeByte( 0 ); //reserved for compression
-        out.writeUTF( id.filePrefixPattern );
         out.writeUTF( id.logType );
         out.writeUTF( clientHostname );
         out.writeInt( id.headers.length );

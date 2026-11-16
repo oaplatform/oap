@@ -220,7 +220,7 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
             buffers.forEachReadyData( b -> {
                 log.trace( "Sending {} {}/{}", b, compression, level );
                 byte[] data = compressor.compress( b, compression, level );
-                sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V4.version, data, 0, data.length );
+                sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V5.version, data, 0, data.length );
             } );
             log.trace( "Data sent to server" );
             return true;
@@ -230,9 +230,9 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     }
 
     @Override
-    public Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        LogId logId = new LogId( filePreffix, logType, properties, headers, types );
+        LogId logId = new LogId( logType, properties, headers, types );
         buffers.put( logId, hostName, version, buffer, offset, length );
         return Result.success( logId );
     }

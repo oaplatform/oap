@@ -52,7 +52,6 @@ public class LogId implements Serializable {
     public final byte[][] types;
     public final String[] headers;
 
-    public final String filePrefixPattern;
     public final LinkedHashMap<String, String> properties = new LinkedHashMap<>();
     /**
      * transient: not serialized by Jackson; 0 after java deserialization -> recomputed lazily
@@ -60,11 +59,10 @@ public class LogId implements Serializable {
     @ToString.Exclude
     private transient int hash;
 
-    public LogId( String filePrefixPattern, String logType,
+    public LogId( String logType,
                   Map<String, String> properties,
                   String[] headers,
                   byte[][] types ) {
-        this.filePrefixPattern = filePrefixPattern;
         this.logType = logType;
         this.types = types;
         this.properties.putAll( properties );
@@ -84,7 +82,6 @@ public class LogId implements Serializable {
         result = result * prime + ( logType == null ? 43 : logType.hashCode() );
         result = result * prime + Arrays.deepHashCode( types );
         result = result * prime + Arrays.deepHashCode( headers );
-        result = result * prime + ( filePrefixPattern == null ? 43 : filePrefixPattern.hashCode() );
         result = result * prime + properties.hashCode();
         return result;
     }
@@ -109,7 +106,6 @@ public class LogId implements Serializable {
             && Objects.equals( logType, logId.logType )
             && Arrays.deepEquals( types, logId.types )
             && Arrays.deepEquals( headers, logId.headers )
-            && Objects.equals( filePrefixPattern, logId.filePrefixPattern )
             && properties.equals( logId.properties );
     }
 

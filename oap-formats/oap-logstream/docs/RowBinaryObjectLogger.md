@@ -87,17 +87,16 @@ TypedRowBinaryLogger<MyEvent> typed = logger.typed( new TypeRef<>() {}, "MODEL_I
 ## Logging rows
 
 ```java
-typed.log( event, "file-prefix", Map.of( "region", "eu" ), "EVENT_TYPE" );
+typed.log( event, Map.of( "region", "eu" ), "EVENT_TYPE" );
 ```
 
 | Parameter | Type | Description |
 |---|---|---|
 | `data` | `D` | Domain object to serialize |
-| `filePreffix` | `String` | Log file prefix passed to the backend |
 | `properties` | `Map<String, String>` | Custom metadata forwarded to the backend |
 | `logType` | `String` | Log type string; used by `DiskLoggerBackend` when building file names |
 
-Each call renders one RowBinary row and calls `backend.log()` with protocol version `ROW_BINARY_V3`.
+Each call renders one RowBinary row and calls `backend.log()` with the current protocol version (`ROW_BINARY_V5`).
 
 ---
 
@@ -136,7 +135,7 @@ RowBinaryObjectLogger logger = new RowBinaryObjectLogger(
 TypedRowBinaryLogger<MyData> typed = logger.typed( new TypeRef<>() {}, "MODEL1" );
 
 typed.log( new MyData( "hello", "fallback", 42, List.of( "x" ) ),
-           "prefix", Map.of(), "my-log" );
+           Map.of(), "my-log" );
 
 // In tests — inspect logged rows as deserialized objects:
 List<List<Object>> rows = backend.asRowBinary( _ -> true );

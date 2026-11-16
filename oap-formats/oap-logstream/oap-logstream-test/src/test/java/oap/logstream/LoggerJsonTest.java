@@ -63,14 +63,14 @@ public class LoggerJsonTest extends Fixtures {
         String content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
         String[] headers = new String[] { "test" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             Logger logger = new Logger( backend );
 
             SimpleJson o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
             String jsonContent = Binder.json.marshal( o );
             assertThat( jsonContent ).isEqualTo( content );
 
-            logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, Compression.gzip( RowBinaryUtils.line( List.of( jsonContent ) ) ) );
+            logger.log( Map.of( "PREFIX", "open_rtb_json" ), "request_response", headers, types, Compression.gzip( RowBinaryUtils.line( List.of( jsonContent ) ) ) );
         }
 
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/open_rtb_json/2015-10/10/request_response_v3b5d9e1b0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), Encoding.GZIP )
@@ -81,5 +81,13 @@ public class LoggerJsonTest extends Fixtures {
         public String title;
         public boolean status;
         public int[] values;
+    }
+
+    /**
+     * the file prefix is a property of the log id: {{ PREFIX }}
+     */
+    private static DiskLoggerBackend prefixed( DiskLoggerBackend backend ) {
+        backend.filePattern = "{{ PREFIX }}/" + backend.filePattern;
+        return backend;
     }
 }

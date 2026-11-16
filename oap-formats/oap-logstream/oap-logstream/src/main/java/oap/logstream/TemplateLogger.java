@@ -40,9 +40,9 @@ public class TemplateLogger<F, TOut, TMutable, TA extends TemplateAccumulator<TO
         this.dictionaryTemplate = dictionaryTemplate;
     }
 
-    public void log( String filePreffix, Map<String, String> properties, String logType, F obj ) {
+    public void log( Map<String, String> properties, String logType, F obj ) {
         var row = dictionaryTemplate.templateFunction.render( obj, true ).getBytes();
-        backend.log( CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, filePreffix, properties, logType, dictionaryTemplate.headers, dictionaryTemplate.types, row );
+        backend.log( CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, properties, logType, dictionaryTemplate.headers, dictionaryTemplate.types, row );
     }
 
     public boolean isLoggingAvailable() {

@@ -9,7 +9,7 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 
 @SuppressWarnings( "checkstyle:InterfaceIsType" )
 public interface LogStreamProtocol {
-    ProtocolVersion CURRENT_PROTOCOL_VERSION = ProtocolVersion.ROW_BINARY_V4;
+    ProtocolVersion CURRENT_PROTOCOL_VERSION = ProtocolVersion.ROW_BINARY_V5;
     byte MESSAGE_TYPE = 20;
     short STATUS_BACKEND_LOGGER_NOT_AVAILABLE = 20000;
     short INVALID_VERSION = 20001;
@@ -26,7 +26,11 @@ public interface LogStreamProtocol {
          * header: digestion (long), data length (int), compression ({@link oap.logstream.LogStreamCompression#id}, byte),
          * then as in v3. payload - compressed by the codec from the header
          */
-        ROW_BINARY_V4( 4 );
+        ROW_BINARY_V4( 4 ),
+        /**
+         * as v4, without filePrefixPattern
+         */
+        ROW_BINARY_V5( 5 );
         public final int version;
 
         ProtocolVersion( int version ) {

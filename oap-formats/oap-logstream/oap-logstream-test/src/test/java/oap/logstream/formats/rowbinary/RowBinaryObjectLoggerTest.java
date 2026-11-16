@@ -96,8 +96,8 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1", false );
 
-        logger.log( new TestData( "ff", "cc", 12, List.of( "1" ), null, Map.of( "map_val_long_as_int", 333L ) ), "prefix", Map.of(), "mylog" );
-        logger.log( new TestData( null, "dd", 44, null, List.of( "2" ), Map.of( "map_val_long_as_int", 1L ) ), "prefix", Map.of(), "mylog" );
+        logger.log( new TestData( "ff", "cc", 12, List.of( "1" ), null, Map.of( "map_val_long_as_int", 333L ) ), Map.of(), "mylog" );
+        logger.log( new TestData( null, "dd", 44, null, List.of( "2" ), Map.of( "map_val_long_as_int", 1L ) ), Map.of(), "mylog" );
 
         memoryLoggerBackend
             .assertRowBinary( _ -> true )
@@ -138,11 +138,11 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         String large = "x".repeat( 1000 );
         String larger = "y".repeat( 5000 );
 
-        logger.log( new TestData( "small", null, 1, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
-        logger.log( new TestData( large, null, 2, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
-        logger.log( new TestData( large, null, 3, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
-        logger.log( new TestData( larger, null, 4, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
-        logger.log( new TestData( "small", null, 5, null, null, Map.of() ), "prefix", Map.of(), "mylog" );
+        logger.log( new TestData( "small", null, 1, null, null, Map.of() ), Map.of(), "mylog" );
+        logger.log( new TestData( large, null, 2, null, null, Map.of() ), Map.of(), "mylog" );
+        logger.log( new TestData( large, null, 3, null, null, Map.of() ), Map.of(), "mylog" );
+        logger.log( new TestData( larger, null, 4, null, null, Map.of() ), Map.of(), "mylog" );
+        logger.log( new TestData( "small", null, 5, null, null, Map.of() ), Map.of(), "mylog" );
 
         memoryLoggerBackend
             .assertRowBinary( _ -> true )
@@ -217,7 +217,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         testData3.aa = "aa2";
         testData3.b = 2;
 
-        logger.log( testData, "prefix", Map.of(), "mylog" );
+        logger.log( testData, Map.of(), "mylog" );
 
         MutableObject<String[]> headers = new MutableObject<>();
 
@@ -289,7 +289,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         testData3.aa = "aa2";
         testData3.b = 2;
 
-        logger.log( testData, "prefix", Map.of(), "mylog" );
+        logger.log( testData, Map.of(), "mylog" );
 
         MutableObject<String[]> headers = new MutableObject<>();
 

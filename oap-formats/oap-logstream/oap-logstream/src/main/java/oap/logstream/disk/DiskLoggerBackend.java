@@ -264,7 +264,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     }
 
     private void filePatternValidation( String type, String filePattern ) {
-        LogId logId = new LogId( "", type, Map.of(), new String[] {}, new byte[][] {} );
+        LogId logId = new LogId( type, Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
         String currentPattern = AbstractWriter.currentPattern( templateEngine, LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time, hostname );
@@ -281,9 +281,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * buffer - gzip
      */
     @Override
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        return log( protocolVersion, LogStreamCompression.GZIP, hostName, filePreffix, properties, logType, headers, types, buffer, offset, length );
+        return log( protocolVersion, LogStreamCompression.GZIP, hostName, properties, logType, headers, types, buffer, offset, length );
     }
 
     /**
@@ -291,7 +291,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      */
     @Override
     @SneakyThrows
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName, String filePreffix,
+    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
@@ -301,7 +301,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         HostMetrics metrics = hostMetrics( hostName );
         metrics.counter.increment();
         metrics.buffers.record( length );
-        LogId logId = new LogId( filePreffix, logType, properties, headers, types );
+        LogId logId = new LogId( logType, properties, headers, types );
         AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
@@ -314,8 +314,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
                 headersWithTypes.add( headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( types[i] ) ), oap.template.Types::valueOf ) + "]" );
             }
 
-            log.error( "hostName {} filePrefix {} logType {} properties {} headers {} path {}",
-                hostName, filePreffix, logType, properties, headersWithTypes, writer.currentPattern() );
+            log.error( "hostName {} logType {} properties {} headers {} path {}",
+                hostName, logType, properties, headersWithTypes, writer.currentPattern() );
 
             throw e;
         }

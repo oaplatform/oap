@@ -44,9 +44,9 @@ public class Logger {
         this( backend, CURRENT_PROTOCOL_VERSION );
     }
 
-    public Result<LogId, LogstreamException> log( String filePreffix, Map<String, String> properties, String logType,
+    public Result<LogId, LogstreamException> log( Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] row ) {
-        return backend.log( protocolVersion, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, row );
+        return backend.log( protocolVersion, Inet.HOSTNAME, properties, logType, headers, types, row );
     }
 
     public boolean isLoggingAvailable() {

@@ -40,13 +40,13 @@ public class LogIdTest {
         var strTypes = new byte[][] { new byte[] { Types.STRING.id } };
         var dtTypes = new byte[][] { new byte[] { Types.DATETIME.id } };
 
-        var lid1 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
-        var lid2 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
-        var lid3 = new LogId( "ln1", "lt", Map.of(), h1Headers, strTypes );
-        var lid4 = new LogId( "ln", "lt1", Map.of(), h1Headers, strTypes );
-        var lid5 = new LogId( "ln", "lt", Map.of(), h1Headers, strTypes );
-        var lid6 = new LogId( "ln", "lt", Map.of(), h2Headers, strTypes );
-        var lid7 = new LogId( "ln", "lt", Map.of(), h1Headers, dtTypes );
+        var lid1 = new LogId( "lt", Map.of( "PREFIX", "ln" ), h1Headers, strTypes );
+        var lid2 = new LogId( "lt", Map.of( "PREFIX", "ln" ), h1Headers, strTypes );
+        var lid3 = new LogId( "lt", Map.of( "PREFIX", "ln1" ), h1Headers, strTypes );
+        var lid4 = new LogId( "lt1", Map.of( "PREFIX", "ln" ), h1Headers, strTypes );
+        var lid5 = new LogId( "lt", Map.of( "PREFIX", "ln" ), h1Headers, strTypes );
+        var lid6 = new LogId( "lt", Map.of( "PREFIX", "ln" ), h2Headers, strTypes );
+        var lid7 = new LogId( "lt", Map.of( "PREFIX", "ln" ), h1Headers, dtTypes );
 
         assertThat( lid1.hashCode() ).isEqualTo( lid2.hashCode() );
         assertThat( lid1.hashCode() ).isNotEqualTo( lid3.hashCode() );

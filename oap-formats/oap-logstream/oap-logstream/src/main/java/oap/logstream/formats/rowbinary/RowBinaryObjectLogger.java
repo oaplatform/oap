@@ -301,12 +301,12 @@ public class RowBinaryObjectLogger {
             this.types = types;
         }
 
-        public void log( D data, String filePreffix, Map<String, String> properties, String logType ) {
+        public void log( D data, Map<String, String> properties, String logType ) {
             // sized from the hint -> single allocation without regrowth; backends copy the buffer synchronously -> no toByteArray() copy
             FastByteArrayOutputStream out = new FastByteArrayOutputStream( sizeHint );
             renderer.render( data, true, out );
             if( out.length > sizeHint ) sizeHint = out.length;
-            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, out.array, 0, out.length );
+            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, properties, logType, headers, types, out.array, 0, out.length );
         }
     }
 }

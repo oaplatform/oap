@@ -64,7 +64,7 @@ public class DiskLoggerBackendTest extends Fixtures {
 
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) ) {
             backend.start();
 
             assertTrue( backend.isLoggingAvailable() );
@@ -82,16 +82,16 @@ public class DiskLoggerBackendTest extends Fixtures {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) {
-            backend.filePattern = "{{ LOG_TYPE }}_{{ LOG_VERSION }}_{{ INTERVAL }}.tsv.gz";
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) ) {
+            backend.filePattern = "{{ PREFIX }}/{{ LOG_TYPE }}_{{ LOG_VERSION }}_{{ INTERVAL }}.tsv.gz";
             backend.filePatternByType.put( "LOG_TYPE_WITH_DIFFERENT_FILE_PATTERN",
-                new DiskLoggerBackend.FilePatternConfiguration( "{{ LOG_TYPE }}_{{ LOG_VERSION }}_{{ MINUTE }}.parquet" ) );
+                new DiskLoggerBackend.FilePatternConfiguration( "{{ PREFIX }}/{{ LOG_TYPE }}_{{ LOG_VERSION }}_{{ MINUTE }}.parquet" ) );
             backend.start();
 
             Logger logger = new Logger( backend );
             //log a line to lfn1
-            logger.log( "lfn1", Map.of(), "log_type_with_default_file_pattern", headers, types, lines );
-            logger.log( "lfn1", Map.of(), "log_type_with_different_file_pattern", headers, types, lines );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log_type_with_default_file_pattern", headers, types, lines );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log_type_with_different_file_pattern", headers, types, lines );
 
             backend.refresh( true );
 
@@ -115,18 +115,18 @@ public class DiskLoggerBackendTest extends Fixtures {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
         //init new logger
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             backend.start();
 
             Logger logger = new Logger( backend );
             //log a line to lfn1
-            Result<LogId, LogstreamException> result = logger.log( "lfn1", Map.of(), "log", headers, types, lines );
+            Result<LogId, LogstreamException> result = logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, lines );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "lfn1", "log", Map.of(), headers, types ) );
+            assertThat( result.successValue ).isEqualTo( new LogId( "log", Map.of( "PREFIX", "lfn1" ), headers, types ) );
             assertThat( backend.getLogFile( result.successValue ).outFilename )
                 .isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ) );
-            assertThat( backend.getLogFile( new LogId( "unknown", "log", Map.of(), headers, types ) ) ).isNull();
+            assertThat( backend.getLogFile( new LogId( "log", Map.of( "PREFIX", "unknown" ), headers, types ) ) ).isNull();
 
             assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf(
@@ -143,9 +143,9 @@ public class DiskLoggerBackendTest extends Fixtures {
      */
     private Path crashedFile( byte[] lines, byte[] torn, String[] headers, byte[][] types ) throws IOException {
         Path file;
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             Logger logger = new Logger( backend );
-            file = backend.getLogFile( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue ).outFilename;
+            file = backend.getLogFile( logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, lines ).successValue ).outFilename;
         }
 
         Files.delete( new LogFile( file ).getCompletedFile() );
@@ -163,7 +163,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         Path file = crashedFile( lines, java.util.Arrays.copyOf( lines, lines.length / 2 ), headers, types );
         long sizeBeforeTorn = Files.size( file ) - lines.length / 2;
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             CopyOnWriteArrayList<Path> closed = new CopyOnWriteArrayList<>();
             backend.addNotificationListener( closed::add );
             backend.start();
@@ -177,7 +177,7 @@ public class DiskLoggerBackendTest extends Fixtures {
             );
 
             Logger logger = new Logger( backend );
-            Path next = backend.getLogFile( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue ).outFilename;
+            Path next = backend.getLogFile( logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, lines ).successValue ).outFilename;
             assertThat( next ).isNotEqualTo( file );
             assertThat( next.getFileName().toString() ).contains( "-2-2015" );
         }
@@ -202,7 +202,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         LogFile logFile = new LogFile( file );
         Files.writeString( logFile.getTransactionFile(), String.valueOf( committed ) );
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             backend.start();
 
             assertThat( Files.size( file ) ).isEqualTo( committed );
@@ -214,7 +214,7 @@ public class DiskLoggerBackendTest extends Fixtures {
             );
 
             Logger logger = new Logger( backend );
-            Path next = backend.getLogFile( logger.log( "lfn1", Map.of(), "log", headers, types, lines ).successValue ).outFilename;
+            Path next = backend.getLogFile( logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, lines ).successValue ).outFilename;
             assertThat( next ).isNotEqualTo( file );
             assertThat( Files.size( file ) ).isEqualTo( committed );
         }
@@ -227,12 +227,12 @@ public class DiskLoggerBackendTest extends Fixtures {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
         byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "1" ) ) ) );
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             backend.syncMode = SyncMode.PERIODIC;
             backend.syncInterval = Dates.h( 1 );
             backend.start();
 
-            new Logger( backend ).log( "lfn1", Map.of(), "log", headers, types, lines );
+            new Logger( backend ).log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, lines );
 
             AbstractWriter writer = backend.writers.asMap().values().iterator().next();
             assertThat( writer.logFile.hasUnsyncedData() ).isTrue();
@@ -240,5 +240,13 @@ public class DiskLoggerBackendTest extends Fixtures {
             backend.sync();
             assertThat( writer.logFile.hasUnsyncedData() ).isFalse();
         }
+    }
+
+    /**
+     * the file prefix is a property of the log id: {{ PREFIX }}
+     */
+    private static DiskLoggerBackend prefixed( DiskLoggerBackend backend ) {
+        backend.filePattern = "{{ PREFIX }}/" + backend.filePattern;
+        return backend;
     }
 }
