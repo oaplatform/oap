@@ -24,7 +24,6 @@
 package oap.logstream.net;
 
 import io.micrometer.core.instrument.Metrics;
-import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.logstream.LogId;
@@ -35,13 +34,13 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -51,7 +50,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-@EqualsAndHashCode( exclude = { "closed", "generation", "configurationLock" } )
 @ToString
 @Slf4j
 public class Buffers implements Closeable {
@@ -139,15 +137,26 @@ public class Buffers implements Closeable {
         put( key, protocolVersion, buffer, 0, buffer.length );
     }
 
-    @SuppressWarnings( "checkstyle:ParameterAssignment" )
     public final void put( LogId id, ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
+        // fast-fail without a lock
         if( closed ) throw new IllegalStateException( "current buffer is already closed" );
 
-        currentBuffers.compute( id, ( _, slot ) -> {
+        // lock-free; identity match for a cached LogId
+        Slot slot = currentBuffers.get( id );
+        if( slot == null ) {
+            slot = currentBuffers.computeIfAbsent( id, k -> {
+                int slotGeneration = generation;
+                return new Slot( findConfiguration( k ), Buffer.encodeHeader( k ), slotGeneration );
+            } );
+        }
+
+        slot.lock.lock();
+        try {
+            // under the slot lock: close() sets closed before flush(), so no buffer is left in a slot after the last flush
+            if( closed ) throw new IllegalStateException( "current buffer is already closed" );
+
             int currentGeneration = generation;
-            if( slot == null ) {
-                slot = new Slot( findConfiguration( id ), Buffer.encodeHeader( id ), currentGeneration );
-            } else if( slot.generation != currentGeneration ) {
+            if( slot.generation != currentGeneration ) {
                 slot.conf = findConfiguration( id );
                 slot.generation = currentGeneration;
                 Buffer current = slot.buffer;
@@ -174,9 +183,9 @@ public class Buffers implements Closeable {
 
             b.put( buffer, offset, length );
             slot.buffer = b;
-
-            return slot;
-        } );
+        } finally {
+            slot.lock.unlock();
+        }
     }
 
     private BufferConfiguration findConfiguration( LogId id ) {
@@ -187,14 +196,16 @@ public class Buffers implements Closeable {
     }
 
     public void flush() {
-        for( LogId id : currentBuffers.keySet() ) {
-            currentBuffers.computeIfPresent( id, ( _, slot ) -> {
+        for( Slot slot : currentBuffers.values() ) {
+            slot.lock.lock();
+            try {
                 if( slot.buffer != null && !slot.buffer.isEmpty() ) {
                     readyBuffers.ready( slot.buffer );
                     slot.buffer = null;
                 }
-                return slot;
-            } );
+            } finally {
+                slot.lock.unlock();
+            }
         }
     }
 
@@ -207,8 +218,9 @@ public class Buffers implements Closeable {
         lock.lock();
         try {
             if( closed ) throw new IllegalStateException( "already closed" );
-            flush();
+            // before flush(): a put that passed the check under the slot lock is flushed, a later one fails
             closed = true;
+            flush();
         } finally {
             lock.unlock();
         }
@@ -233,21 +245,26 @@ public class Buffers implements Closeable {
     }
 
     public void report() {
-        report( readyBuffers.buffers, "true" );
-        ArrayList<Buffer> current = new ArrayList<>();
+        ArrayList<String> ready = new ArrayList<>();
+        for( Buffer buffer : readyBuffers.buffers ) ready.add( buffer.id.logType );
+        report( ready, "true" );
+
+        ArrayList<String> current = new ArrayList<>();
         for( Slot slot : currentBuffers.values() ) {
-            Buffer buffer = slot.buffer;
-            if( buffer != null ) current.add( buffer );
+            slot.lock.lock();
+            try {
+                Buffer buffer = slot.buffer;
+                if( buffer != null ) current.add( buffer.id.logType );
+            } finally {
+                slot.lock.unlock();
+            }
         }
         report( current, "false" );
     }
 
-    private void report( Collection<Buffer> in, String ready ) {
-        ArrayList<Buffer> buffers = new ArrayList<>( in );
-
+    private void report( Collection<String> logTypes, String ready ) {
         HashMap<String, MutableLong> map = new HashMap<String, MutableLong>();
-        for( Buffer buffer : buffers ) {
-            String logType = buffer.id.logType;
+        for( String logType : logTypes ) {
             map.computeIfAbsent( logType, lt -> new MutableLong() ).increment();
         }
 
@@ -259,11 +276,11 @@ public class Buffers implements Closeable {
     }
 
     /**
-     * buffer configuration, serialized buffer header + current buffer for a LogId; mutated only inside currentBuffers.compute*
+     * buffer configuration, serialized buffer header + current buffer for a LogId; mutated only under Slot.lock
      */
-    @ToString( exclude = "header" )
-    @EqualsAndHashCode
+    @ToString( exclude = { "header", "lock" } )
     private static final class Slot {
+        final ReentrantLock lock = new ReentrantLock();
         final byte[] header;
         BufferConfiguration conf;
         int generation;
@@ -288,7 +305,7 @@ public class Buffers implements Closeable {
         private Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize, byte[] header ) {
             lock.lock();
             try {
-                Queue<Buffer> list = cache.computeIfAbsent( bufferSize, bs -> new LinkedList<>() );
+                Queue<Buffer> list = cache.computeIfAbsent( bufferSize, bs -> new ArrayDeque<>() );
 
                 if( list.isEmpty() ) {
                     return new Buffer( bufferSize, id, protocolVersion, header );
@@ -309,7 +326,7 @@ public class Buffers implements Closeable {
             lock.lock();
             try {
                 int capacity = buffer.capacity();
-                if( sizes.contains( capacity ) ) cache.computeIfAbsent( capacity, bs -> new LinkedList<>() ).offer( buffer );
+                if( sizes.contains( capacity ) ) cache.computeIfAbsent( capacity, bs -> new ArrayDeque<>() ).offer( buffer );
             } finally {
                 lock.unlock();
             }

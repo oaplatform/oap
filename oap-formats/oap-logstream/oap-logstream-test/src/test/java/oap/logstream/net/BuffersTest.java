@@ -38,6 +38,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static oap.logstream.LogStreamProtocol.ProtocolVersion.BINARY_V2;
@@ -258,5 +264,76 @@ public class BuffersTest {
         buffers.put( id, BINARY_V2, new byte[] { 3 } );
         assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 3 }, header + 8 ) );
         assertThat( buffers.cache.size( header + 8 ) ).isEqualTo( 1 );
+    }
+
+    @Test
+    public void putAfterCloseThrows() {
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
+        LogId id = new LogId( "x/y", Map.of(), HEADERS, TYPES );
+
+        buffers.put( id, BINARY_V2, new byte[] { 1 } );
+        buffers.close();
+
+        assertThatThrownBy( () -> buffers.put( id, BINARY_V2, new byte[] { 2 } ) )
+            .isInstanceOf( IllegalStateException.class );
+        assertThatThrownBy( () -> buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 3 } ) )
+            .isInstanceOf( IllegalStateException.class );
+
+        // the data put before close() is flushed, nothing else is left in the slots
+        assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 1 }, header + 4 ) );
+        assertThat( readyData( buffers ) ).isEmpty();
+    }
+
+    /**
+     * concurrent put ( per slot lock ) + concurrent consumer: every byte is delivered exactly once
+     */
+    @Test
+    public void concurrentPut() throws Exception {
+        int threads = 8;
+        int puts = 20_000;
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 64 ) );
+        LogId[] ids = new LogId[] {
+            new LogId( "x/1", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/2", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/3", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/4", Map.of(), HEADERS, TYPES )
+        };
+
+        // delivered bytes per writer thread; updated only by the single consumer ( under Buffers.lock )
+        long[] delivered = new long[threads];
+        Consumer<Buffer> consumer = b -> {
+            byte[] data = b.data();
+            for( int i = b.headerLength(); i < b.length(); i++ ) delivered[data[i]]++;
+        };
+
+        AtomicBoolean done = new AtomicBoolean();
+        ExecutorService executor = Executors.newFixedThreadPool( threads + 1 );
+        try {
+            Future<?> drain = executor.submit( () -> {
+                while( !done.get() ) buffers.forEachReadyData( consumer );
+            } );
+
+            List<Future<?>> writers = new ArrayList<>();
+            for( int t = 0; t < threads; t++ ) {
+                byte value = ( byte ) t;
+                writers.add( executor.submit( () -> {
+                    for( int i = 0; i < puts; i++ ) {
+                        buffers.put( ids[i % ids.length], BINARY_V2, new byte[] { value, value, value } );
+                    }
+                } ) );
+            }
+            for( Future<?> writer : writers ) writer.get( 1, TimeUnit.MINUTES );
+
+            done.set( true );
+            drain.get( 1, TimeUnit.MINUTES );
+        } finally {
+            executor.shutdownNow();
+        }
+
+        buffers.forEachReadyData( consumer );
+
+        long[] expected = new long[threads];
+        Arrays.fill( expected, puts * 3L );
+        assertThat( delivered ).isEqualTo( expected );
     }
 }

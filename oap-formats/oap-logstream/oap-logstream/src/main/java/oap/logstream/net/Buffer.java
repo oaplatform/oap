@@ -41,7 +41,7 @@ public class Buffer implements Serializable {
     public LogId id;
     private int position = DIGESTION_POSITION;
     /**
-     * not volatile: read/written only under the slot lock ( Buffers.currentBuffers.compute* ), like position
+     * not volatile: read/written only under the slot lock ( Buffers.Slot.lock ), like position
      */
     private boolean closed = false;
     private int dataStart;
