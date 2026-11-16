@@ -25,7 +25,7 @@ import static org.joda.time.DateTimeZone.UTC;
  */
 @ToString
 @EqualsAndHashCode
-@JsonIgnoreProperties( "clientHostname" )
+@JsonIgnoreProperties( { "clientHostname", "filePrefixPattern" } )
 public class LogMetadata {
     public final String type;
     @JsonIgnore
@@ -33,15 +33,12 @@ public class LogMetadata {
     public final String[] headers;
     @JsonIgnore
     public final byte[][] types;
-    private final String filePrefixPattern;
 
     @JsonCreator
-    public LogMetadata( String filePrefixPattern,
-                        String type,
+    public LogMetadata( String type,
                         Map<String, String> properties,
                         String[] headers,
                         byte[][] types ) {
-        this.filePrefixPattern = filePrefixPattern;
         this.type = type;
         this.properties = properties != null ? new LinkedHashMap<>( properties ) : new LinkedHashMap<>();
         this.headers = headers;
@@ -49,7 +46,7 @@ public class LogMetadata {
     }
 
     public LogMetadata( LogId logId ) {
-        this( logId.filePrefixPattern, logId.logType, logId.properties, logId.headers, logId.types );
+        this( logId.logType, logId.properties, logId.headers, logId.types );
     }
 
     @JsonAnyGetter
@@ -89,6 +86,6 @@ public class LogMetadata {
     public LogMetadata withProperty( String propertyName, String value ) {
         LinkedHashMap<String, String> newProperties = new LinkedHashMap<>( properties );
         newProperties.put( propertyName, value );
-        return new LogMetadata( filePrefixPattern, type, newProperties, headers, types );
+        return new LogMetadata( type, newProperties, headers, types );
     }
 }

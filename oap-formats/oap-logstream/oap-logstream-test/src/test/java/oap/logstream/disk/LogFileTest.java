@@ -31,7 +31,7 @@ public class LogFileTest extends Fixtures {
     }
 
     private static LogId newLogId() {
-        return new LogId( "fpp", "type", Map.of(),
+        return new LogId( "type", Map.of(),
             new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
     }
 
@@ -43,12 +43,11 @@ public class LogFileTest extends Fixtures {
     public void testSave() {
         Path file = testDirectoryFixture.testPath( "file" );
 
-        new LogFile( file ).create( new LogId( "fpp", "type", Map.of(),
+        new LogFile( file ).create( new LogId( "type", Map.of(),
             new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } ) ).close();
 
         assertFile( Path.of( file + ".metadata.yaml" ) ).hasContent( """
             ---
-            filePrefixPattern: "fpp"
             type: "type"
             headers:
             - "h1"
@@ -93,7 +92,7 @@ public class LogFileTest extends Fixtures {
     public void testSaveLoad() {
         Path file = testDirectoryFixture.testPath( "file" );
 
-        LogFile logFile = new LogFile( file ).create( new LogId( "fpp", "type", Map.of(),
+        LogFile logFile = new LogFile( file ).create( new LogId( "type", Map.of(),
             new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } ) );
 
         DateTime dt = new DateTime( 2019, 11, 29, 10, 9, 0, 0, UTC );

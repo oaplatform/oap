@@ -26,12 +26,13 @@ package oap.logstream.net;
 import lombok.SneakyThrows;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
-import oap.net.Inet;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.util.Map;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 public class Buffer implements Serializable {
     public static final int DIGESTION_POSITION = 0;
@@ -41,11 +42,14 @@ public class Buffer implements Serializable {
     private final byte[] data;
     public LogId id;
     private int position = DIGESTION_POSITION;
-    private volatile boolean closed = false;
+    /**
+     * not volatile: read/written only under the slot lock ( Buffers.Slot.lock ), like position
+     */
+    private boolean closed = false;
     private int dataStart;
 
     Buffer( int size, LogId id, ProtocolVersion protocolVersion ) {
-        this( size, id, protocolVersion, encodeHeader( id, Inet.HOSTNAME ) );
+        this( size, id, protocolVersion, encodeHeader( id ) );
     }
 
     Buffer( int size, LogId id, ProtocolVersion protocolVersion, byte[] header ) {
@@ -56,21 +60,19 @@ public class Buffer implements Serializable {
     }
 
     /**
-     * {@link ProtocolVersion#ROW_BINARY_V4} header: digestion control (long, reserved), data length (int, reserved),
-     * compression (byte, reserved), filePrefixPattern, logType, clientHostname, headers, types, properties.
+     * {@link ProtocolVersion#ROW_BINARY_V5} header: digestion control (long, reserved), data length (int, reserved),
+     * compression (byte, reserved), logType, headers, types, properties.
      * Strings - modified UTF-8 (DataInputStream.readUTF on the server).
      */
     @SneakyThrows
-    public static byte[] encodeHeader( LogId id, String clientHostname ) {
+    public static byte[] encodeHeader( LogId id ) {
         FastByteArrayOutputStream baos = new FastByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream( baos );
 
         out.writeLong( 0 ); //reserved for digestion control
         out.writeInt( 0 ); //reserved for data length
         out.writeByte( 0 ); //reserved for compression
-        out.writeUTF( id.filePrefixPattern );
         out.writeUTF( id.logType );
-        out.writeUTF( clientHostname );
         out.writeInt( id.headers.length );
         for( String header : id.headers ) {
             out.writeUTF( header );
@@ -110,7 +112,7 @@ public class Buffer implements Serializable {
     }
 
     private void initMetadata( byte[] header ) {
-        if( header.length > data.length ) throw new IllegalArgumentException( "buffer is too small! Provided " + data.length + " bytes" );
+        if( header.length > data.length ) throw new IllegalArgumentException( s( "buffer is too small! Provided ${data.length} bytes" ) );
 
         System.arraycopy( header, 0, data, 0, header.length );
         this.position = header.length;
@@ -209,7 +211,7 @@ public class Buffer implements Serializable {
     }
 
     public final void reset( LogId id ) {
-        reset( id, encodeHeader( id, Inet.HOSTNAME ) );
+        reset( id, encodeHeader( id ) );
     }
 
     final void reset( LogId id, byte[] header ) {
@@ -249,6 +251,6 @@ public class Buffer implements Serializable {
 
     @Override
     public final String toString() {
-        return id + "," + position;
+        return s( "${id},${position}" );
     }
 }

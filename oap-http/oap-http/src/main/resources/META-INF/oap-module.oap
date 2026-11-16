@@ -35,7 +35,7 @@ services {
       backlog = -1
       idleTimeout = -1
       tcpNodelay = true
-      ioThreads = -1
+      ioThreads = 0 // relative to cores: 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5
       workerThreads = -1
       maxEntitySize = -1
       maxParameters = -1

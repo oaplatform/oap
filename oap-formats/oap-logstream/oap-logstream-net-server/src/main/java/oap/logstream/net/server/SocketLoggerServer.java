@@ -70,7 +70,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         ByteArrayInputStream bais = new ByteArrayInputStream( data );
         try( DataInputStream in = new DataInputStream( bais ) ) {
             return switch( protocolVersion ) {
-                case 1, 2, 3, 4 -> readBinary( ProtocolVersion.valueOf( protocolVersion ), hostName, data, bais, in );
+                case 1, 2, 3, 4, 5 -> readBinary( ProtocolVersion.valueOf( protocolVersion ), hostName, data, bais, in );
                 default -> LogStreamProtocol.INVALID_VERSION;
             };
         } catch( EOFException e ) {
@@ -86,17 +86,17 @@ public class SocketLoggerServer implements MessageListener, Closeable {
     }
 
     /**
-     * v1-v3: gzip payload, v4: compression byte after the data length
+     * v1-v3: gzip payload, v4+: compression byte after the data length; v1-v4: filePrefixPattern and clientHostname (ignored), v5: none
      */
     private short readBinary( ProtocolVersion version, String hostName, byte[] data, ByteArrayInputStream bais, DataInputStream in ) throws IOException {
         in.readLong(); // digestion control
         int length = in.readInt();
-        LogStreamCompression compression = version == ProtocolVersion.ROW_BINARY_V4
+        LogStreamCompression compression = version.version >= ProtocolVersion.ROW_BINARY_V4.version
             ? LogStreamCompression.fromId( in.readByte() )
             : LogStreamCompression.GZIP;
-        String filePreffix = in.readUTF();
+        if( version.version < ProtocolVersion.ROW_BINARY_V5.version ) in.readUTF(); // filePrefixPattern of the old clients, ignored
         String logType = in.readUTF();
-        String clientHostname = in.readUTF();
+        if( version.version < ProtocolVersion.ROW_BINARY_V5.version ) in.readUTF(); // clientHostname of the old clients, ignored
 
         int headersSize = in.readInt();
         String[] headers = new String[headersSize];
@@ -127,7 +127,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         }
         int offset = data.length - remaining;
 
-        Result<String, LogstreamException> result = backend.log( version, compression, clientHostname, filePreffix, properties, logType, headers, types, data, offset, length );
+        Result<Void, LogstreamException> result = backend.log( version, compression, properties, logType, headers, types, data, offset, length );
         if( result.isSuccess() ) {
             return MessageProtocol.STATUS_OK;
         } else {

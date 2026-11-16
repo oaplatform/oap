@@ -13,16 +13,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class NullLoggerBackendTest {
     @Test
-    public void logReturnsLogId() {
+    public void logReturnsSuccess() {
         String[] headers = new String[] { "h1" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         try( NullLoggerBackend backend = new NullLoggerBackend() ) {
-            Result<String, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of( "p1", "v1" ), "type1",
+            Result<Void, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1", "p1", "v1" ), "type1",
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", Map.of( "p1", "v1" ), headers, types ).toString() );
+            assertThat( result.successValue ).isNull();
         }
     }
 }

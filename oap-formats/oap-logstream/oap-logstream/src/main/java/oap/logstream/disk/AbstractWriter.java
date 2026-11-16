@@ -38,6 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -84,11 +85,7 @@ public abstract class AbstractWriter implements Closeable {
 
     @SneakyThrows
     static String currentPattern( TemplateEngine templateEngine, LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time, String hostname ) {
-        String suffix = filePattern;
-        if( filePattern.startsWith( "/" ) && filePattern.endsWith( "/" ) ) suffix = suffix.substring( 1 );
-        else if( !filePattern.startsWith( "/" ) && !logId.filePrefixPattern.endsWith( "/" ) ) suffix = "/" + suffix;
-
-        String pattern = logId.filePrefixPattern + suffix;
+        String pattern = filePattern;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
 
         // files are always RowBinary; for other formats logFormat is only a template variable (LOG_FORMAT)
@@ -168,6 +165,19 @@ public abstract class AbstractWriter implements Closeable {
 
     protected Path filename() {
         return logDirectory.resolve( lastPattern );
+    }
+
+    /**
+     * the file open for writing, null - none
+     */
+    @Nullable
+    public LogFile getLogFile() {
+        lock.lock();
+        try {
+            return logFile;
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**

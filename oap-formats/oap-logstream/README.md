@@ -78,7 +78,7 @@ File names follow the pattern `<name>-yyyy-MM-dd-HH-mm.<ext>` where `mm` is `00`
 
 ## `DiskLoggerBackend`
 
-Writes log rows to gzip-compressed, RowBinary-framed files on local disk. Each unique `LogId` (log type + file prefix + properties + headers) gets its own writer; writers are cached for the duration of a time bucket and evicted when the bucket changes.
+Writes log rows to gzip-compressed, RowBinary-framed files on local disk. Each unique `LogId` (log type + properties + headers) gets its own writer; writers are cached for the duration of a time bucket and evicted when the bucket changes.
 
 ```java
 DiskLoggerBackend backend = new DiskLoggerBackend(
@@ -178,6 +178,8 @@ SocketLoggerBackend backend = new SocketLoggerBackend(
 | `flushInterval` | How often buffered rows are sent to the server (milliseconds); `<= 0` — no automatic sending, the application calls `sendAsync()` | `setFlushInterval( ms )`, `getFlushInterval()` — rescheduled immediately |
 | `maxBuffers` | Maximum number of ready (not yet sent) buffers before the backend reports FAILED (default 5000) | `setMaxBuffers( n )`, `getMaxBuffers()` — from the next `availabilityReport()` |
 | `compression` | Payload codec: `ZSTD` (default, level 1), `LZ4`, `GZIP` | `setCompression( codec )`, `setGzipLevel` / `setLz4Level` / `setZstdLevel` — from the next `sendAsync()` |
+| `sendThreads` | Number of threads compressing the ready buffers and passing them to the sender (default 2; the thread of `sendAsync()` is one of them) | `setSendThreads( n )`, `getSendThreads()` — from the next `sendAsync()` |
+| `stripes` | Constructor parameter: max number of buffers filled concurrently per log ID, relative to the number of cores: `0` (default) — cores, `N` — N, `-N` — cores - N, `1.5` — cores * 1.5, `-1.5` — cores / 1.5; rounded up to a power of 2. A log ID starts with one buffer; the number doubles only when the writing threads contend for it | — |
 
 All setters validate the value (`IllegalArgumentException`) and log the change; `setFlushInterval` after `close()` throws `IllegalStateException`. Buffers that are already ready are sent unchanged.
 
@@ -224,7 +226,7 @@ RowBinaryObjectLogger logger = new RowBinaryObjectLogger(
 );
 
 TypedRowBinaryLogger<MyEvent> typed = logger.typed( new TypeRef<>() {}, "MODEL_ID" );
-typed.log( event, "file-prefix", Map.of( "region", "eu" ), "EVENT_TYPE" );
+typed.log( event, Map.of( "region", "eu" ), "EVENT_TYPE" );
 ```
 
 See [docs/RowBinaryObjectLogger.md](docs/RowBinaryObjectLogger.md) for the full API reference, supported types, schema format, and a complete example.

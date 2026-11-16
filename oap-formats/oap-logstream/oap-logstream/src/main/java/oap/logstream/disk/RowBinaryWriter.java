@@ -19,6 +19,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class RowBinaryWriter extends AbstractWriter {
     public final LogStreamCompression compression;
@@ -137,7 +139,7 @@ public class RowBinaryWriter extends AbstractWriter {
 
             log.debug( "[{}] file exists v{}", filename, fileVersion );
             fileVersion += 1;
-            if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
+            if( fileVersion > maxVersions ) throw new IllegalStateException( s( "version > ${maxVersions}" ) );
             refresh();
         }
     }

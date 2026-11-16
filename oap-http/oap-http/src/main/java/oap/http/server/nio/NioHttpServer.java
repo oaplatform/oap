@@ -36,6 +36,7 @@ import io.undertow.server.handlers.PathHandler;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
@@ -88,7 +89,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public int backlog = -1;
     public long idleTimeout = -1;
     public boolean tcpNodelay = true;
-    public int ioThreads = -1; // default = max(2, Runtime.getRuntime().availableProcessors())
+    /**
+     * relative to the number of cores, see {@link Threads#count(double, int)}: 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5
+     */
+    public double ioThreads = 0;
     public int workerThreads = -1; // default = Runtime.getRuntime().availableProcessors() * 8
     public long maxEntitySize = -1; // default = unlimited
     public int maxParameters = -1; // default = 1000
@@ -183,12 +187,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
             .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
 
+        int io = Threads.count( ioThreads, Math.max( Runtime.getRuntime().availableProcessors(), 2 ) );
+
         XnioWorker.Builder workerBuilder = Xnio.getInstance( Undertow.class.getClassLoader() ).createWorkerBuilder();
-        if( ioThreads > 0 ) {
-            workerBuilder.setWorkerIoThreads( ioThreads );
-        } else {
-            workerBuilder.setWorkerIoThreads( Math.max( Runtime.getRuntime().availableProcessors(), 2 ) );
-        }
+        workerBuilder.setWorkerIoThreads( io );
         xnioWorker = workerBuilder
             .populateFromOptions( OptionMap.builder()
                 .set( Options.TCP_NODELAY, true )
@@ -199,7 +201,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         builder.setWorker( xnioWorker );
 
         if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
-        if( ioThreads > 0 ) builder.setIoThreads( ioThreads );
+        builder.setIoThreads( io );
         if( workerThreads > 0 ) builder.setWorkerThreads( workerThreads );
         if( idleTimeout > 0 ) builder.setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) idleTimeout );
         if( maxEntitySize > 0 ) builder.setServerOption( UndertowOptions.MAX_ENTITY_SIZE, maxEntitySize );

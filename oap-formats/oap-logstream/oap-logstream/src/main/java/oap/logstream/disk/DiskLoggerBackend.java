@@ -62,6 +62,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -74,7 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -121,7 +121,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public boolean recoverOnStart = true;
     public volatile boolean closed;
     private volatile UsableSpace usableSpace;
-    private final ConcurrentHashMap<String, HostMetrics> hostMetrics = new ConcurrentHashMap<>();
+    private final Counter loggingCounter = Metrics.counter( "logstream_logging_disk_counter" );
+    private final DistributionSummary loggingBuffers = Metrics.summary( "logstream_logging_disk_buffers" );
     protected CopyOnWriteArrayList<FileWriterNotification> notifications = new CopyOnWriteArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
@@ -263,7 +264,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     }
 
     private void filePatternValidation( String type, String filePattern ) {
-        LogId logId = new LogId( "", type, Map.of(), new String[] {}, new byte[][] {} );
+        LogId logId = new LogId( type, Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
         String currentPattern = AbstractWriter.currentPattern( templateEngine, LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time, hostname );
@@ -280,54 +281,72 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * buffer - gzip
      */
     @Override
-    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        return log( protocolVersion, LogStreamCompression.GZIP, hostName, filePreffix, properties, logType, headers, types, buffer, offset, length );
+        return log( protocolVersion, LogStreamCompression.GZIP, properties, logType, headers, types, buffer, offset, length );
+    }
+
+    /**
+     * buffer - gzip
+     */
+    @Override
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogId logId, byte[] buffer, int offset, int length ) {
+        return log( protocolVersion, LogStreamCompression.GZIP, logId, buffer, offset, length );
     }
 
     /**
      * buffer - compressed by compression, appended to the file of the corresponding format as is
      */
     @Override
-    @SneakyThrows
-    public Result<String, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName, String filePreffix,
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+        return log( protocolVersion, compression, new LogId( logType, properties, headers, types ), buffer, offset, length );
+    }
+
+    @SneakyThrows
+    private Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
+                                                    LogId logId, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
         }
 
-        HostMetrics metrics = hostMetrics( hostName );
-        metrics.counter.increment();
-        metrics.buffers.record( length );
-        LogId logId = new LogId( filePreffix, logType, properties, headers, types );
+        loggingCounter.increment();
+        loggingBuffers.record( length );
         AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
-            return Result.success( writer.write( protocolVersion, buffer, offset, length ) );
+            writer.write( protocolVersion, buffer, offset, length );
+            return SUCCESS;
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
-            for( int i = 0; i < headers.length; i++ ) {
-                headersWithTypes.add( headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( types[i] ) ), oap.template.Types::valueOf ) + "]" );
+            for( int i = 0; i < logId.headers.length; i++ ) {
+                headersWithTypes.add( logId.headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( logId.types[i] ) ), oap.template.Types::valueOf ) + "]" );
             }
 
-            log.error( "hostName {} filePrefix {} logType {} properties {} headers {} path {}",
-                hostName, filePreffix, logType, properties, headersWithTypes, writer.currentPattern() );
+            log.error( "logType {} properties {} headers {} path {}",
+                logId.logType, logId.properties, headersWithTypes, writer.currentPattern() );
 
             throw e;
         }
     }
 
-    private HostMetrics hostMetrics( String hostName ) {
-        HostMetrics metrics = hostMetrics.get( hostName );
-        if( metrics != null ) {
-            return metrics;
-        }
+    /**
+     * @return the file currently open for writing for the log id ( gzip payload ), null - none
+     */
+    @Nullable
+    public LogFile getLogFile( LogId logId ) {
+        return getLogFile( logId, LogStreamCompression.GZIP );
+    }
 
-        return hostMetrics.computeIfAbsent( hostName, h -> new HostMetrics(
-            Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", h ) ) ),
-            Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", h ) ) ) ) );
+    /**
+     * @return the file currently open for writing for the log id and the compression, null - none
+     */
+    @Nullable
+    public LogFile getLogFile( LogId logId, LogStreamCompression compression ) {
+        AbstractWriter writer = writers.getIfPresent( new WriterKey( logId, compression ) );
+        return writer != null ? writer.getLogFile() : null;
     }
 
     @Override
@@ -427,5 +446,4 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
     private record UsableSpace( long checkedAt, long bytes ) {}
 
-    private record HostMetrics( Counter counter, DistributionSummary buffers ) {}
 }

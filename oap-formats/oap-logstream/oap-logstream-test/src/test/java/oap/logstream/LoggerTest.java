@@ -45,6 +45,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -88,14 +89,14 @@ public class LoggerTest extends Fixtures {
         byte[] line2 = Compression.gzip( RowBinaryUtils.line( lineData2 ) );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
             Logger logger = new Logger( backend );
-            logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
-            logger.log( "lfn2", Map.of(), "log", headers1, types1, line1 );
-            logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
-            logger.log( "lfn1", Map.of(), "log2", headers2, types2, line2 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers1, types1, line1 );
+            logger.log( Map.of( "PREFIX", "lfn2" ), "log", headers1, types1, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers1, types1, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log2", headers2, types2, line2 );
 
-            logger.log( "lfn1", Map.of(), "log", headers2, types2, line2 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers2, types2, line2 );
         }
 
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v356dae4c0-1-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
@@ -124,7 +125,7 @@ public class LoggerTest extends Fixtures {
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
 
-        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
+        try( DiskLoggerBackend serverBackend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) );
              SocketLoggerServer server = new SocketLoggerServer( serverBackend );
              NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
@@ -138,8 +139,8 @@ public class LoggerTest extends Fixtures {
             serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 10000L;
             assertFalse( serverBackend.isLoggingAvailable() );
             Logger logger = new Logger( clientBackend );
-            logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
-            logger.log( "lfn2", Map.of(), "log", headers1, types1, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers1, types1, line1 );
+            logger.log( Map.of( "PREFIX", "lfn2" ), "log", headers1, types1, line1 );
             clientBackend.sendAsync();
             client.syncMemory();
             assertEventually( 50, 100, () -> assertFalse( logger.isLoggingAvailable() ) );
@@ -157,12 +158,12 @@ public class LoggerTest extends Fixtures {
                 client.syncMemory();
                 assertTrue( logger.isLoggingAvailable() );
             } );
-            logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers1, types1, line1 );
             clientBackend.sendAsync();
             client.syncMemory();
 
             assertTrue( logger.isLoggingAvailable() );
-            logger.log( "lfn1", Map.of(), "log2", headers2, types2, line2 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log2", headers2, types2, line2 );
             clientBackend.sendAsync();
             client.syncMemory();
         }
@@ -190,7 +191,7 @@ public class LoggerTest extends Fixtures {
         String[] headers = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
 
-        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
+        try( DiskLoggerBackend serverBackend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) );
              SocketLoggerServer server = new SocketLoggerServer( serverBackend );
              NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
@@ -205,32 +206,32 @@ public class LoggerTest extends Fixtures {
 
             assertThat( clientBackend.getCompression() ).isEqualTo( LogStreamCompression.ZSTD );
             assertThat( clientBackend.getZstdLevel() ).isEqualTo( 1 );
-            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line1 );
             clientBackend.sendAsync();
             client.syncMemory();
 
             clientBackend.setCompression( LogStreamCompression.LZ4 );
-            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line1 );
             clientBackend.sendAsync();
             client.syncMemory();
             clientBackend.setLz4Level( 9 );
-            logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line2 );
             clientBackend.sendAsync();
             client.syncMemory();
 
             clientBackend.setCompression( LogStreamCompression.ZSTD );
             clientBackend.setZstdLevel( 3 );
-            logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line2 );
             clientBackend.sendAsync();
             client.syncMemory();
             clientBackend.setZstdLevel( -5 );
-            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line1 );
             clientBackend.sendAsync();
             client.syncMemory();
 
             clientBackend.setCompression( LogStreamCompression.GZIP );
             clientBackend.setGzipLevel( 9 );
-            logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line2 );
             clientBackend.sendAsync();
             client.syncMemory();
 
@@ -268,12 +269,12 @@ public class LoggerTest extends Fixtures {
             __( "LOG", new BufferConfigurationMap.BufferConfiguration( 256, Pattern.compile( "^log$" ) ) ),
             __( "OTHER", new BufferConfigurationMap.BufferConfiguration( 512, Pattern.compile( ".*" ) ) ) );
 
-        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
+        try( DiskLoggerBackend serverBackend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) );
              SocketLoggerServer server = new SocketLoggerServer( serverBackend );
              NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
              MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
-             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, configurations, -1 ) ) {
+             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, configurations, -1, 4 ) ) {
 
             mServer.start();
             messageHttpHandler.preStart();
@@ -283,24 +284,29 @@ public class LoggerTest extends Fixtures {
 
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( -1L );
             assertThat( clientBackend.getMaxBuffers() ).isEqualTo( 5000 );
+            assertThat( clientBackend.getSendThreads() ).isEqualTo( 2 );
             assertThat( clientBackend.getBufferSizes() ).containsOnly( Map.entry( "LOG", 256 ), Map.entry( "OTHER", 512 ) );
 
             // bufferSize: the current buffer (256) is sent, the next one is 1024
-            logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line1 );
             clientBackend.setBufferSize( "LOG", 1024 );
             assertThat( clientBackend.getBufferSizes() ).containsOnly( Map.entry( "LOG", 1024 ), Map.entry( "OTHER", 512 ) );
-            for( int i = 0; i < 20; i++ ) logger.log( "lfn1", Map.of(), "log", headers, types, line2 );
+            for( int i = 0; i < 20; i++ ) logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line2 );
             clientBackend.sendAsync();
             client.syncMemory();
 
             // maxBuffers: 100 lines do not fit into one 1024-byte buffer - full buffers are ready (not sent yet)
-            for( int i = 0; i < 100; i++ ) logger.log( "lfn1", Map.of(), "log", headers, types, line1 );
+            for( int i = 0; i < 100; i++ ) logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line1 );
             clientBackend.setMaxBuffers( 1 );
             AvailabilityReport report = clientBackend.availabilityReport();
             assertThat( report.state ).isEqualTo( FAILED );
             assertThat( report.subsystemStates ).containsEntry( SocketLoggerBackend.FAILURE_BUFFERS_STATE, FAILED );
             clientBackend.setMaxBuffers( 5000 );
             assertThat( clientBackend.availabilityReport().subsystemStates ).doesNotContainEntry( SocketLoggerBackend.FAILURE_BUFFERS_STATE, FAILED );
+
+            // sendThreads: the ready buffers are compressed and sent by 8 threads
+            clientBackend.setSendThreads( 8 );
+            assertThat( clientBackend.getSendThreads() ).isEqualTo( 8 );
 
             // flushInterval: sent without sendAsync()
             clientBackend.setFlushInterval( 100 );
@@ -316,6 +322,19 @@ public class LoggerTest extends Fixtures {
 
             clientBackend.setFlushInterval( -1 );
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( -1L );
+
+            // sendThreads: shrink, sent by the thread of sendAsync() only
+            clientBackend.setSendThreads( 1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line2 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+            List<Object>[] expectedAll = Arrays.copyOf( expected, expected.length + 1 );
+            expectedAll[expected.length] = lineData2;
+            assertEventually( 100, 100, () -> {
+                client.syncMemory();
+                assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.zst" ), ZSTD )
+                    .containsExactlyInAnyOrderEntriesOf( expectedAll );
+            } );
         }
     }
 
@@ -336,6 +355,8 @@ public class LoggerTest extends Fixtures {
         SocketLoggerBackend backend = new SocketLoggerBackend( null, 256, -1 );
 
         assertThatThrownBy( () -> backend.setMaxBuffers( 0 ) ).isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> backend.setSendThreads( 0 ) ).isInstanceOf( IllegalArgumentException.class );
+        assertThat( backend.getSendThreads() ).isEqualTo( 2 );
         assertThatThrownBy( () -> backend.setBufferSize( 0 ) ).isInstanceOf( IllegalArgumentException.class );
         assertThatThrownBy( () -> backend.setBufferSize( "unknown", 1024 ) ).isInstanceOf( IllegalArgumentException.class );
         assertThat( backend.getMaxBuffers() ).isEqualTo( 5000 );
@@ -346,5 +367,13 @@ public class LoggerTest extends Fixtures {
 
         backend.close();
         assertThatThrownBy( () -> backend.setFlushInterval( 100 ) ).isInstanceOf( IllegalStateException.class );
+    }
+
+    /**
+     * the file prefix is a property of the log id: {{ PREFIX }}
+     */
+    private static DiskLoggerBackend prefixed( DiskLoggerBackend backend ) {
+        backend.filePattern = "{{ PREFIX }}/" + backend.filePattern;
+        return backend;
     }
 }

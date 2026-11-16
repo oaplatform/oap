@@ -35,9 +35,18 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.function.Consumer;
+import java.util.function.ObjIntConsumer;
 import java.util.regex.Pattern;
 
 import static oap.logstream.LogStreamProtocol.ProtocolVersion.BINARY_V2;
@@ -76,7 +85,7 @@ public class BuffersTest {
 
     @BeforeClass
     public void beforeClass() {
-        var buffer = new Buffer( 1024, new LogId( "x/y", "", Map.of(),
+        var buffer = new Buffer( 1024, new LogId( "x/y", Map.of(),
             HEADERS, TYPES ), BINARY_V2 );
         header = buffer.length();
     }
@@ -85,8 +94,7 @@ public class BuffersTest {
     public void length() {
         Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         try( Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 1 ) ) ) {
-            // the header length depends on the client hostname
-            assertThatThrownBy( () -> buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
+            assertThatThrownBy( () -> buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
                 .isInstanceOf( IllegalArgumentException.class )
                 .hasMessage( "buffer size is too big: 2 for buffer of " + ( header + 1 ) + "; headers = " + header );
         }
@@ -96,24 +104,24 @@ public class BuffersTest {
     public void foreach() {
         Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
-        buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3 } );
-        buffers.put( new LogId( "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
-        buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 4, 5, 6 } );
-        buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 7, 8, 9 } );
-        buffers.put( new LogId( "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
-        buffers.put( new LogId( "x/z", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 16 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3 } );
+        buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 4, 5, 6 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 7, 8, 9 } );
+        buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
+        buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 16 } );
 
         List<Buffer> expected = List.of(
-            buffer( BINARY_V2, header + 4, 1, new LogId( "x/y", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 1, new LogId( "x/y", Map.of(),
                 HEADERS, TYPES ), new byte[] { 1, 2, 3 } ),
-            buffer( BINARY_V2, header + 4, 2, new LogId( "x/y", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 2, new LogId( "x/y", Map.of(),
                 HEADERS, TYPES ), new byte[] { 4, 5, 6 } ),
-            buffer( BINARY_V2, header + 4, 3, new LogId( "x/z", "", Map.of(),
+            buffer( BINARY_V2, header + 4, 3, new LogId( "x/z", Map.of(),
                 HEADERS, TYPES ), new byte[] { 11, 12, 13 } ),
-            buffer( BINARY_V2, header + 4, 4, new LogId( "x/z", "", Map.of(),
-                HEADERS, TYPES ), new byte[] { 14, 15, 16 } ),
-            buffer( BINARY_V2, header + 4, 5, new LogId( "x/y", "", Map.of(),
-                HEADERS, TYPES ), new byte[] { 7, 8, 9 } )
+            buffer( BINARY_V2, header + 4, 4, new LogId( "x/y", Map.of(),
+                HEADERS, TYPES ), new byte[] { 7, 8, 9 } ),
+            buffer( BINARY_V2, header + 4, 5, new LogId( "x/z", Map.of(),
+                HEADERS, TYPES ), new byte[] { 14, 15, 16 } )
         );
         assertReadyData( buffers, expected );
         assertReadyData( buffers, Lists.empty() );
@@ -126,17 +134,17 @@ public class BuffersTest {
             c( "x_y", ".+y", header + 2 ),
             c( "x_z", ".+z", header + 4 )
         ) );
-        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1 } );
-        buffers.put( new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
-        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 2 } );
-        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 3 } );
-        buffers.put( new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1 } );
+        buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 2 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 3 } );
+        buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 14, 15 } );
 
         List<Buffer> expected = List.of(
-            buffer( BINARY_V2, header + 2, 1, new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), new byte[] { 1, 2 } ),
-            buffer( BINARY_V2, header + 4, 2, new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), new byte[] { 11, 12, 13 } ),
-            buffer( BINARY_V2, header + 4, 3, new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), new byte[] { 3 } ),
-            buffer( BINARY_V2, header + 2, 4, new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), new byte[] { 14, 15 } )
+            buffer( BINARY_V2, header + 2, 1, new LogId( "x/y", Map.of(), HEADERS, TYPES ), new byte[] { 1, 2 } ),
+            buffer( BINARY_V2, header + 4, 2, new LogId( "x/z", Map.of(), HEADERS, TYPES ), new byte[] { 11, 12, 13 } ),
+            buffer( BINARY_V2, header + 4, 3, new LogId( "x/y", Map.of(), HEADERS, TYPES ), new byte[] { 3 } ),
+            buffer( BINARY_V2, header + 2, 4, new LogId( "x/z", Map.of(), HEADERS, TYPES ), new byte[] { 14, 15 } )
         );
         assertReadyData( buffers, expected );
         assertReadyData( buffers, Lists.empty() );
@@ -158,8 +166,8 @@ public class BuffersTest {
             c( "x_y", ".+y", header + 2 ),
             c( "x_z", ".+z", header + 4 )
         ) );
-        LogId y = new LogId( "", "x/y", Map.of(), HEADERS, TYPES );
-        LogId z = new LogId( "", "x/z", Map.of(), HEADERS, TYPES );
+        LogId y = new LogId( "x/y", Map.of(), HEADERS, TYPES );
+        LogId z = new LogId( "x/z", Map.of(), HEADERS, TYPES );
 
         buffers.put( y, BINARY_V2, new byte[] { 1 } );
         buffers.put( z, BINARY_V2, new byte[] { 11 } );
@@ -188,8 +196,8 @@ public class BuffersTest {
         buffers.setBufferSize( header + 8 );
         assertThat( buffers.bufferSizes() ).containsOnly( Map.entry( "x_y", header + 8 ), Map.entry( "x_z", header + 8 ) );
 
-        buffers.put( new LogId( "", "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 } );
-        buffers.put( new LogId( "", "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13, 14, 15, 16, 17 } );
+        buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 } );
+        buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 11, 12, 13, 14, 15, 16, 17 } );
 
         assertThat( readyData( buffers ) ).containsExactlyInAnyOrder(
             tuple( "x/y", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, header + 8 ),
@@ -207,7 +215,7 @@ public class BuffersTest {
         assertThat( buffers.bufferSizes() ).containsOnly( Map.entry( "DEFAULT", header + 4 ) );
 
         buffers.setBufferSize( header + 1 );
-        assertThatThrownBy( () -> buffers.put( new LogId( "x/y", "", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
+        assertThatThrownBy( () -> buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
             .isInstanceOf( IllegalArgumentException.class );
     }
 
@@ -227,7 +235,7 @@ public class BuffersTest {
     @Test
     public void sentBufferIsReused() {
         Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
-        LogId id = new LogId( "x/y", "", Map.of(), HEADERS, TYPES );
+        LogId id = new LogId( "x/y", Map.of(), HEADERS, TYPES );
 
         buffers.put( id, BINARY_V2, new byte[] { 1 } );
         assertThat( readyData( buffers ) ).hasSize( 1 );
@@ -236,14 +244,14 @@ public class BuffersTest {
         buffers.put( id, BINARY_V2, new byte[] { 2 } );
         assertThat( buffers.cache.size() ).isZero();
 
-        assertThat( readyData( buffers ) ).containsExactly( tuple( "", new byte[] { 2 }, header + 4 ) );
+        assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 2 }, header + 4 ) );
         assertThat( buffers.cache.size() ).isEqualTo( 1 );
     }
 
     @Test
     public void bufferOfOldSizeIsNotPooled() {
         Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
-        LogId id = new LogId( "x/y", "", Map.of(), HEADERS, TYPES );
+        LogId id = new LogId( "x/y", Map.of(), HEADERS, TYPES );
 
         buffers.put( id, BINARY_V2, new byte[] { 1 } );
         assertThat( readyData( buffers ) ).hasSize( 1 );
@@ -253,11 +261,198 @@ public class BuffersTest {
         buffers.setBufferSize( header + 8 );
         assertThat( buffers.cache.size() ).isZero();
 
-        assertThat( readyData( buffers ) ).containsExactly( tuple( "", new byte[] { 2 }, header + 4 ) );
+        assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 2 }, header + 4 ) );
         assertThat( buffers.cache.size() ).isZero();
 
         buffers.put( id, BINARY_V2, new byte[] { 3 } );
-        assertThat( readyData( buffers ) ).containsExactly( tuple( "", new byte[] { 3 }, header + 8 ) );
+        assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 3 }, header + 8 ) );
         assertThat( buffers.cache.size( header + 8 ) ).isEqualTo( 1 );
+    }
+
+    @Test
+    public void putAfterCloseThrows() {
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ) );
+        LogId id = new LogId( "x/y", Map.of(), HEADERS, TYPES );
+
+        buffers.put( id, BINARY_V2, new byte[] { 1 } );
+        buffers.close();
+
+        assertThatThrownBy( () -> buffers.put( id, BINARY_V2, new byte[] { 2 } ) )
+            .isInstanceOf( IllegalStateException.class );
+        assertThatThrownBy( () -> buffers.put( new LogId( "x/z", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 3 } ) )
+            .isInstanceOf( IllegalStateException.class );
+
+        // the data put before close() is flushed, nothing else is left in the slots
+        assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 1 }, header + 4 ) );
+        assertThat( readyData( buffers ) ).isEmpty();
+    }
+
+    /**
+     * concurrent put ( per slot lock ) + concurrent consumer: every byte is delivered exactly once
+     */
+    @Test
+    public void concurrentPut() throws Exception {
+        int threads = 8;
+        int puts = 20_000;
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 64 ) );
+        LogId[] ids = new LogId[] {
+            new LogId( "x/1", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/2", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/3", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/4", Map.of(), HEADERS, TYPES )
+        };
+
+        // delivered bytes per writer thread; updated only by the single consumer ( under Buffers.lock )
+        long[] delivered = new long[threads];
+        Consumer<Buffer> consumer = b -> {
+            byte[] data = b.data();
+            for( int i = b.headerLength(); i < b.length(); i++ ) delivered[data[i]]++;
+        };
+
+        AtomicBoolean done = new AtomicBoolean();
+        ExecutorService executor = Executors.newFixedThreadPool( threads + 1 );
+        try {
+            Future<?> drain = executor.submit( () -> {
+                while( !done.get() ) buffers.forEachReadyData( consumer );
+            } );
+
+            List<Future<?>> writers = new ArrayList<>();
+            for( int t = 0; t < threads; t++ ) {
+                byte value = ( byte ) t;
+                writers.add( executor.submit( () -> {
+                    for( int i = 0; i < puts; i++ ) {
+                        buffers.put( ids[i % ids.length], BINARY_V2, new byte[] { value, value, value } );
+                    }
+                } ) );
+            }
+            for( Future<?> writer : writers ) writer.get( 1, TimeUnit.MINUTES );
+
+            done.set( true );
+            drain.get( 1, TimeUnit.MINUTES );
+        } finally {
+            executor.shutdownNow();
+        }
+
+        buffers.forEachReadyData( consumer );
+
+        long[] expected = new long[threads];
+        Arrays.fill( expected, puts * 3L );
+        assertThat( delivered ).isEqualTo( expected );
+    }
+
+    /**
+     * 32 writers into 2 LogIds with striped slots + parallel consumer: every byte is delivered exactly once, into a buffer of its LogId
+     */
+    @Test
+    public void stripedConcurrentPut() throws Exception {
+        int threads = 32;
+        int puts = 20_000;
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 64 ), 16 );
+        LogId[] ids = new LogId[] {
+            new LogId( "x/1", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/2", Map.of(), HEADERS, TYPES )
+        };
+
+        // delivered bytes per (writer thread, LogId); the consumer runs in parallel
+        AtomicLongArray delivered = new AtomicLongArray( threads * ids.length );
+        AtomicBoolean wrongLogId = new AtomicBoolean();
+        ObjIntConsumer<Buffer> consumer = ( b, worker ) -> {
+            int id = b.id.logType.equals( "x/1" ) ? 0 : 1;
+            byte[] data = b.data();
+            for( int i = b.headerLength(); i < b.length(); i += 2 ) {
+                if( data[i + 1] != id ) wrongLogId.set( true );
+                delivered.incrementAndGet( data[i] * ids.length + id );
+            }
+        };
+
+        AtomicBoolean done = new AtomicBoolean();
+        ExecutorService workers = Executors.newFixedThreadPool( 3 );
+        ExecutorService executor = Executors.newFixedThreadPool( threads + 1 );
+        try {
+            Future<?> drain = executor.submit( () -> {
+                while( !done.get() ) buffers.forEachReadyData( workers, 4, consumer );
+            } );
+
+            List<Future<?>> writers = new ArrayList<>();
+            for( int t = 0; t < threads; t++ ) {
+                byte value = ( byte ) t;
+                writers.add( executor.submit( () -> {
+                    for( int i = 0; i < puts; i++ ) {
+                        int id = i % ids.length;
+                        buffers.put( ids[id], BINARY_V2, new byte[] { value, ( byte ) id } );
+                    }
+                } ) );
+            }
+            for( Future<?> writer : writers ) writer.get( 1, TimeUnit.MINUTES );
+
+            done.set( true );
+            drain.get( 1, TimeUnit.MINUTES );
+
+            buffers.forEachReadyData( workers, 4, consumer );
+        } finally {
+            executor.shutdownNow();
+            workers.shutdownNow();
+        }
+
+        assertThat( wrongLogId ).isFalse();
+        for( int i = 0; i < delivered.length(); i++ ) {
+            assertThat( delivered.get( i ) ).as( "writer %d, LogId %d", i / ids.length, i % ids.length ).isEqualTo( puts / ids.length );
+        }
+        assertThat( buffers.readyBuffers() ).isZero();
+    }
+
+    /**
+     * a consumer exception stops the workers: the failed and not consumed buffers stay ready for the next call
+     */
+    @Test
+    public void parallelConsumerFailure() throws Exception {
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 1 ) );
+        LogId id = new LogId( "x/y", Map.of(), HEADERS, TYPES );
+        for( int i = 0; i < 64; i++ ) buffers.put( id, BINARY_V2, new byte[] { ( byte ) i } );
+
+        List<Byte> delivered = Collections.synchronizedList( new ArrayList<>() );
+        ExecutorService workers = Executors.newFixedThreadPool( 3 );
+        try {
+            assertThatThrownBy( () -> buffers.forEachReadyData( workers, 4, ( b, worker ) -> {
+                byte value = b.data()[b.headerLength()];
+                if( value == 10 ) throw new IllegalStateException( "send failed" );
+                delivered.add( value );
+            } ) ).isInstanceOf( IllegalStateException.class ).hasMessage( "send failed" );
+
+            assertThat( buffers.readyBuffers() ).isEqualTo( 64 - delivered.size() );
+            assertThat( buffers.cache.size() ).isEqualTo( delivered.size() );
+
+            buffers.forEachReadyData( workers, 4, ( b, worker ) -> delivered.add( b.data()[b.headerLength()] ) );
+        } finally {
+            workers.shutdownNow();
+        }
+
+        List<Byte> expected = new ArrayList<>();
+        for( int i = 0; i < 64; i++ ) expected.add( ( byte ) i );
+        assertThat( delivered ).containsExactlyInAnyOrderElementsOf( expected );
+        assertThat( buffers.readyBuffers() ).isZero();
+    }
+
+    /**
+     * relative to the number of cores, rounded up to a power of 2
+     */
+    @Test
+    public void stripes() {
+        int cores = Runtime.getRuntime().availableProcessors();
+        BufferConfigurationMap configurations = BufferConfigurationMap.defaultMap( header + 4 );
+
+        assertThat( new Buffers( configurations, 1 ).stripes ).isEqualTo( 1 );
+        assertThat( new Buffers( configurations, 3 ).stripes ).isEqualTo( 4 );
+        assertThat( new Buffers( configurations, 16 ).stripes ).isEqualTo( 16 );
+        assertThat( new Buffers( configurations, 0 ).stripes ).isEqualTo( powerOf2( cores ) );
+        assertThat( new Buffers( configurations ).stripes ).isEqualTo( powerOf2( cores ) );
+        assertThat( new Buffers( configurations, -1 ).stripes ).isEqualTo( powerOf2( cores - 1 ) );
+        assertThat( new Buffers( configurations, -1000 ).stripes ).isEqualTo( 1 );
+    }
+
+    private static int powerOf2( int n ) {
+        int result = 1;
+        while( result < n ) result <<= 1;
+        return result;
     }
 }

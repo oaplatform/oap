@@ -42,7 +42,7 @@ services {
 | `backlog` | `-1` (OS default) | TCP accept backlog |
 | `idleTimeout` | `-1` (disabled) | Idle connection timeout |
 | `tcpNodelay` | `true` | Disable Nagle algorithm |
-| `ioThreads` | `max(2, CPU count)` | Undertow IO threads |
+| `ioThreads` | `0` = `max(2, CPU count)` | Undertow IO threads, relative to the CPU count: `N` — N, `-N` — CPU count - N, `1.5` — CPU count × 1.5, `-1.5` — CPU count / 1.5 (at least 1) |
 | `workerThreads` | `CPU count × 8` | Undertow worker threads |
 | `maxEntitySize` | `-1` (unlimited) | Maximum request body size in bytes |
 | `maxParameters` | `-1` (unlimited) | Maximum number of query/form parameters |

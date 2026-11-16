@@ -39,16 +39,16 @@ public class MemoryLoggerBackendTest {
     @Test
     public void lines() {
         try( MemoryLoggerBackend backend = new MemoryLoggerBackend() ) {
-            backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of(), "type1",
+            backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } }, "line1\n".getBytes( UTF_8 ) );
-            backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of(), "type1",
+            backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } }, "line2\n".getBytes( UTF_8 ) );
 
-            assertThat( backend.loggedLines( new LogId( "file1", "type1", Map.of(),
+            assertThat( backend.loggedLines( new LogId( "type1", Map.of( "PREFIX", "file1" ),
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ) ) )
                 .containsExactly( "line1", "line2" );
 
-            assertThat( backend.logged( new LogId( "file1", "type1", Map.of(),
+            assertThat( backend.logged( new LogId( "type1", Map.of( "PREFIX", "file1" ),
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ) ) )
                 .isEqualTo( "line1\nline2\n" );
 
@@ -58,16 +58,16 @@ public class MemoryLoggerBackendTest {
     }
 
     @Test
-    public void logReturnsLogId() {
+    public void logReturnsSuccess() {
         String[] headers = new String[] { "h1" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         try( MemoryLoggerBackend backend = new MemoryLoggerBackend() ) {
-            Result<String, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, "test1", "file1", Map.of(), "type1",
+            Result<Void, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "file1", "type1", Map.of(), headers, types ).toString() );
+            assertThat( result.successValue ).isNull();
         }
     }
 }
