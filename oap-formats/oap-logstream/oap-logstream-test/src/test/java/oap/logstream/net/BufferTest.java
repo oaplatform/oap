@@ -43,7 +43,7 @@ public class BufferTest {
     @Test
     public void data() throws IOException {
         var id = new LogId( "l", Map.of(), new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
-        var buffer = new Buffer( 200, id, BINARY_V2, Buffer.encodeHeader( id, "h" ) );
+        var buffer = new Buffer( 200, id, BINARY_V2, Buffer.encodeHeader( id ) );
 
         assertTrue( buffer.putInt( 10 ) );
         assertTrue( buffer.putLong( 10 ) );
@@ -59,7 +59,6 @@ public class BufferTest {
         assertThat( dis.readInt() ).isEqualTo( 26 );
         assertThat( dis.readByte() ).isEqualTo( ( byte ) 0 ); // compression (reserved, set by BufferCompressor)
         assertThat( dis.readUTF() ).isEqualTo( "l" ); // logType
-        assertThat( dis.readUTF() ).isEqualTo( "h" ); // clientHostname
         assertThat( dis.readInt() ).isEqualTo( 1 ); // headers size
         assertThat( dis.readUTF() ).isEqualTo( "h1" ); // header 0
         assertThat( dis.readByte() ).isEqualTo( ( byte ) 1 ); // type 0 size

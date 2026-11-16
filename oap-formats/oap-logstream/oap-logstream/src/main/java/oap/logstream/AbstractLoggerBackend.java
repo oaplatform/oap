@@ -32,25 +32,25 @@ import java.io.Closeable;
 import java.util.Map;
 
 public abstract class AbstractLoggerBackend implements Closeable {
-    public Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, Map<String, String> properties, String logType,
+    public Result<LogId, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer ) {
-        return log( version, hostName, properties, logType, headers, types, buffer, 0, buffer.length );
+        return log( version, properties, logType, headers, types, buffer, 0, buffer.length );
     }
 
     /**
      * @return log id
      */
-    public abstract Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, Map<String, String> properties, String logType,
+    public abstract Result<LogId, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                             String[] headers, byte[][] types, byte[] buffer, int offset, int length );
 
     /**
      * @param compression codec of the buffer (server side, {@link ProtocolVersion#ROW_BINARY_V4} header).
      *                    Backends that do not store the compressed payload as is ignore it.
      */
-    public Result<LogId, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression, String hostName,
+    public Result<LogId, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        return log( version, hostName, properties, logType, headers, types, buffer, offset, length );
+        return log( version, properties, logType, headers, types, buffer, offset, length );
     }
 
     public abstract void close();

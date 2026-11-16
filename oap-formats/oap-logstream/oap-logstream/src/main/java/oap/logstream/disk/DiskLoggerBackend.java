@@ -75,7 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -122,7 +121,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public boolean recoverOnStart = true;
     public volatile boolean closed;
     private volatile UsableSpace usableSpace;
-    private final ConcurrentHashMap<String, HostMetrics> hostMetrics = new ConcurrentHashMap<>();
+    private final Counter loggingCounter = Metrics.counter( "logstream_logging_disk_counter" );
+    private final DistributionSummary loggingBuffers = Metrics.summary( "logstream_logging_disk_buffers" );
     protected CopyOnWriteArrayList<FileWriterNotification> notifications = new CopyOnWriteArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
@@ -281,9 +281,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * buffer - gzip
      */
     @Override
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, String hostName, Map<String, String> properties, String logType,
+    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        return log( protocolVersion, LogStreamCompression.GZIP, hostName, properties, logType, headers, types, buffer, offset, length );
+        return log( protocolVersion, LogStreamCompression.GZIP, properties, logType, headers, types, buffer, offset, length );
     }
 
     /**
@@ -291,16 +291,15 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      */
     @Override
     @SneakyThrows
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression, String hostName,
+    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
         }
 
-        HostMetrics metrics = hostMetrics( hostName );
-        metrics.counter.increment();
-        metrics.buffers.record( length );
+        loggingCounter.increment();
+        loggingBuffers.record( length );
         LogId logId = new LogId( logType, properties, headers, types );
         AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
 
@@ -314,8 +313,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
                 headersWithTypes.add( headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( types[i] ) ), oap.template.Types::valueOf ) + "]" );
             }
 
-            log.error( "hostName {} logType {} properties {} headers {} path {}",
-                hostName, logType, properties, headersWithTypes, writer.currentPattern() );
+            log.error( "logType {} properties {} headers {} path {}",
+                logType, properties, headersWithTypes, writer.currentPattern() );
 
             throw e;
         }
@@ -336,17 +335,6 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public LogFile getLogFile( LogId logId, LogStreamCompression compression ) {
         AbstractWriter writer = writers.getIfPresent( new WriterKey( logId, compression ) );
         return writer != null ? writer.getLogFile() : null;
-    }
-
-    private HostMetrics hostMetrics( String hostName ) {
-        HostMetrics metrics = hostMetrics.get( hostName );
-        if( metrics != null ) {
-            return metrics;
-        }
-
-        return hostMetrics.computeIfAbsent( hostName, h -> new HostMetrics(
-            Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", h ) ) ),
-            Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", h ) ) ) ) );
     }
 
     @Override
@@ -446,5 +434,4 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
     private record UsableSpace( long checkedAt, long bytes ) {}
 
-    private record HostMetrics( Counter counter, DistributionSummary buffers ) {}
 }

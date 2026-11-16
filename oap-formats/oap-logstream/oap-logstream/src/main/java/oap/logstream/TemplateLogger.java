@@ -24,7 +24,6 @@
 
 package oap.logstream;
 
-import oap.net.Inet;
 import oap.template.DictionaryTemplate;
 import oap.template.TemplateAccumulator;
 
@@ -42,7 +41,7 @@ public class TemplateLogger<F, TOut, TMutable, TA extends TemplateAccumulator<TO
 
     public void log( Map<String, String> properties, String logType, F obj ) {
         var row = dictionaryTemplate.templateFunction.render( obj, true ).getBytes();
-        backend.log( CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, properties, logType, dictionaryTemplate.headers, dictionaryTemplate.types, row );
+        backend.log( CURRENT_PROTOCOL_VERSION, properties, logType, dictionaryTemplate.headers, dictionaryTemplate.types, row );
     }
 
     public boolean isLoggingAvailable() {

@@ -11,10 +11,13 @@ import oap.logstream.disk.LogstreamException;
 import oap.logstream.net.server.SocketLoggerServer;
 import oap.message.MessageProtocol;
 import oap.template.Types;
+import oap.util.FastByteArrayOutputStream;
 import oap.util.Result;
 import org.testng.annotations.Test;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -42,7 +45,6 @@ public class SocketLoggerServerTest {
         assertThat( backend.calls ).isEqualTo( 1 );
         assertThat( backend.version ).isEqualTo( ROW_BINARY_V5 );
         assertThat( backend.compression ).isEqualTo( LogStreamCompression.LZ4 );
-        assertThat( backend.hostName ).isEqualTo( "client-host" );
         assertThat( backend.logType ).isEqualTo( "type" );
         assertThat( backend.properties ).containsExactlyEntriesOf( Map.of( "p1", "v1" ) );
         assertThat( backend.headers ).containsExactly( HEADERS );
@@ -105,7 +107,6 @@ public class SocketLoggerServerTest {
         assertThat( backend.calls ).isEqualTo( 1 );
         assertThat( backend.version ).isEqualTo( ROW_BINARY_V3 );
         assertThat( backend.compression ).isEqualTo( LogStreamCompression.GZIP );
-        assertThat( backend.hostName ).isEqualTo( "client-host" );
         assertThat( backend.logType ).isEqualTo( "type" );
         assertThat( backend.properties ).containsExactlyEntriesOf( Map.of( "p1", "v1" ) );
         assertThat( backend.headers ).containsExactly( HEADERS );
@@ -126,7 +127,6 @@ public class SocketLoggerServerTest {
         assertThat( backend.calls ).isEqualTo( 1 );
         assertThat( backend.version ).isEqualTo( ROW_BINARY_V4 );
         assertThat( backend.compression ).isEqualTo( LogStreamCompression.LZ4 );
-        assertThat( backend.hostName ).isEqualTo( "client-host" );
         assertThat( backend.logType ).isEqualTo( "type" );
         assertThat( backend.properties ).containsExactlyEntriesOf( Map.of( "p1", "v1" ) );
         assertThat( backend.headers ).containsExactly( HEADERS );
@@ -149,7 +149,7 @@ public class SocketLoggerServerTest {
 
     private static byte[] payload( LogStreamCompression compression ) {
         LogId id = new LogId( "type", Map.of( "p1", "v1" ), HEADERS, TYPES );
-        Buffer buffer = new Buffer( 1024, id, ROW_BINARY_V5, Buffer.encodeHeader( id, "client-host" ) );
+        Buffer buffer = new Buffer( 1024, id, ROW_BINARY_V5, Buffer.encodeHeader( id ) );
         assertThat( buffer.put( ROW ) ).isTrue();
         buffer.close( 1L );
 
@@ -159,20 +159,25 @@ public class SocketLoggerServerTest {
     }
 
     /**
-     * v5 header + filePrefixPattern after the compression byte
+     * v5 header + filePrefixPattern after the compression byte and clientHostname after logType
      */
     private static byte[] payloadV4( LogStreamCompression compression ) {
         byte[] v5 = payload( compression );
-        byte[] prefix = "prefix".getBytes( UTF_8 );
-        int headerStart = Buffer.COMPRESSION_POSITION + 1;
+        int fixed = Buffer.COMPRESSION_POSITION + 1;
+        // logType: writeUTF
+        int logTypeLength = 2 + ( ( ( v5[fixed] & 0xFF ) << 8 ) | ( v5[fixed + 1] & 0xFF ) );
 
-        byte[] v4 = new byte[v5.length + 2 + prefix.length];
-        System.arraycopy( v5, 0, v4, 0, headerStart );
-        v4[headerStart] = ( byte ) ( prefix.length >>> 8 );
-        v4[headerStart + 1] = ( byte ) prefix.length;
-        System.arraycopy( prefix, 0, v4, headerStart + 2, prefix.length );
-        System.arraycopy( v5, headerStart, v4, headerStart + 2 + prefix.length, v5.length - headerStart );
-        return v4;
+        FastByteArrayOutputStream baos = new FastByteArrayOutputStream();
+        try( DataOutputStream out = new DataOutputStream( baos ) ) {
+            out.write( v5, 0, fixed );
+            out.writeUTF( "prefix" );
+            out.write( v5, fixed, logTypeLength );
+            out.writeUTF( "client-host" );
+            out.write( v5, fixed + logTypeLength, v5.length - fixed - logTypeLength );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+        return baos.toByteArray();
     }
 
     /**
@@ -192,7 +197,6 @@ public class SocketLoggerServerTest {
         private int calls;
         private ProtocolVersion version;
         private LogStreamCompression compression;
-        private String hostName;
         private Map<String, String> properties;
         private String logType;
         private String[] headers;
@@ -204,19 +208,18 @@ public class SocketLoggerServerTest {
         }
 
         @Override
-        public Result<LogId, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression, String hostName,
+        public Result<LogId, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression,
                                                        Map<String, String> properties, String logType,
                                                        String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
             this.compression = compression;
-            return log( version, hostName, properties, logType, headers, types, buffer, offset, length );
+            return log( version, properties, logType, headers, types, buffer, offset, length );
         }
 
         @Override
-        public Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, Map<String, String> properties, String logType,
+        public Result<LogId, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                        String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
             this.calls++;
             this.version = version;
-            this.hostName = hostName;
             this.properties = properties;
             this.logType = logType;
             this.headers = headers;

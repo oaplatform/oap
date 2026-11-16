@@ -48,7 +48,7 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     private final LinkedHashMap<LogId, ByteArrayOutputStream> outputs = new LinkedHashMap<>();
 
     @Override
-    public synchronized Result<LogId, LogstreamException> log( ProtocolVersion version, String hostName, Map<String, String> properties, String logType,
+    public synchronized Result<LogId, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                                 String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         LogId logId = new LogId( logType, properties, headers, types );
         outputs

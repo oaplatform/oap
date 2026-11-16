@@ -85,7 +85,6 @@ public class BuffersTest {
     public void length() {
         Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         try( Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 1 ) ) ) {
-            // the header length depends on the client hostname
             assertThatThrownBy( () -> buffers.put( new LogId( "x/y", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1, 2 } ) )
                 .isInstanceOf( IllegalArgumentException.class )
                 .hasMessage( "buffer size is too big: 2 for buffer of " + ( header + 1 ) + "; headers = " + header );

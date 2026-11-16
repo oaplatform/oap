@@ -26,7 +26,6 @@ package oap.logstream.net;
 import lombok.SneakyThrows;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
-import oap.net.Inet;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.DataOutputStream;
@@ -48,7 +47,7 @@ public class Buffer implements Serializable {
     private int dataStart;
 
     Buffer( int size, LogId id, ProtocolVersion protocolVersion ) {
-        this( size, id, protocolVersion, encodeHeader( id, Inet.HOSTNAME ) );
+        this( size, id, protocolVersion, encodeHeader( id ) );
     }
 
     Buffer( int size, LogId id, ProtocolVersion protocolVersion, byte[] header ) {
@@ -60,11 +59,11 @@ public class Buffer implements Serializable {
 
     /**
      * {@link ProtocolVersion#ROW_BINARY_V5} header: digestion control (long, reserved), data length (int, reserved),
-     * compression (byte, reserved), logType, clientHostname, headers, types, properties.
+     * compression (byte, reserved), logType, headers, types, properties.
      * Strings - modified UTF-8 (DataInputStream.readUTF on the server).
      */
     @SneakyThrows
-    public static byte[] encodeHeader( LogId id, String clientHostname ) {
+    public static byte[] encodeHeader( LogId id ) {
         FastByteArrayOutputStream baos = new FastByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream( baos );
 
@@ -72,7 +71,6 @@ public class Buffer implements Serializable {
         out.writeInt( 0 ); //reserved for data length
         out.writeByte( 0 ); //reserved for compression
         out.writeUTF( id.logType );
-        out.writeUTF( clientHostname );
         out.writeInt( id.headers.length );
         for( String header : id.headers ) {
             out.writeUTF( header );
@@ -211,7 +209,7 @@ public class Buffer implements Serializable {
     }
 
     public final void reset( LogId id ) {
-        reset( id, encodeHeader( id, Inet.HOSTNAME ) );
+        reset( id, encodeHeader( id ) );
     }
 
     final void reset( LogId id, byte[] header ) {

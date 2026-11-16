@@ -39,9 +39,9 @@ public class MemoryLoggerBackendTest {
     @Test
     public void lines() {
         try( MemoryLoggerBackend backend = new MemoryLoggerBackend() ) {
-            backend.log( CURRENT_PROTOCOL_VERSION, "test1", Map.of( "PREFIX", "file1" ), "type1",
+            backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } }, "line1\n".getBytes( UTF_8 ) );
-            backend.log( CURRENT_PROTOCOL_VERSION, "test1", Map.of( "PREFIX", "file1" ), "type1",
+            backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } }, "line2\n".getBytes( UTF_8 ) );
 
             assertThat( backend.loggedLines( new LogId( "type1", Map.of( "PREFIX", "file1" ),
@@ -63,7 +63,7 @@ public class MemoryLoggerBackendTest {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         try( MemoryLoggerBackend backend = new MemoryLoggerBackend() ) {
-            Result<LogId, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, "test1", Map.of( "PREFIX", "file1" ), "type1",
+            Result<LogId, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();

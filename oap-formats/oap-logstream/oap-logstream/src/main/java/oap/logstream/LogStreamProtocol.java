@@ -28,7 +28,7 @@ public interface LogStreamProtocol {
          */
         ROW_BINARY_V4( 4 ),
         /**
-         * as v4, without filePrefixPattern
+         * as v4, without filePrefixPattern and clientHostname
          */
         ROW_BINARY_V5( 5 );
         public final int version;

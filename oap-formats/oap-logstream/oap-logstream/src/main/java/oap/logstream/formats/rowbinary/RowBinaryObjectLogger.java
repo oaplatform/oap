@@ -31,7 +31,6 @@ import oap.dictionary.DictionaryRoot;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogStreamProtocol;
-import oap.net.Inet;
 import oap.reflect.TypeRef;
 import oap.template.Template;
 import oap.template.TemplateEngine;
@@ -306,7 +305,7 @@ public class RowBinaryObjectLogger {
             FastByteArrayOutputStream out = new FastByteArrayOutputStream( sizeHint );
             renderer.render( data, true, out );
             if( out.length > sizeHint ) sizeHint = out.length;
-            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, properties, logType, headers, types, out.array, 0, out.length );
+            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, properties, logType, headers, types, out.array, 0, out.length );
         }
     }
 }

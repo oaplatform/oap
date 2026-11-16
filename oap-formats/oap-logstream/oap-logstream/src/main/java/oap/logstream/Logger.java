@@ -24,7 +24,6 @@
 package oap.logstream;
 
 import oap.logstream.disk.LogstreamException;
-import oap.net.Inet;
 import oap.util.Result;
 
 import java.util.Map;
@@ -46,7 +45,7 @@ public class Logger {
 
     public Result<LogId, LogstreamException> log( Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] row ) {
-        return backend.log( protocolVersion, Inet.HOSTNAME, properties, logType, headers, types, row );
+        return backend.log( protocolVersion, properties, logType, headers, types, row );
     }
 
     public boolean isLoggingAvailable() {
