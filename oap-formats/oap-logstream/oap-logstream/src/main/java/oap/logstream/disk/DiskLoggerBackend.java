@@ -281,7 +281,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * buffer - gzip
      */
     @Override
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, Map<String, String> properties, String logType,
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         return log( protocolVersion, LogStreamCompression.GZIP, properties, logType, headers, types, buffer, offset, length );
     }
@@ -291,7 +291,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      */
     @Override
     @SneakyThrows
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
@@ -306,7 +306,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         log.trace( "logging {} bytes to {}", length, writer );
         try {
             writer.write( protocolVersion, buffer, offset, length );
-            return Result.success( logId );
+            return SUCCESS;
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
             for( int i = 0; i < headers.length; i++ ) {

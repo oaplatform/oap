@@ -43,7 +43,7 @@ public class Logger {
         this( backend, CURRENT_PROTOCOL_VERSION );
     }
 
-    public Result<LogId, LogstreamException> log( Map<String, String> properties, String logType,
+    public Result<Void, LogstreamException> log( Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] row ) {
         return backend.log( protocolVersion, properties, logType, headers, types, row );
     }

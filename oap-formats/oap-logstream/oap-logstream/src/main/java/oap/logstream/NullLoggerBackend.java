@@ -11,10 +11,9 @@ import java.util.Map;
 
 public class NullLoggerBackend extends AbstractLoggerBackend {
     @Override
-    public Result<LogId, LogstreamException> log( ProtocolVersion protocolVersion, Map<String, String> properties, String logType,
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] row, int offset, int length ) {
-        LogId logId = new LogId( logType, properties, headers, types );
-        return Result.success( logId );
+        return SUCCESS;
     }
 
     @Override

@@ -58,16 +58,16 @@ public class MemoryLoggerBackendTest {
     }
 
     @Test
-    public void logReturnsLogId() {
+    public void logReturnsSuccess() {
         String[] headers = new String[] { "h1" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         try( MemoryLoggerBackend backend = new MemoryLoggerBackend() ) {
-            Result<LogId, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
+            Result<Void, LogstreamException> result = backend.log( CURRENT_PROTOCOL_VERSION, Map.of( "PREFIX", "file1" ), "type1",
                 headers, types, "line1\n".getBytes( UTF_8 ) );
 
             assertThat( result.isSuccess() ).isTrue();
-            assertThat( result.successValue ).isEqualTo( new LogId( "type1", Map.of( "PREFIX", "file1" ), headers, types ) );
+            assertThat( result.successValue ).isNull();
         }
     }
 }

@@ -32,11 +32,10 @@ public class SocketLoggerServerTest {
     private static final String[] HEADERS = new String[] { "h1" };
     private static final byte[][] TYPES = new byte[][] { new byte[] { Types.STRING.id } };
     private static final byte[] ROW = "line1\n".getBytes( UTF_8 );
-    private static final LogId LOG_ID = new LogId( "type", Map.of( "p1", "v1" ), HEADERS, TYPES );
 
     @Test
     public void success() {
-        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
+        TestBackend backend = new TestBackend( Result.success( null ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payload( LogStreamCompression.LZ4 );
@@ -77,7 +76,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void backendNotAvailable() {
-        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
+        TestBackend backend = new TestBackend( Result.success( null ) );
         backend.state = AvailabilityReport.State.FAILED;
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
@@ -88,7 +87,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void invalidVersion() {
-        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
+        TestBackend backend = new TestBackend( Result.success( null ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payload( LogStreamCompression.GZIP );
@@ -98,7 +97,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void v3IsGzip() {
-        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
+        TestBackend backend = new TestBackend( Result.success( null ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payloadV3();
@@ -118,7 +117,7 @@ public class SocketLoggerServerTest {
      */
     @Test
     public void v4PrefixIgnored() {
-        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
+        TestBackend backend = new TestBackend( Result.success( null ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payloadV4( LogStreamCompression.LZ4 );
@@ -136,7 +135,7 @@ public class SocketLoggerServerTest {
 
     @Test
     public void unknownCompression() {
-        TestBackend backend = new TestBackend( Result.success( LOG_ID ) );
+        TestBackend backend = new TestBackend( Result.success( null ) );
         SocketLoggerServer server = new SocketLoggerServer( backend );
 
         byte[] data = payload( LogStreamCompression.GZIP );
@@ -192,7 +191,7 @@ public class SocketLoggerServerTest {
     }
 
     private static class TestBackend extends AbstractLoggerBackend {
-        private final Result<LogId, LogstreamException> result;
+        private final Result<Void, LogstreamException> result;
         private AvailabilityReport.State state = AvailabilityReport.State.OPERATIONAL;
         private int calls;
         private ProtocolVersion version;
@@ -203,12 +202,12 @@ public class SocketLoggerServerTest {
         private byte[][] types;
         private byte[] buffer;
 
-        private TestBackend( Result<LogId, LogstreamException> result ) {
+        private TestBackend( Result<Void, LogstreamException> result ) {
             this.result = result;
         }
 
         @Override
-        public Result<LogId, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression,
+        public Result<Void, LogstreamException> log( ProtocolVersion version, LogStreamCompression compression,
                                                        Map<String, String> properties, String logType,
                                                        String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
             this.compression = compression;
@@ -216,7 +215,7 @@ public class SocketLoggerServerTest {
         }
 
         @Override
-        public Result<LogId, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
+        public Result<Void, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                        String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
             this.calls++;
             this.version = version;
