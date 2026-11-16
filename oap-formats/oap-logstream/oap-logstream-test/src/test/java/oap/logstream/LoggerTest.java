@@ -45,6 +45,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -273,7 +274,7 @@ public class LoggerTest extends Fixtures {
              NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
              MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
-             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, configurations, -1 ) ) {
+             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, configurations, -1, 4 ) ) {
 
             mServer.start();
             messageHttpHandler.preStart();
@@ -283,6 +284,7 @@ public class LoggerTest extends Fixtures {
 
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( -1L );
             assertThat( clientBackend.getMaxBuffers() ).isEqualTo( 5000 );
+            assertThat( clientBackend.getSendThreads() ).isEqualTo( 2 );
             assertThat( clientBackend.getBufferSizes() ).containsOnly( Map.entry( "LOG", 256 ), Map.entry( "OTHER", 512 ) );
 
             // bufferSize: the current buffer (256) is sent, the next one is 1024
@@ -302,6 +304,10 @@ public class LoggerTest extends Fixtures {
             clientBackend.setMaxBuffers( 5000 );
             assertThat( clientBackend.availabilityReport().subsystemStates ).doesNotContainEntry( SocketLoggerBackend.FAILURE_BUFFERS_STATE, FAILED );
 
+            // sendThreads: the ready buffers are compressed and sent by 8 threads
+            clientBackend.setSendThreads( 8 );
+            assertThat( clientBackend.getSendThreads() ).isEqualTo( 8 );
+
             // flushInterval: sent without sendAsync()
             clientBackend.setFlushInterval( 100 );
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( 100L );
@@ -316,6 +322,19 @@ public class LoggerTest extends Fixtures {
 
             clientBackend.setFlushInterval( -1 );
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( -1L );
+
+            // sendThreads: shrink, sent by the thread of sendAsync() only
+            clientBackend.setSendThreads( 1 );
+            logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line2 );
+            clientBackend.sendAsync();
+            client.syncMemory();
+            List<Object>[] expectedAll = Arrays.copyOf( expected, expected.length + 1 );
+            expectedAll[expected.length] = lineData2;
+            assertEventually( 100, 100, () -> {
+                client.syncMemory();
+                assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.zst" ), ZSTD )
+                    .containsExactlyInAnyOrderEntriesOf( expectedAll );
+            } );
         }
     }
 
@@ -336,6 +355,8 @@ public class LoggerTest extends Fixtures {
         SocketLoggerBackend backend = new SocketLoggerBackend( null, 256, -1 );
 
         assertThatThrownBy( () -> backend.setMaxBuffers( 0 ) ).isInstanceOf( IllegalArgumentException.class );
+        assertThatThrownBy( () -> backend.setSendThreads( 0 ) ).isInstanceOf( IllegalArgumentException.class );
+        assertThat( backend.getSendThreads() ).isEqualTo( 2 );
         assertThatThrownBy( () -> backend.setBufferSize( 0 ) ).isInstanceOf( IllegalArgumentException.class );
         assertThatThrownBy( () -> backend.setBufferSize( "unknown", 1024 ) ).isInstanceOf( IllegalArgumentException.class );
         assertThat( backend.getMaxBuffers() ).isEqualTo( 5000 );

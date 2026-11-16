@@ -39,6 +39,35 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Slf4j
 public class Threads {
+    /**
+     * {@link #count(double, int, int)} for the number of available processors
+     */
+    public static int count( double value, int auto ) {
+        return count( value, auto, Runtime.getRuntime().availableProcessors() );
+    }
+
+    /**
+     * A thread / stripe count relative to the number of cores, never &lt; 1:
+     * <ul>
+     *     <li>0 - auto</li>
+     *     <li>integer &gt; 0 - as is</li>
+     *     <li>integer &lt; 0 - cores + value (-1 = cores - 1)</li>
+     *     <li>fraction &gt; 0 - cores * value (1.2 = cores * 1.2)</li>
+     *     <li>fraction &lt; 0 - cores / -value (-1.2 = cores / 1.2)</li>
+     * </ul>
+     */
+    public static int count( double value, int auto, int cores ) {
+        if( Double.isNaN( value ) || Double.isInfinite( value ) )
+            throw new IllegalArgumentException( "count must be finite, but " + value );
+
+        long count;
+        if( value == 0 ) count = auto;
+        else if( value == Math.rint( value ) ) count = value > 0 ? ( long ) value : cores + ( long ) value;
+        else count = value > 0 ? Math.round( cores * value ) : Math.round( cores / -value );
+
+        return ( int ) Math.max( 1, Math.min( Integer.MAX_VALUE, count ) );
+    }
+
     public static void interruptAndJoin( Thread thread ) {
         if( thread != null ) {
             thread.interrupt();

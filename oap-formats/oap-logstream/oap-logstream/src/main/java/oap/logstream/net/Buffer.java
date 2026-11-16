@@ -32,6 +32,8 @@ import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 public class Buffer implements Serializable {
     public static final int DIGESTION_POSITION = 0;
     public static final int DATE_LENGTH_POSITION = 8;
@@ -110,7 +112,7 @@ public class Buffer implements Serializable {
     }
 
     private void initMetadata( byte[] header ) {
-        if( header.length > data.length ) throw new IllegalArgumentException( "buffer is too small! Provided " + data.length + " bytes" );
+        if( header.length > data.length ) throw new IllegalArgumentException( s( "buffer is too small! Provided ${data.length} bytes" ) );
 
         System.arraycopy( header, 0, data, 0, header.length );
         this.position = header.length;
@@ -249,6 +251,6 @@ public class Buffer implements Serializable {
 
     @Override
     public final String toString() {
-        return id + "," + position;
+        return s( "${id},${position}" );
     }
 }

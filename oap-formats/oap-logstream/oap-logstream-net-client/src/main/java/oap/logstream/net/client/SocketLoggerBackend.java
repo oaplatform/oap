@@ -45,8 +45,11 @@ import oap.message.client.MessageAvailabilityReport;
 import oap.message.client.MessageSender;
 import oap.util.Result;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -64,8 +67,16 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
 
     private final MessageSender sender;
     private final Buffers buffers;
+    /**
+     * workers 1..n-1 of sendAsync() (a virtual thread per worker), worker 0 is the thread of sendAsync()
+     */
     @ToString.Exclude
-    private final BufferCompressor compressor = new BufferCompressor();
+    private final ExecutorService sendExecutor = Executors.newThreadPerTaskExecutor( Thread.ofVirtual().name( "logstream-send-", 0 ).factory() );
+    /**
+     * one per worker (not thread-safe); accessed only within sendAsync() / close() (synchronized)
+     */
+    @ToString.Exclude
+    private BufferCompressor[] compressors = new BufferCompressor[0];
     /**
      * guards scheduled / flushInterval; not the object monitor - sendAsync() holds it while sending
      */
@@ -95,16 +106,29 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     private volatile int lz4Level = LogStreamCompression.LZ4.defaultLevel;
     @Getter
     private volatile int zstdLevel = LogStreamCompression.ZSTD.defaultLevel;
+    /**
+     * runtime parameter: number of threads compressing and passing the ready buffers to the sender
+     */
+    @Getter
+    private volatile int sendThreads = 2;
 
     public SocketLoggerBackend( MessageSender sender, int bufferSize, long flushInterval ) {
         this( sender, BufferConfigurationMap.defaultMap( bufferSize ), flushInterval );
     }
 
     public SocketLoggerBackend( MessageSender sender, BufferConfigurationMap configurations, long flushInterval ) {
-        log.info( "flushInterval = {}", durationToString( flushInterval ) );
+        this( sender, configurations, flushInterval, 0 );
+    }
 
+    /**
+     * @param stripes max number of concurrently filled buffers of a log id, relative to the number of cores
+     *                ( 0 - auto ), see {@link Buffers#Buffers(BufferConfigurationMap, double)}
+     */
+    public SocketLoggerBackend( MessageSender sender, BufferConfigurationMap configurations, long flushInterval, double stripes ) {
         this.sender = sender;
-        this.buffers = new Buffers( configurations );
+        this.buffers = new Buffers( configurations, stripes );
+        log.info( "flushInterval = {} stripes = {} ({})", durationToString( flushInterval ), stripes, buffers.stripes );
+
         reschedule( flushInterval );
         Metrics.gauge( "logstream_logging_buffers_cache", buffers.cache, Buffers.BufferCache::size );
         log.info( "SocketLoggerBackend '{}' is ready", sender == null ? "no-name" : sender.uniqueName );
@@ -201,6 +225,15 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         this.zstdLevel = zstdLevel;
     }
 
+    /**
+     * runtime change, applied starting from the next {@link #sendAsync()}
+     */
+    public void setSendThreads( int sendThreads ) {
+        Preconditions.checkArgument( sendThreads > 0, "sendThreads must be > 0, but %s", sendThreads );
+        log.info( "sendThreads {} -> {}", this.sendThreads, sendThreads );
+        this.sendThreads = sendThreads;
+    }
+
     public int getCompressionLevel( LogStreamCompression compression ) {
         return switch( compression ) {
             case GZIP -> gzipLevel;
@@ -217,9 +250,11 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         if( shutdown || !closed ) {
             LogStreamCompression compression = this.compression;
             int level = getCompressionLevel( compression );
-            buffers.forEachReadyData( b -> {
+            int workers = workers( sendThreads );
+            BufferCompressor[] compressors = this.compressors;
+            buffers.forEachReadyData( sendExecutor, workers, ( b, worker ) -> {
                 log.trace( "Sending {} {}/{}", b, compression, level );
-                byte[] data = compressor.compress( b, compression, level );
+                byte[] data = compressors[worker].compress( b, compression, level );
                 sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V5.version, data, 0, data.length );
             } );
             log.trace( "Data sent to server" );
@@ -227,6 +262,21 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         }
 
         return false;
+    }
+
+    /**
+     * resizes the compressors to the number of workers
+     */
+    private int workers( int workers ) {
+        int current = compressors.length;
+        if( workers == current ) return workers;
+
+        BufferCompressor[] resized = Arrays.copyOf( compressors, workers );
+        for( int i = current; i < workers; i++ ) resized[i] = new BufferCompressor();
+        for( int i = workers; i < current; i++ ) compressors[i].close();
+        compressors = resized;
+
+        return workers;
     }
 
     @Override
@@ -255,7 +305,9 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         try {
             sendAsync( true );
         } finally {
-            compressor.close();
+            sendExecutor.shutdown();
+            for( BufferCompressor compressor : compressors ) compressor.close();
+            compressors = new BufferCompressor[0];
         }
     }
 

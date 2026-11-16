@@ -26,6 +26,7 @@ package oap.logstream.net;
 import io.micrometer.core.instrument.Metrics;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
@@ -40,15 +41,23 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.ObjIntConsumer;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 @ToString
 @Slf4j
@@ -68,9 +77,27 @@ public class Buffers implements Closeable {
     private volatile int generation;
     public BufferCache cache;
     ReadyQueue readyBuffers = new ReadyQueue();
+    /**
+     * max number of buffers (stripes) of a LogId, a power of 2
+     */
+    public final int stripes;
     private volatile boolean closed;
 
     public Buffers( BufferConfigurationMap configurations ) {
+        this( configurations, 0 );
+    }
+
+    /**
+     * @param stripes max number of concurrently filled buffers of a LogId, relative to the number of cores
+     *                ( {@link Threads#count(double, int)}, 0 - the number of cores ), rounded up to a power of 2;
+     *                a LogId starts with one buffer, the number grows ( up to stripes ) only when the producers contend
+     *                for the buffer of the LogId
+     */
+    public Buffers( BufferConfigurationMap configurations, double stripes ) {
+        int count = Threads.count( stripes, Runtime.getRuntime().availableProcessors() );
+        this.stripes = count <= 1 ? 1 : Integer.highestOneBit( count - 1 ) << 1;
+        log.debug( "stripes {} -> {}", stripes, this.stripes );
+
         this.configurations = Collections.unmodifiableMap( new LinkedHashMap<>( configurations ) );
         this.cache = new BufferCache();
         this.cache.retainSizes( sizes( this.configurations ) );
@@ -146,35 +173,35 @@ public class Buffers implements Closeable {
         if( slot == null ) {
             slot = currentBuffers.computeIfAbsent( id, k -> {
                 int slotGeneration = generation;
-                return new Slot( findConfiguration( k ), Buffer.encodeHeader( k ), slotGeneration );
+                return new Slot( findConfiguration( k ), Buffer.encodeHeader( k ), slotGeneration, stripes );
             } );
         }
 
-        slot.lock.lock();
+        Stripe stripe = lock( slot );
         try {
-            // under the slot lock: close() sets closed before flush(), so no buffer is left in a slot after the last flush
+            // under the stripe lock: close() sets closed before flush(), so no buffer is left in a slot after the last flush
             if( closed ) throw new IllegalStateException( "current buffer is already closed" );
 
             int currentGeneration = generation;
-            if( slot.generation != currentGeneration ) {
-                slot.conf = findConfiguration( id );
-                slot.generation = currentGeneration;
-                Buffer current = slot.buffer;
-                if( current != null && current.capacity() != slot.conf.bufferSize ) {
+            if( stripe.generation != currentGeneration ) {
+                stripe.conf = findConfiguration( id );
+                stripe.generation = currentGeneration;
+                Buffer current = stripe.buffer;
+                if( current != null && current.capacity() != stripe.conf.bufferSize ) {
                     if( current.isEmpty() ) cache.release( current );
                     else readyBuffers.ready( current );
-                    slot.buffer = null;
+                    stripe.buffer = null;
                 }
             }
-            int bufferSize = slot.conf.bufferSize;
+            int bufferSize = stripe.conf.bufferSize;
 
-            Buffer b = slot.buffer;
+            Buffer b = stripe.buffer;
             if( b == null ) {
                 b = cache.get( id, protocolVersion, bufferSize, slot.header );
             }
 
             if( bufferSize - b.headerLength() < length )
-                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize + "; headers = " + b.headerLength() );
+                throw new IllegalArgumentException( s( "buffer size is too big: ${length} for buffer of ${bufferSize}; headers = ${b.headerLength()}" ) );
 
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
@@ -182,10 +209,34 @@ public class Buffers implements Closeable {
             }
 
             b.put( buffer, offset, length );
-            slot.buffer = b;
+            stripe.buffer = b;
         } finally {
-            slot.lock.unlock();
+            stripe.lock.unlock();
         }
+    }
+
+    /**
+     * the stripe of the current thread among the first slot.width stripes; a failed tryLock doubles the width
+     * ( up to the number of stripes ), so only a LogId written concurrently gets more than one buffer
+     */
+    private static Stripe lock( Slot slot ) {
+        Stripe[] stripes = slot.stripes;
+        if( stripes.length == 1 ) {
+            stripes[0].lock.lock();
+            return stripes[0];
+        }
+
+        int probe = ( int ) Thread.currentThread().threadId();
+        int width = slot.width;
+        Stripe stripe = stripes[probe & ( width - 1 )];
+        if( stripe.lock.tryLock() ) return stripe;
+
+        if( width < stripes.length ) {
+            Slot.WIDTH.compareAndSet( slot, width, width << 1 );
+            stripe = stripes[probe & ( slot.width - 1 )];
+        }
+        stripe.lock.lock();
+        return stripe;
     }
 
     private BufferConfiguration findConfiguration( LogId id ) {
@@ -197,14 +248,16 @@ public class Buffers implements Closeable {
 
     public void flush() {
         for( Slot slot : currentBuffers.values() ) {
-            slot.lock.lock();
-            try {
-                if( slot.buffer != null && !slot.buffer.isEmpty() ) {
-                    readyBuffers.ready( slot.buffer );
-                    slot.buffer = null;
+            for( Stripe stripe : slot.stripes ) {
+                stripe.lock.lock();
+                try {
+                    if( stripe.buffer != null && !stripe.buffer.isEmpty() ) {
+                        readyBuffers.ready( stripe.buffer );
+                        stripe.buffer = null;
+                    }
+                } finally {
+                    stripe.lock.unlock();
                 }
-            } finally {
-                slot.lock.unlock();
             }
         }
     }
@@ -226,19 +279,67 @@ public class Buffers implements Closeable {
         }
     }
 
+    /**
+     * sequential {@link #forEachReadyData(Executor, int, ObjIntConsumer)}
+     */
     public final void forEachReadyData( Consumer<Buffer> consumer ) {
+        forEachReadyData( Runnable::run, 1, ( buffer, worker ) -> consumer.accept( buffer ) );
+    }
+
+    /**
+     * Flushes the current buffers and passes every ready buffer to the consumer, in parallel by up to workers threads:
+     * worker 0 is the calling thread, the others run in the executor. A consumed buffer is removed and returned to the pool.
+     * After the first exception of the consumer the workers stop taking buffers; the failed buffer and the not consumed ones
+     * stay ready ( in their order ) for the next call, the exception is rethrown.
+     *
+     * @param consumer ( buffer, worker index 0..workers-1 ); a worker calls it sequentially - per-worker state needs no synchronization
+     */
+    public final void forEachReadyData( Executor executor, int workers, ObjIntConsumer<Buffer> consumer ) {
+        if( workers <= 0 ) throw new IllegalArgumentException( s( "workers must be > 0, but ${workers}" ) );
+
         lock.lock();
         try {
             flush();
             report();
-            log.trace( "buffers to go {}", readyBuffers.size() );
-            // single consumer under lock, ready() only appends to the tail -> poll() removes the peeked buffer
-            Buffer buffer;
-            while( ( buffer = readyBuffers.peek() ) != null ) {
-                consumer.accept( buffer );
-                readyBuffers.poll();
-                cache.release( buffer );
+
+            // single consumer under lock, ready() only appends to the tail -> the first n buffers are stable
+            int n = readyBuffers.size();
+            log.trace( "buffers to go {}", n );
+            if( n == 0 ) return;
+
+            Batch batch = new Batch( new Buffer[n], consumer );
+            Iterator<Buffer> iterator = readyBuffers.buffers.iterator();
+            for( int i = 0; i < n; i++ ) batch.buffers[i] = iterator.next();
+
+            int parallelism = Math.min( workers, n );
+            CompletableFuture<?>[] futures = new CompletableFuture<?>[parallelism - 1];
+            for( int w = 1; w < parallelism; w++ ) {
+                int worker = w;
+                try {
+                    futures[w - 1] = CompletableFuture.runAsync( () -> batch.run( worker ), executor );
+                } catch( RejectedExecutionException e ) {
+                    // the buffers of this worker are taken by the others
+                    futures[w - 1] = CompletableFuture.completedFuture( null );
+                }
             }
+            batch.run( 0 );
+            CompletableFuture.allOf( futures ).join();
+
+            // remove the consumed buffers, the failed / not consumed ones keep their position
+            iterator = readyBuffers.buffers.iterator();
+            for( int i = 0; i < n; i++ ) {
+                Buffer buffer = iterator.next();
+                if( batch.consumed[i] ) {
+                    iterator.remove();
+                    readyBuffers.size.decrementAndGet();
+                    cache.release( buffer );
+                }
+            }
+
+            Throwable error = batch.error;
+            if( error instanceof RuntimeException e ) throw e;
+            if( error instanceof Error e ) throw e;
+            if( error != null ) throw new IllegalStateException( error );
         } finally {
             lock.unlock();
         }
@@ -251,12 +352,14 @@ public class Buffers implements Closeable {
 
         ArrayList<String> current = new ArrayList<>();
         for( Slot slot : currentBuffers.values() ) {
-            slot.lock.lock();
-            try {
-                Buffer buffer = slot.buffer;
-                if( buffer != null ) current.add( buffer.id.logType );
-            } finally {
-                slot.lock.unlock();
+            for( Stripe stripe : slot.stripes ) {
+                stripe.lock.lock();
+                try {
+                    Buffer buffer = stripe.buffer;
+                    if( buffer != null ) current.add( buffer.id.logType );
+                } finally {
+                    stripe.lock.unlock();
+                }
             }
         }
         report( current, "false" );
@@ -276,20 +379,74 @@ public class Buffers implements Closeable {
     }
 
     /**
-     * buffer configuration, serialized buffer header + current buffer for a LogId; mutated only under Slot.lock
+     * serialized buffer header + the stripes ( current buffers ) of a LogId
      */
-    @ToString( exclude = { "header", "lock" } )
+    @ToString( exclude = { "header" } )
     private static final class Slot {
-        final ReentrantLock lock = new ReentrantLock();
+        static final AtomicIntegerFieldUpdater<Slot> WIDTH = AtomicIntegerFieldUpdater.newUpdater( Slot.class, "width" );
+
         final byte[] header;
+        final Stripe[] stripes;
+        /**
+         * number of the stripes in use, a power of 2; grows on contention
+         */
+        volatile int width = 1;
+
+        Slot( BufferConfiguration conf, byte[] header, int generation, int stripes ) {
+            this.header = header;
+            this.stripes = new Stripe[stripes];
+            for( int i = 0; i < stripes; i++ ) this.stripes[i] = new Stripe( conf, generation );
+        }
+    }
+
+    /**
+     * buffer configuration + current buffer; mutated only under Stripe.lock
+     */
+    @ToString( exclude = { "lock" } )
+    private static final class Stripe {
+        final ReentrantLock lock = new ReentrantLock();
         BufferConfiguration conf;
         int generation;
         Buffer buffer;
 
-        Slot( BufferConfiguration conf, byte[] header, int generation ) {
+        Stripe( BufferConfiguration conf, int generation ) {
             this.conf = conf;
-            this.header = header;
             this.generation = generation;
+        }
+    }
+
+    /**
+     * the ready buffers of one forEachReadyData call, the workers take them by index
+     */
+    private static final class Batch {
+        final Buffer[] buffers;
+        /**
+         * written by the workers, read by the caller after CompletableFuture.join() ( happens-before )
+         */
+        final boolean[] consumed;
+        final ObjIntConsumer<Buffer> consumer;
+        final AtomicInteger next = new AtomicInteger();
+        volatile Throwable error;
+
+        Batch( Buffer[] buffers, ObjIntConsumer<Buffer> consumer ) {
+            this.buffers = buffers;
+            this.consumed = new boolean[buffers.length];
+            this.consumer = consumer;
+        }
+
+        void run( int worker ) {
+            int i;
+            while( error == null && ( i = next.getAndIncrement() ) < buffers.length ) {
+                try {
+                    consumer.accept( buffers[i], worker );
+                    consumed[i] = true;
+                } catch( Throwable e ) {
+                    synchronized( this ) {
+                        if( error == null ) error = e;
+                        else error.addSuppressed( e );
+                    }
+                }
+            }
         }
     }
 
