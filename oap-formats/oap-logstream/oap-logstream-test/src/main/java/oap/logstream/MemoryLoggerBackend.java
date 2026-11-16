@@ -50,7 +50,11 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     @Override
     public synchronized Result<Void, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                                 String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        LogId logId = new LogId( logType, properties, headers, types );
+        return log( version, new LogId( logType, properties, headers, types ), buffer, offset, length );
+    }
+
+    @Override
+    public synchronized Result<Void, LogstreamException> log( ProtocolVersion version, LogId logId, byte[] buffer, int offset, int length ) {
         outputs
             .computeIfAbsent( logId, fn -> new ByteArrayOutputStream() )
             .write( buffer, offset, length );

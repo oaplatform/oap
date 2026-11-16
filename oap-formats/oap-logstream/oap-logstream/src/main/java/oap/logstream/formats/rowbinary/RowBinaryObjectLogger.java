@@ -30,6 +30,7 @@ import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryRoot;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
+import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol;
 import oap.reflect.TypeRef;
 import oap.template.Template;
@@ -49,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static oap.template.ErrorStrategy.ERROR;
@@ -284,14 +286,21 @@ public class RowBinaryObjectLogger {
         }
     }
 
+    private record LogKey( String logType, Map<String, String> properties ) {
+    }
+
     public class TypedRowBinaryLogger<D> {
         private static final int INITIAL_SIZE_HINT = 256;
+        private static final int MAX_LOG_IDS = 1024;
 
         public final String[] headers;
         public final byte[][] types;
         private final Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer;
         // max rendered row size seen so far; benign race - worst case is one extra regrowth
         private volatile int sizeHint = INITIAL_SIZE_HINT;
+        // headers/types are fixed per instance, only logType/properties vary
+        private volatile LogId last;
+        private final ConcurrentHashMap<LogKey, LogId> logIds = new ConcurrentHashMap<>();
 
         public TypedRowBinaryLogger( Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer, String[] headers, byte[][] types ) {
             this.renderer = renderer;
@@ -305,7 +314,26 @@ public class RowBinaryObjectLogger {
             FastByteArrayOutputStream out = new FastByteArrayOutputStream( sizeHint );
             renderer.render( data, true, out );
             if( out.length > sizeHint ) sizeHint = out.length;
-            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, properties, logType, headers, types, out.array, 0, out.length );
+            backend.log( LogStreamProtocol.CURRENT_PROTOCOL_VERSION, logId( properties, logType ), out.array, 0, out.length );
+        }
+
+        private LogId logId( Map<String, String> properties, String logType ) {
+            LogId id = last;
+            if( id != null && id.logType.equals( logType ) && id.properties.equals( properties ) ) return id;
+
+            // lookup by the caller's map, no copy
+            id = logIds.get( new LogKey( logType, properties ) );
+            if( id == null ) {
+                // high cardinality of properties
+                if( logIds.size() > MAX_LOG_IDS ) logIds.clear();
+
+                LogId created = new LogId( logType, properties, headers, types );
+                // the key holds the LogId's own copy of the properties
+                LogId previous = logIds.putIfAbsent( new LogKey( logType, created.properties ), created );
+                id = previous != null ? previous : created;
+            }
+            last = id;
+            return id;
         }
     }
 }

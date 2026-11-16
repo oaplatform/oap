@@ -46,6 +46,13 @@ public abstract class AbstractLoggerBackend implements Closeable {
                                                             String[] headers, byte[][] types, byte[] buffer, int offset, int length );
 
     /**
+     * @param logId created ( and may be cached ) by the caller
+     */
+    public Result<Void, LogstreamException> log( ProtocolVersion version, LogId logId, byte[] buffer, int offset, int length ) {
+        return log( version, logId.properties, logId.logType, logId.headers, logId.types, buffer, offset, length );
+    }
+
+    /**
      * @param compression codec of the buffer (server side, {@link ProtocolVersion#ROW_BINARY_V4} header).
      *                    Backends that do not store the compressed payload as is ignore it.
      */

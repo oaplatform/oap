@@ -287,20 +287,32 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     }
 
     /**
+     * buffer - gzip
+     */
+    @Override
+    public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogId logId, byte[] buffer, int offset, int length ) {
+        return log( protocolVersion, LogStreamCompression.GZIP, logId, buffer, offset, length );
+    }
+
+    /**
      * buffer - compressed by compression, appended to the file of the corresponding format as is
      */
     @Override
-    @SneakyThrows
     public Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
                                                    Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+        return log( protocolVersion, compression, new LogId( logType, properties, headers, types ), buffer, offset, length );
+    }
+
+    @SneakyThrows
+    private Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
+                                                    LogId logId, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
         }
 
         loggingCounter.increment();
         loggingBuffers.record( length );
-        LogId logId = new LogId( logType, properties, headers, types );
         AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
@@ -309,12 +321,12 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             return SUCCESS;
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
-            for( int i = 0; i < headers.length; i++ ) {
-                headersWithTypes.add( headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( types[i] ) ), oap.template.Types::valueOf ) + "]" );
+            for( int i = 0; i < logId.headers.length; i++ ) {
+                headersWithTypes.add( logId.headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( logId.types[i] ) ), oap.template.Types::valueOf ) + "]" );
             }
 
             log.error( "logType {} properties {} headers {} path {}",
-                logType, properties, headersWithTypes, writer.currentPattern() );
+                logId.logType, logId.properties, headersWithTypes, writer.currentPattern() );
 
             throw e;
         }

@@ -25,11 +25,15 @@
 package oap.logstream.formats.rowbinary;
 
 import oap.dictionary.DictionaryParser;
+import oap.logstream.LogId;
+import oap.logstream.LogStreamProtocol;
 import oap.logstream.MemoryLoggerBackend;
+import oap.logstream.disk.LogstreamException;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
+import oap.util.Result;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.testng.annotations.Test;
 
@@ -105,6 +109,72 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                 List.of( "ff", 12, "ff", List.of( "1" ), 333 ),
                 List.of( "", 44, "dd", List.of( "2" ), 1 )
             );
+    }
+
+    @Test
+    public void testLogIdCache() {
+        String datamodel = """
+            name = model
+            values {
+              MODEL1 {
+                values {
+                  a {
+                    path = a
+                    type = STRING
+                    default = ""
+                  }
+                }
+              }
+            }
+            """;
+
+        LogIdCapturingBackend backend = new LogIdCapturingBackend();
+        RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( DictionaryParser.parseFromString( datamodel ), backend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
+
+        RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1", false );
+        TestData data = new TestData( "v", null, 1, null, null, Map.of() );
+
+        // the same logType/properties ( another instance of an equal map ) -> the same LogId instance
+        LinkedHashMap<String, String> properties = new LinkedHashMap<>( Map.of( "p", "1" ) );
+        logger.log( data, properties, "log1" );
+        logger.log( data, Map.of( "p", "1" ), "log1" );
+        assertThat( backend.logIds ).hasSize( 2 );
+        LogId p1 = backend.logIds.get( 0 );
+        assertThat( backend.logIds.get( 1 ) ).isSameAs( p1 );
+        assertThat( p1 ).isEqualTo( new LogId( "log1", Map.of( "p", "1" ), logger.headers, logger.types ) );
+
+        // the caller's map is copied: its mutation does not change the cached LogId
+        properties.put( "p", "changed" );
+        assertThat( p1.properties ).containsExactlyEntriesOf( Map.of( "p", "1" ) );
+        logger.log( data, properties, "log1" );
+        LogId changed = backend.logIds.get( 2 );
+        assertThat( changed ).isNotSameAs( p1 ).isEqualTo( new LogId( "log1", Map.of( "p", "changed" ), logger.headers, logger.types ) );
+
+        // another logType / properties -> another LogId; back to the previous combination -> the cached instance
+        logger.log( data, Map.of( "p", "1" ), "log2" );
+        logger.log( data, Map.of( "p", "2" ), "log1" );
+        logger.log( data, Map.of( "p", "1" ), "log1" );
+        logger.log( data, Map.of( "p", "1" ), "log2" );
+        assertThat( backend.logIds.get( 3 ) ).isEqualTo( new LogId( "log2", Map.of( "p", "1" ), logger.headers, logger.types ) );
+        assertThat( backend.logIds.get( 4 ) ).isEqualTo( new LogId( "log1", Map.of( "p", "2" ), logger.headers, logger.types ) );
+        assertThat( backend.logIds.get( 5 ) ).isSameAs( p1 );
+        assertThat( backend.logIds.get( 6 ) ).isSameAs( backend.logIds.get( 3 ) );
+
+        // high cardinality of properties: the cache is dropped, LogIds are still correct
+        backend.logIds.clear();
+        for( int i = 0; i < 3000; i++ ) {
+            logger.log( data, Map.of( "p", "c" + i ), "log1" );
+        }
+        assertThat( backend.logIds ).hasSize( 3000 );
+        for( int i = 0; i < 3000; i++ ) {
+            assertThat( backend.logIds.get( i ) ).isEqualTo( new LogId( "log1", Map.of( "p", "c" + i ), logger.headers, logger.types ) );
+        }
+
+        logger.log( data, Map.of( "p", "1" ), "log1" );
+        assertThat( backend.logIds.get( 3000 ) ).isEqualTo( p1 );
+
+        // every distinct log id reached the backend
+        assertThat( backend.logs() ).hasSize( 3004 );
     }
 
     @Test
@@ -339,6 +409,16 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
             public TestData1( List<String> list ) {
                 this.list.addAll( list );
             }
+        }
+    }
+
+    private static class LogIdCapturingBackend extends MemoryLoggerBackend {
+        private final ArrayList<LogId> logIds = new ArrayList<>();
+
+        @Override
+        public synchronized Result<Void, LogstreamException> log( LogStreamProtocol.ProtocolVersion version, LogId logId, byte[] buffer, int offset, int length ) {
+            logIds.add( logId );
+            return super.log( version, logId, buffer, offset, length );
         }
     }
 

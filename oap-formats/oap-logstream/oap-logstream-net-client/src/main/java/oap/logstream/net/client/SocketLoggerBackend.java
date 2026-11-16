@@ -232,7 +232,11 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     @Override
     public Result<Void, LogstreamException> log( ProtocolVersion version, Map<String, String> properties, String logType,
                                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        LogId logId = new LogId( logType, properties, headers, types );
+        return log( version, new LogId( logType, properties, headers, types ), buffer, offset, length );
+    }
+
+    @Override
+    public Result<Void, LogstreamException> log( ProtocolVersion version, LogId logId, byte[] buffer, int offset, int length ) {
         buffers.put( logId, version, buffer, offset, length );
         return SUCCESS;
     }
