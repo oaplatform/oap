@@ -725,6 +725,82 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
+    public void priority() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            client
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "p0-a", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 5, "p5-a", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 0, "p0-b", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 10, "p10", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 5, "p5-b", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, -1, "p-1", ofString() )
+                .syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactly(
+                new TestMessage( 1, "p10" ),
+                new TestMessage( 1, "p5-a" ),
+                new TestMessage( 1, "p5-b" ),
+                new TestMessage( 1, "p0-a" ),
+                new TestMessage( 1, "p0-b" ),
+                new TestMessage( 1, "p-1" ) );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void priorityPersistence() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+        Path directory = testDirectoryFixture.testPath( "tmp" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( MessageSender client = new MessageSender( "localhost", port, "/messages", directory, -1 ) ) {
+            client
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, -3, "p-3", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 7, "p7", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 2, 2, "p2", ofString() );
+        } // not sent -> persisted
+
+        // legacy file name, without priority
+        byte[] legacy = "legacy".getBytes( UTF_8 );
+        Files.write( directory.resolve( "1" ).resolve( String.valueOf( Byte.toUnsignedInt( MessageListenerMock.MESSAGE_TYPE ) ) )
+            .resolve( DigestUtils.md5Hex( legacy ) + "-1.bin" ), legacy );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", directory, -1 ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            client.syncDisk().syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactly(
+                new TestMessage( 1, "p7" ),
+                new TestMessage( 2, "p2" ),
+                new TestMessage( 1, "legacy" ),
+                new TestMessage( 1, "p-3" ) );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
     public void testKernel() {
         KernelFixture kernelFixture = new KernelFixture(
             new TestDirectoryFixture(),

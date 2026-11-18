@@ -41,6 +41,11 @@ public class Buffer implements Serializable {
     public final ProtocolVersion protocolVersion;
     private final byte[] data;
     public LogId id;
+    /**
+     * name of the {@link BufferConfigurationMap} configuration the buffer was taken for ( set by {@link Buffers} ),
+     * resolves the runtime parameters of the buffer ( priority ) at send time; null - no configuration
+     */
+    String configuration;
     private int position = DIGESTION_POSITION;
     /**
      * not volatile: read/written only under the slot lock ( Buffers.Slot.lock ), like position

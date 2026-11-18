@@ -56,6 +56,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.ObjIntConsumer;
+import java.util.function.ToIntFunction;
+import java.util.function.UnaryOperator;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -119,6 +121,24 @@ public class Buffers implements Closeable {
     }
 
     /**
+     * configuration name -> priority
+     */
+    public Map<String, Integer> priorities() {
+        LinkedHashMap<String, Integer> result = new LinkedHashMap<>();
+        configurations.forEach( ( name, conf ) -> result.put( name, conf.priority ) );
+        return result;
+    }
+
+    /**
+     * the current priority of the configuration of the buffer ( a runtime change applies to the not yet sent buffers too )
+     */
+    public int priority( Buffer buffer ) {
+        String name = buffer.configuration;
+        BufferConfiguration conf = name != null ? configurations.get( name ) : null;
+        return conf != null ? conf.priority : BufferConfiguration.DEFAULT_PRIORITY;
+    }
+
+    /**
      * Runtime change of the buffer size of a configuration. The next buffer of every LogId of this configuration is
      * created with the new size; the current non-empty buffer of a LogId is made ready (sent) on its next put.
      */
@@ -133,9 +153,34 @@ public class Buffers implements Closeable {
         changeBufferSize( null, bufferSize );
     }
 
+    /**
+     * Runtime change of the priority of a configuration, applied to every not yet sent buffer of the configuration
+     * ( current and ready ) - the priority is resolved when the buffer is sent; the buffers are not re-created.
+     */
+    public void setPriority( String name, int priority ) {
+        changeConfiguration( name, "priority", conf -> conf.priority, conf -> conf.withPriority( priority ), false );
+    }
+
+    /**
+     * {@link #setPriority(String, int)} for all configurations
+     */
+    public void setPriority( int priority ) {
+        changeConfiguration( null, "priority", conf -> conf.priority, conf -> conf.withPriority( priority ), false );
+    }
+
     private void changeBufferSize( String name, int bufferSize ) {
         if( bufferSize <= 0 ) throw new IllegalArgumentException( "bufferSize must be > 0, but " + bufferSize );
 
+        changeConfiguration( name, "bufferSize", conf -> conf.bufferSize, conf -> conf.withBufferSize( bufferSize ), true );
+    }
+
+    /**
+     * copy-on-write change of the configuration name ( null - all )
+     *
+     * @param recreate the buffers of the changed configurations are re-created ( see {@link #generation} )
+     */
+    private void changeConfiguration( String name, String parameter, ToIntFunction<BufferConfiguration> value,
+                                      UnaryOperator<BufferConfiguration> change, boolean recreate ) {
         configurationLock.lock();
         try {
             Map<String, BufferConfiguration> current = configurations;
@@ -145,16 +190,20 @@ public class Buffers implements Closeable {
             LinkedHashMap<String, BufferConfiguration> updated = new LinkedHashMap<>();
             current.forEach( ( n, conf ) -> {
                 if( name == null || name.equals( n ) ) {
-                    if( conf.bufferSize != bufferSize ) log.info( "buffer configuration '{}' bufferSize {} -> {}", n, conf.bufferSize, bufferSize );
-                    updated.put( n, new BufferConfiguration( bufferSize, conf.pattern ) );
+                    BufferConfiguration changed = change.apply( conf );
+                    if( value.applyAsInt( conf ) != value.applyAsInt( changed ) )
+                        log.info( "buffer configuration '{}' {} {} -> {}", n, parameter, value.applyAsInt( conf ), value.applyAsInt( changed ) );
+                    updated.put( n, changed );
                 } else {
                     updated.put( n, conf );
                 }
             } );
 
             configurations = Collections.unmodifiableMap( updated );
-            cache.retainSizes( sizes( updated ) );
-            generation++;
+            if( recreate ) {
+                cache.retainSizes( sizes( updated ) );
+                generation++;
+            }
         } finally {
             configurationLock.unlock();
         }
@@ -184,7 +233,7 @@ public class Buffers implements Closeable {
 
             int currentGeneration = generation;
             if( stripe.generation != currentGeneration ) {
-                stripe.conf = findConfiguration( id );
+                stripe.configure( findConfiguration( id ) );
                 stripe.generation = currentGeneration;
                 Buffer current = stripe.buffer;
                 if( current != null && current.capacity() != stripe.conf.bufferSize ) {
@@ -197,7 +246,7 @@ public class Buffers implements Closeable {
 
             Buffer b = stripe.buffer;
             if( b == null ) {
-                b = cache.get( id, protocolVersion, bufferSize, slot.header );
+                b = cache.get( id, protocolVersion, bufferSize, slot.header, stripe.confName );
             }
 
             if( bufferSize - b.headerLength() < length )
@@ -205,7 +254,7 @@ public class Buffers implements Closeable {
 
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
-                b = cache.get( id, protocolVersion, bufferSize, slot.header );
+                b = cache.get( id, protocolVersion, bufferSize, slot.header, stripe.confName );
             }
 
             b.put( buffer, offset, length );
@@ -239,9 +288,12 @@ public class Buffers implements Closeable {
         return stripe;
     }
 
-    private BufferConfiguration findConfiguration( LogId id ) {
+    /**
+     * @return configuration name -&gt; configuration
+     */
+    private Map.Entry<String, BufferConfiguration> findConfiguration( LogId id ) {
         for( var conf : configurations.entrySet() ) {
-            if( conf.getValue().pattern.matcher( id.logType ).find() ) return conf.getValue();
+            if( conf.getValue().pattern.matcher( id.logType ).find() ) return conf;
         }
         throw new IllegalStateException( "Pattern for " + id + " not found" );
     }
@@ -392,7 +444,7 @@ public class Buffers implements Closeable {
          */
         volatile int width = 1;
 
-        Slot( BufferConfiguration conf, byte[] header, int generation, int stripes ) {
+        Slot( Map.Entry<String, BufferConfiguration> conf, byte[] header, int generation, int stripes ) {
             this.header = header;
             this.stripes = new Stripe[stripes];
             for( int i = 0; i < stripes; i++ ) this.stripes[i] = new Stripe( conf, generation );
@@ -405,13 +457,19 @@ public class Buffers implements Closeable {
     @ToString( exclude = { "lock" } )
     private static final class Stripe {
         final ReentrantLock lock = new ReentrantLock();
+        String confName;
         BufferConfiguration conf;
         int generation;
         Buffer buffer;
 
-        Stripe( BufferConfiguration conf, int generation ) {
-            this.conf = conf;
+        Stripe( Map.Entry<String, BufferConfiguration> conf, int generation ) {
+            configure( conf );
             this.generation = generation;
+        }
+
+        void configure( Map.Entry<String, BufferConfiguration> conf ) {
+            this.confName = conf.getKey();
+            this.conf = conf.getValue();
         }
     }
 
@@ -459,21 +517,22 @@ public class Buffers implements Closeable {
          */
         private Set<Integer> sizes = Set.of();
 
-        private Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize, byte[] header ) {
+        private Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize, byte[] header, String configuration ) {
+            Buffer buffer;
             lock.lock();
             try {
                 Queue<Buffer> list = cache.computeIfAbsent( bufferSize, bs -> new ArrayDeque<>() );
 
-                if( list.isEmpty() ) {
-                    return new Buffer( bufferSize, id, protocolVersion, header );
-                } else {
-                    Buffer buffer = list.poll();
-                    buffer.reset( id, header );
-                    return buffer;
-                }
+                buffer = list.poll();
             } finally {
                 lock.unlock();
             }
+
+            if( buffer == null ) buffer = new Buffer( bufferSize, id, protocolVersion, header );
+            else buffer.reset( id, header );
+            buffer.configuration = configuration;
+
+            return buffer;
         }
 
         /**

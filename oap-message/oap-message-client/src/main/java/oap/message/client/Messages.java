@@ -31,23 +31,38 @@ import oap.util.ByteSequence;
 import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 class Messages {
-    final LinkedBlockingQueue<MessageInfo> ready = new LinkedBlockingQueue<>();
+    /**
+     * higher priority first, FIFO within the same priority
+     */
+    private static final Comparator<MessageInfo> ORDER = Comparator
+        .comparingInt( ( MessageInfo mi ) -> mi.message.priority ).reversed()
+        .thenComparingLong( mi -> mi.seq );
+
+    final PriorityBlockingQueue<MessageInfo> ready = new PriorityBlockingQueue<>( 64, ORDER );
     final LinkedBlockingQueue<RetryInfo> retry = new LinkedBlockingQueue<>();
     final ConcurrentHashMap<ByteSequence, MessageInfo> inProgress = new ConcurrentHashMap<>();
+    private final AtomicLong sequence = new AtomicLong();
 
     public void add( Message message ) {
-        ready.add( new MessageInfo( message, DateTimeUtils.currentTimeMillis() ) );
+        add( new MessageInfo( message, DateTimeUtils.currentTimeMillis() ) );
     }
 
+    /**
+     * a re-added ( retried ) message goes to the tail of its priority
+     */
     public void add( MessageInfo messageInfo ) {
+        messageInfo.seq = sequence.incrementAndGet();
         ready.add( messageInfo );
     }
 
@@ -147,6 +162,10 @@ class Messages {
         public final Message message;
         public final long startTime;
         public int retryCount;
+        /**
+         * order within the priority, assigned by {@link Messages#add(MessageInfo)} before the message enters the ready queue
+         */
+        long seq;
 
         MessageInfo( Message message, long startTime ) {
             this.message = message;

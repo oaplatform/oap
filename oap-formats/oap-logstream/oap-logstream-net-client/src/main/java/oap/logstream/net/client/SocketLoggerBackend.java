@@ -165,6 +165,28 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     }
 
     /**
+     * configuration name ({@link BufferConfigurationMap}) -&gt; message priority ( higher - sent earlier )
+     */
+    public Map<String, Integer> getPriorities() {
+        return buffers.priorities();
+    }
+
+    /**
+     * runtime change, applied starting from the next {@link #sendAsync()} to all not yet sent buffers of the configuration;
+     * the messages already passed to the {@link MessageSender} keep their priority
+     */
+    public void setPriority( String configurationName, int priority ) {
+        buffers.setPriority( configurationName, priority );
+    }
+
+    /**
+     * {@link #setPriority(String, int)} for all configurations
+     */
+    public void setPriority( int priority ) {
+        buffers.setPriority( priority );
+    }
+
+    /**
      * runtime change, applied starting from the next {@link #availabilityReport()}
      */
     public void setMaxBuffers( int maxBuffers ) {
@@ -253,9 +275,10 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
             int workers = workers( sendThreads );
             BufferCompressor[] compressors = this.compressors;
             buffers.forEachReadyData( sendExecutor, workers, ( b, worker ) -> {
-                log.trace( "Sending {} {}/{}", b, compression, level );
+                int priority = buffers.priority( b );
+                log.trace( "Sending {} {}/{} priority {}", b, compression, level, priority );
                 byte[] data = compressors[worker].compress( b, compression, level );
-                sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V5.version, data, 0, data.length );
+                sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V5.version, priority, data, 0, data.length );
             } );
             log.trace( "Data sent to server" );
             return true;

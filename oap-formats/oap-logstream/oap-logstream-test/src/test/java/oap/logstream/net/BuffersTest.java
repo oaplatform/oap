@@ -220,6 +220,75 @@ public class BuffersTest {
     }
 
     /**
+     * the first configuration in the order of insertion wins ( "OTHER" goes before "LOG" in a HashMap )
+     */
+    @Test
+    public void firstMatchingConfigurationWins() {
+        Buffers buffers = new Buffers( BufferConfigurationMap.custom(
+            c( "LOG", "^log$", header + 2 ),
+            c( "OTHER", ".*", header + 4 )
+        ) );
+
+        assertThat( buffers.bufferSizes().keySet() ).containsExactly( "LOG", "OTHER" );
+
+        buffers.put( new LogId( "log", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 1 } );
+        buffers.put( new LogId( "other", Map.of(), HEADERS, TYPES ), BINARY_V2, new byte[] { 2 } );
+
+        assertThat( readyData( buffers ) ).containsExactlyInAnyOrder(
+            tuple( "log", new byte[] { 1 }, header + 2 ),
+            tuple( "other", new byte[] { 2 }, header + 4 )
+        );
+    }
+
+    /**
+     * (logType, data, priority) of the ready buffers, the buffers are released to the pool
+     */
+    private static List<org.assertj.core.groups.Tuple> readyPriorities( Buffers buffers ) {
+        List<org.assertj.core.groups.Tuple> result = new ArrayList<>();
+        buffers.forEachReadyData( b -> result.add( tuple( b.id.logType,
+            Arrays.copyOfRange( b.data(), b.headerLength(), b.length() ), buffers.priority( b ) ) ) );
+        return result;
+    }
+
+    @Test
+    public void priority() {
+        Buffers buffers = new Buffers( BufferConfigurationMap.custom(
+            __( "x_y", new BufferConfigurationMap.BufferConfiguration( header + 2, Pattern.compile( ".+y" ), 5 ) ),
+            c( "x_z", ".+z", header + 4 )
+        ) );
+        LogId y = new LogId( "x/y", Map.of(), HEADERS, TYPES );
+        LogId z = new LogId( "x/z", Map.of(), HEADERS, TYPES );
+
+        assertThat( buffers.priorities() ).containsOnly( Map.entry( "x_y", 5 ), Map.entry( "x_z", 0 ) );
+
+        buffers.put( y, BINARY_V2, new byte[] { 1, 2 } );
+        buffers.put( y, BINARY_V2, new byte[] { 3 } ); // x/y {1, 2} is ready
+        buffers.put( z, BINARY_V2, new byte[] { 11 } );
+
+        // applied to the ready and the current buffers, the buffers are not re-created
+        buffers.setPriority( "x_z", 10 );
+        buffers.put( z, BINARY_V2, new byte[] { 12 } );
+        assertThat( buffers.priorities() ).containsOnly( Map.entry( "x_y", 5 ), Map.entry( "x_z", 10 ) );
+        assertThat( buffers.bufferSizes() ).containsOnly( Map.entry( "x_y", header + 2 ), Map.entry( "x_z", header + 4 ) );
+
+        assertThat( readyPriorities( buffers ) ).containsExactlyInAnyOrder(
+            tuple( "x/y", new byte[] { 1, 2 }, 5 ),
+            tuple( "x/y", new byte[] { 3 }, 5 ),
+            tuple( "x/z", new byte[] { 11, 12 }, 10 )
+        );
+
+        buffers.setPriority( -1 );
+        assertThat( buffers.priorities() ).containsOnly( Map.entry( "x_y", -1 ), Map.entry( "x_z", -1 ) );
+
+        // a priority change keeps the buffer size, a buffer size change keeps the priority
+        buffers.setBufferSize( "x_y", header + 8 );
+        assertThat( buffers.priorities() ).containsOnly( Map.entry( "x_y", -1 ), Map.entry( "x_z", -1 ) );
+        assertThat( buffers.bufferSizes() ).containsOnly( Map.entry( "x_y", header + 8 ), Map.entry( "x_z", header + 4 ) );
+
+        assertThatThrownBy( () -> buffers.setPriority( "unknown", 1 ) ).isInstanceOf( IllegalArgumentException.class );
+    }
+
+    /**
      * the configuration map passed to the constructor is copied
      */
     @Test

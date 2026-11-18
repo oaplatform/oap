@@ -90,6 +90,10 @@ public class MessageSender implements Closeable, AutoCloseable {
     public static final String FAILURE_IO_STATE = "IO";
     public static final String FAILURE_MESSAGES_STATE = "MESSAGES";
     public static final String FAILURE_SHUTDOWN_STATE = "SHUTDOWN";
+    /**
+     * the ready messages are sent in the order of priority ( higher first ), FIFO within the same priority
+     */
+    public static final int DEFAULT_PRIORITY = 0;
     private static final Pair<MessageStatus, Short> STATUS_OK = Pair.__( MessageStatus.OK, MessageProtocol.STATUS_OK );
     public final Object syncDiskLock = new Object();
     public final String host;
@@ -188,8 +192,15 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public <T> MessageSender send( byte messageType, short version, T data, ContentWriter<T> writer ) {
+        return send( messageType, version, DEFAULT_PRIORITY, data, writer );
+    }
+
+    /**
+     * @param priority higher - sent earlier; messages of the same priority are sent in the order of sending
+     */
+    public <T> MessageSender send( byte messageType, short version, int priority, T data, ContentWriter<T> writer ) {
         byte[] bytes = writer.write( data );
-        return send( messageType, version, bytes, 0, bytes.length );
+        return send( messageType, version, priority, bytes, 0, bytes.length );
     }
 
     public MessageSender send( byte messageType, byte[] data, int offset, int length ) {
@@ -197,11 +208,18 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public MessageSender send( byte messageType, short version, byte[] data, int offset, int length ) {
+        return send( messageType, version, DEFAULT_PRIORITY, data, offset, length );
+    }
+
+    /**
+     * @param priority higher - sent earlier; messages of the same priority are sent in the order of sending
+     */
+    public MessageSender send( byte messageType, short version, int priority, byte[] data, int offset, int length ) {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
         byte[] md5 = DigestUtils.getMd5Digest().digest( data );
-        Message message = new Message( clientId, messageType, version, ByteSequence.of( md5 ), data, offset, length );
+        Message message = new Message( clientId, messageType, version, priority, ByteSequence.of( md5 ), data, offset, length );
         messages.add( message );
 
         return this;
@@ -252,11 +270,12 @@ public class MessageSender implements Closeable, AutoCloseable {
             Path parentDirectory = directory
                 .resolve( Long.toHexString( clientId ) )
                 .resolve( String.valueOf( Byte.toUnsignedInt( message.messageType ) ) );
-            Path tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin.tmp" );
+            String fileName = MessageFileName.of( message );
+            Path tmpMsgPath = parentDirectory.resolve( fileName + ".bin.tmp" );
             log.debug( "[{}] writing unsent message to {}", uniqueName, tmpMsgPath );
             try {
                 Files.write( tmpMsgPath, message.data, ContentWriter.ofBytes() );
-                Path msgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin" );
+                Path msgPath = parentDirectory.resolve( fileName + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
                 log.error( "[{}] type: {}, md5: {}, data: {}",
@@ -523,18 +542,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                                     continue;
                                 }
 
-                                String md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
-                                String md5Hex;
-                                short version;
-                                int versionStart = md5HexWithVersion.lastIndexOf( '-' );
-                                if( versionStart > 0 ) {
-                                    version = Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
-                                    md5Hex = md5HexWithVersion.substring( 0, versionStart );
-                                } else {
-                                    version = 1;
-                                    md5Hex = md5HexWithVersion;
-                                }
-                                ByteSequence md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
+                                MessageFileName fileName = MessageFileName.parse( messagePath );
 
                                 Path lockFile;
 
@@ -547,10 +555,12 @@ public class MessageSender implements Closeable, AutoCloseable {
                                         try {
                                             byte[] data = Files.read( messagePath, ContentReader.ofBytes() );
 
-                                            log.info( "[{}] client id {} message type {} md5 {}",
-                                                uniqueName, msgClientId, MessageProtocol.messageTypeToString( messageType ), md5Hex );
+                                            log.info( "[{}] client id {} message type {} md5 {} priority {}",
+                                                uniqueName, msgClientId, MessageProtocol.messageTypeToString( messageType ),
+                                                fileName.md5Hex(), fileName.priority() );
 
-                                            Message message = new Message( clientId, messageType, version, md5, data );
+                                            Message message = new Message( clientId, messageType, fileName.version(), fileName.priority(),
+                                                ByteSequence.of( Hex.decodeHex( fileName.md5Hex() ) ), data );
                                             messages.add( message );
 
                                             Files.delete( messagePath );
@@ -581,14 +591,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             String messageFile = messagePath.toString();
             if( !messageFile.endsWith( ".bin" ) && !messageFile.endsWith( ".lock" ) ) return false;
 
-            String md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
-            int versionStart = md5HexWithVersion.lastIndexOf( '-' );
-            if( versionStart > 0 ) {
-                Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
-                ByteSequence.of( Hex.decodeHex( md5HexWithVersion.substring( 0, versionStart ) ) );
-            } else {
-                ByteSequence.of( Hex.decodeHex( md5HexWithVersion ) );
-            }
+            Hex.decodeHex( MessageFileName.parse( messagePath ).md5Hex() );
 
             return true;
         } catch( DecoderException | NumberFormatException e ) {

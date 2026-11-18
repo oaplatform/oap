@@ -24,18 +24,23 @@
 
 package oap.logstream.net;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Pair;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * configuration name -&gt; configuration; the first configuration ( in the order of insertion ) whose pattern matches
+ * the logType wins
+ */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
-public final class BufferConfigurationMap extends HashMap<String, BufferConfigurationMap.BufferConfiguration> {
+public final class BufferConfigurationMap extends LinkedHashMap<String, BufferConfigurationMap.BufferConfiguration> {
     private static final Pattern ALL = Pattern.compile( ".*" );
 
     private BufferConfigurationMap() {
@@ -64,9 +69,35 @@ public final class BufferConfigurationMap extends HashMap<String, BufferConfigur
 
     @ToString
     @EqualsAndHashCode
-    @AllArgsConstructor
     public static final class BufferConfiguration {
+        public static final int DEFAULT_PRIORITY = 0;
+
         public final int bufferSize;
         public final Pattern pattern;
+        /**
+         * message priority of the buffers of this configuration: higher - sent earlier ( oap-message MessageSender )
+         */
+        public final int priority;
+
+        public BufferConfiguration( int bufferSize, Pattern pattern ) {
+            this( bufferSize, pattern, DEFAULT_PRIORITY );
+        }
+
+        @JsonCreator
+        public BufferConfiguration( @JsonProperty( "bufferSize" ) int bufferSize,
+                                    @JsonProperty( "pattern" ) Pattern pattern,
+                                    @JsonProperty( "priority" ) int priority ) {
+            this.bufferSize = bufferSize;
+            this.pattern = pattern;
+            this.priority = priority;
+        }
+
+        public BufferConfiguration withBufferSize( int bufferSize ) {
+            return new BufferConfiguration( bufferSize, pattern, priority );
+        }
+
+        public BufferConfiguration withPriority( int priority ) {
+            return new BufferConfiguration( bufferSize, pattern, priority );
+        }
     }
 }
