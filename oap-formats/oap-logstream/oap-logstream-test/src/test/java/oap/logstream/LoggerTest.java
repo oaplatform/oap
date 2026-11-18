@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.compression.Compression;
 import oap.http.server.nio.NioHttpServer;
 import oap.logstream.disk.DiskLoggerBackend;
+import oap.logstream.disk.LogstreamException;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.logstream.net.BufferConfigurationMap;
 import oap.logstream.net.client.SocketLoggerBackend;
@@ -40,6 +41,7 @@ import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
+import oap.util.Result;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
@@ -48,6 +50,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import static oap.io.IoStreams.Encoding.GZIP;
@@ -249,6 +252,70 @@ public class LoggerTest extends Fixtures {
             .containsExactlyInAnyOrderEntriesOf( lineData1, lineData2 );
         assertRowBinaryFile( testDirectoryFixture.testPath( prefix + ".rb.zst" ), ZSTD )
             .containsExactlyInAnyOrderEntriesOf( lineData1, lineData2, lineData1 );
+    }
+
+    @Test
+    public void netPriority() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        byte[] line = RowBinaryUtils.line( List.of( "12345678" ) );
+        String[] headers = new String[] { "REQUEST_ID" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
+
+        BufferConfigurationMap configurations = BufferConfigurationMap.custom(
+            __( "LOG", new BufferConfigurationMap.BufferConfiguration( 256, Pattern.compile( "^log$" ) ) ),
+            __( "OTHER", new BufferConfigurationMap.BufferConfiguration( 512, Pattern.compile( ".*" ), 1 ) ) );
+
+        List<String> received = new CopyOnWriteArrayList<>();
+        AbstractLoggerBackend serverBackend = new AbstractLoggerBackend() {
+            @Override
+            public Result<Void, LogstreamException> log( LogStreamProtocol.ProtocolVersion version, Map<String, String> properties, String logType,
+                                                           String[] h, byte[][] t, byte[] buffer, int offset, int length ) {
+                received.add( logType );
+                return Result.success( null );
+            }
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public AvailabilityReport availabilityReport() {
+                return new AvailabilityReport( AvailabilityReport.State.OPERATIONAL );
+            }
+        };
+
+        try( SocketLoggerServer server = new SocketLoggerServer( serverBackend );
+             NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
+             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, configurations, -1 ) ) {
+
+            mServer.start();
+            messageHttpHandler.preStart();
+            client.start();
+
+            Logger logger = new Logger( clientBackend );
+
+            assertThat( clientBackend.getPriorities() ).containsOnly( Map.entry( "LOG", 0 ), Map.entry( "OTHER", 1 ) );
+
+            logger.log( Map.of(), "other", headers, types, line );
+            logger.log( Map.of(), "log", headers, types, line );
+            clientBackend.sendAsync();
+            client.syncMemory();
+            assertThat( received ).containsExactly( "other", "log" );
+
+            // runtime change, applied to the current buffers
+            received.clear();
+            logger.log( Map.of(), "other", headers, types, line );
+            logger.log( Map.of(), "log", headers, types, line );
+            clientBackend.setPriority( "LOG", 10 );
+            assertThat( clientBackend.getPriorities() ).containsOnly( Map.entry( "LOG", 10 ), Map.entry( "OTHER", 1 ) );
+            clientBackend.sendAsync();
+            client.syncMemory();
+            assertThat( received ).containsExactly( "log", "other" );
+        }
     }
 
     @Test

@@ -37,14 +37,19 @@ final class Message {
     public final short version;
     public final long clientId;
     public final byte[] data;
+    /**
+     * higher - sent earlier, see {@link MessageSender#DEFAULT_PRIORITY}
+     */
+    public final int priority;
 
-    Message( long clientId, byte messageType, short version, ByteSequence md5, byte[] data, int from, int length ) {
-        this( clientId, messageType, version, md5, Arrays.copyOfRange( data, from, from + length ) );
+    Message( long clientId, byte messageType, short version, int priority, ByteSequence md5, byte[] data, int from, int length ) {
+        this( clientId, messageType, version, priority, md5, Arrays.copyOfRange( data, from, from + length ) );
     }
 
-    Message( long clientId, byte messageType, short version, ByteSequence md5, byte[] data ) {
+    Message( long clientId, byte messageType, short version, int priority, ByteSequence md5, byte[] data ) {
         this.clientId = clientId;
         this.version = version;
+        this.priority = priority;
         this.md5 = md5;
         this.messageType = messageType;
         this.data = data;

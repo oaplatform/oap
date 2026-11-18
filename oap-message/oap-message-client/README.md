@@ -21,6 +21,20 @@ sender.send( MY_MESSAGE_TYPE, bytes, 0, bytes.length );
 
 `send` enqueues the message in the in-memory ready queue and returns immediately — it does not block on network I/O.
 
+### Priority
+
+```java
+// higher priority - sent earlier; default MessageSender.DEFAULT_PRIORITY = 0, negative values are allowed
+sender.send( MY_MESSAGE_TYPE, (short) 1, 10, payload, ContentWriter.ofJson() );
+sender.send( MY_MESSAGE_TYPE, (short) 1, 10, bytes, 0, bytes.length );
+```
+
+The ready queue is drained strictly by priority: a message is taken only when no message of a higher priority is ready.
+Messages of the same priority are taken in the order of `send`. A retried message keeps its priority and goes to the tail of
+its priority. The priority survives the spill to disk (`close()`) and the reload (`syncDisk()`).
+
+Strict priority means a steady stream of high-priority messages delays the lower ones until it stops.
+
 ### Flushing
 
 ```java
@@ -33,7 +47,7 @@ sender.syncDisk();
 
 Both methods are called automatically when `start()` is used with the default scheduler configuration.
 
-`syncMemory()` drains the ready queue until it is empty. With `concurrency = 1` (default) messages are delivered one by one; with `concurrency = N` the run starts `N` workers on virtual threads that poll the shared ready queue in parallel. `syncMemory()` returns only after all workers finish, so scheduled runs never overlap. Delivery order is not guaranteed in either mode (retried messages are re-queued at the tail).
+`syncMemory()` drains the ready queue until it is empty. With `concurrency = 1` (default) messages are delivered one by one; with `concurrency = N` the run starts `N` workers on virtual threads that poll the shared ready queue in parallel. `syncMemory()` returns only after all workers finish, so scheduled runs never overlap. Messages are taken from the ready queue by [priority](#priority); with `concurrency = 1` they are delivered in that order, with `concurrency = N` the delivery of concurrently taken messages may interleave. Retried messages are re-queued at the tail of their priority.
 
 ### Lifecycle
 
@@ -89,9 +103,12 @@ When everything is fine the report is `OPERATIONAL` with empty `subsystemStates`
 <directory>/
   <clientId-hex>/
     <messageType>/
-      <md5Hex>-<version>.bin        ← persisted message payload
-      <md5Hex>-<version>.bin.lock   ← per-file lock created during reload
+      <md5Hex>-<version>.bin              ← persisted message payload, default priority
+      <md5Hex>-<version>-<priority>.bin   ← persisted message payload, priority != 0 (e.g. `…-1-10.bin`, `…-1--5.bin`)
+      <md5Hex>-<version>[-<priority>].lock ← per-file lock created during reload
 ```
+
+A default-priority message keeps the old file name, so the files are readable by the older versions.
 
 Messages are written atomically (`.bin.tmp` → `.bin`) and deleted once delivered or reloaded into the queue.
 
