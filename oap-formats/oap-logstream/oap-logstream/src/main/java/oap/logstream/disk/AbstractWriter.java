@@ -155,13 +155,15 @@ public abstract class AbstractWriter implements Closeable {
         lock.lock();
         try {
             if( logFile != null ) {
-                log.debug( "refresh {}...", lastPattern );
+                log.trace( "refresh {}...", lastPattern );
             }
 
             String currentPattern = currentPattern();
 
             if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
-                log.trace( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+                if( log.isTraceEnabled() ) {
+                    log.trace( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+                }
 
                 String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
                 if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
@@ -169,7 +171,9 @@ public abstract class AbstractWriter implements Closeable {
                 }
                 currentPattern = currentPattern();
 
-                log.debug( "force {} change pattern from '{}' to '{}'", forceSync, this.lastPattern, currentPattern );
+                if( log.isTraceEnabled() ) {
+                    log.trace( "force {} change pattern from '{}' to '{}'", forceSync, this.lastPattern, currentPattern );
+                }
                 closeOutput();
 
                 lastPattern = currentPattern;
