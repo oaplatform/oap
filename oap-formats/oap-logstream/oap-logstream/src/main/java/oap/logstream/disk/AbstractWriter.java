@@ -56,6 +56,10 @@ public abstract class AbstractWriter implements Closeable {
     protected final int maxVersions;
     protected final String hostname;
     protected final FileWriterNotification notification;
+    /**
+     * shard index of the (LogId, codec) key; shard k &gt; 0 adds {@code -s<k>} before the codec extension
+     */
+    protected final int shard;
     protected final ReentrantLock lock = new ReentrantLock();
     protected LogFile logFile;
     protected String lastPattern;
@@ -65,6 +69,13 @@ public abstract class AbstractWriter implements Closeable {
 
     protected AbstractWriter( TemplateEngine templateEngine, LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
                               int maxVersions, String hostname, FileWriterNotification notification ) {
+        this( templateEngine, logFormat, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification, 0 );
+    }
+
+    protected AbstractWriter( TemplateEngine templateEngine, LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
+                              int maxVersions, String hostname, FileWriterNotification notification, int shard ) {
+        Preconditions.checkArgument( shard >= 0, "shard must not be negative: %s", shard );
+        this.shard = shard;
         this.templateEngine = templateEngine;
         this.logFormat = logFormat;
         this.logDirectory = logDirectory;
@@ -83,8 +94,15 @@ public abstract class AbstractWriter implements Closeable {
         log.debug( "spawning {}", this );
     }
 
-    @SneakyThrows
     static String currentPattern( TemplateEngine templateEngine, LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time, String hostname ) {
+        return currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, version, time, hostname, 0 );
+    }
+
+    /**
+     * @param shard k &gt; 0 adds {@code -s<k>} before the codec extension; 0 - no suffix
+     */
+    @SneakyThrows
+    static String currentPattern( TemplateEngine templateEngine, LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time, String hostname, int shard ) {
         String pattern = filePattern;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
 
@@ -93,7 +111,7 @@ public abstract class AbstractWriter implements Closeable {
             case ROW_BINARY_LZ4, ROW_BINARY_ZSTD -> logFormat;
             case ROW_BINARY_GZ, TSV_GZ, TSV_ZSTD, PARQUET -> LogFormat.ROW_BINARY_GZ;
         };
-        pattern = pattern + "." + fileFormat.extension;
+        pattern = pattern + ( shard == 0 ? "" : "-s" + shard ) + "." + fileFormat.extension;
 
         LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
 
@@ -114,7 +132,7 @@ public abstract class AbstractWriter implements Closeable {
             return cache.pattern;
         }
 
-        String pattern = currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, version, new DateTime( now, DateTimeZone.UTC ), hostname );
+        String pattern = currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, version, new DateTime( now, DateTimeZone.UTC ), hostname, shard );
         patternCache = new PatternCache( minute, version, pattern );
         return pattern;
     }
@@ -137,13 +155,15 @@ public abstract class AbstractWriter implements Closeable {
         lock.lock();
         try {
             if( logFile != null ) {
-                log.debug( "refresh {}...", lastPattern );
+                log.trace( "refresh {}...", lastPattern );
             }
 
             String currentPattern = currentPattern();
 
             if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
-                log.trace( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+                if( log.isTraceEnabled() ) {
+                    log.trace( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+                }
 
                 String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
                 if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
@@ -151,7 +171,9 @@ public abstract class AbstractWriter implements Closeable {
                 }
                 currentPattern = currentPattern();
 
-                log.debug( "force {} change pattern from '{}' to '{}'", forceSync, this.lastPattern, currentPattern );
+                if( log.isTraceEnabled() ) {
+                    log.trace( "force {} change pattern from '{}' to '{}'", forceSync, this.lastPattern, currentPattern );
+                }
                 closeOutput();
 
                 lastPattern = currentPattern;
@@ -193,14 +215,46 @@ public abstract class AbstractWriter implements Closeable {
     }
 
     /**
-     * fdatasync of the data written without sync ({@link SyncMode#PERIODIC}, {@link SyncMode#ON_CLOSE})
+     * fdatasync of the data written without sync ({@link SyncMode#PERIODIC}, {@link SyncMode#ON_CLOSE}).
+     * A failed sync fails the file: it is closed without {@code .metadata.completed} at once,
+     * {@link FileWriterNotification#fileFailed(Path, Throwable)} is called, the next write goes to the next version.
      */
     public void sync() throws LoggerException {
         lock.lock();
         try {
-            if( logFile != null ) logFile.sync();
+            if( logFile != null ) try {
+                logFile.sync();
+            } catch( LoggerException e ) {
+                if( logFile.isFailed() ) failOutput( e );
+                throw e;
+            }
         } finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * under lock: the sync of the current file failed - closes it without {@code .metadata.completed}
+     * ({@link DiskLoggerBackend#recover()} repairs it on the next start) and notifies
+     */
+    protected void failOutput( Exception cause ) {
+        LogFile failed = logFile;
+        logFile = null;
+        try {
+            failed.closeQuietlyWithoutCompleted();
+        } finally {
+            fileFailed( failed.outFilename, cause );
+        }
+    }
+
+    private void fileFailed( Path outFilename, Exception cause ) {
+        log.error( "[{}] sync failed, the file is closed without completed, the next write goes to the next version: {}",
+            outFilename, cause.getMessage(), cause );
+        Metrics.counter( "logstream_logging_disk_sync_failures" ).increment();
+        if( notification != null ) try {
+            notification.fileFailed( outFilename, cause );
+        } catch( Exception e ) {
+            log.error( "[{}] fileFailed notification", outFilename, e );
         }
     }
 
@@ -208,7 +262,13 @@ public abstract class AbstractWriter implements Closeable {
         lock.lock();
         try {
             if( logFile != null ) try {
-                logFile.close();
+                try {
+                    logFile.close();
+                } catch( LoggerException e ) {
+                    // the sync on close failed: the file is closed without .completed
+                    if( logFile.isFailed() ) fileFailed( logFile.outFilename, e );
+                    throw e;
+                }
 
                 long fileSize = logFile.getDataSize();
                 log.trace( "closing output {} ({} bytes)", this, fileSize );

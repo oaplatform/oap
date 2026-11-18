@@ -97,7 +97,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public final Path logDirectory;
     public final Timestamp timestamp;
     public final int bufferSize;
-    public final LoadingCache<WriterKey, AbstractWriter> writers;
+    public final LoadingCache<WriterKey, WriterShards> writers;
     public final ScheduledExecutorService pool;
     public final String hostname;
     protected final TemplateEngine templateEngine;
@@ -119,6 +119,19 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * repair the files left without .metadata.completed by a crash on start, see {@link LogFile#recover()}
      */
     public boolean recoverOnStart = true;
+    /**
+     * the most files (shards) per (LogId, codec) written at the same time, 1..999; 1 - one file per key.
+     * Shard k &gt; 0 writes {@code <pattern>-s<k>.<codec extension>}. Read when the writers of a key are created.
+     */
+    public int maxShards = 1;
+    /**
+     * ms: the mean wait for a busy shard per window ({@link #refreshPeriod}) above which the active shards double
+     */
+    public long shardGrowWait = 5;
+    /**
+     * quiet windows ({@link #refreshPeriod}) in a row before the active shards drop by one
+     */
+    public int shardShrinkWindows = 30;
     public volatile boolean closed;
     private volatile UsableSpace usableSpace;
     private final Counter loggingCounter = Metrics.counter( "logstream_logging_disk_counter" );
@@ -152,17 +165,23 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             } )
             .build( new CacheLoader<>() {
                 @Override
-                public AbstractWriter load( WriterKey key ) {
+                public WriterShards load( WriterKey key ) {
                     LogId id = key.id();
                     FilePatternConfiguration fp = filePatternByType.getOrDefault( id.logType.toUpperCase(), new FilePatternConfiguration( filePattern ) );
+                    SyncMode syncMode = DiskLoggerBackend.this.syncMode;
 
-                    log.trace( "new writer id '{}' compression {} filePattern '{}'", id, key.compression(), fp );
+                    log.trace( "new writer id '{}' compression {} filePattern '{}' maxShards {}", id, key.compression(), fp, maxShards );
 
-                    return new RowBinaryWriter( templateEngine, key.compression(), syncMode, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
+                    return new WriterShards( id.logType + "/" + key.compression(), maxShards, syncMode,
+                        new ShardController( maxShards, MILLISECONDS.toNanos( shardGrowWait ), shardShrinkWindows ),
+                        shard -> new RowBinaryWriter( templateEngine, key.compression(), syncMode, DiskLoggerBackend.this.logDirectory, fp.path, id,
+                            bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this, shard ) );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
             writers, Cache::size );
+        Metrics.gauge( "logstream_logging_disk_shards", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
+            writers, c -> c.asMap().values().stream().mapToInt( WriterShards::activeShards ).sum() );
 
         pool = Executors.newScheduledThreadPool( 1, "disk-logger-backend" );
     }
@@ -172,6 +191,11 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         log.info( "file patterns by type {}", filePatternByType );
         log.info( "refreshInitDelay {} refreshPeriod {}", Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ) );
         log.info( "syncMode {} syncInterval {} recoverOnStart {}", syncMode, Dates.durationToString( syncInterval ), recoverOnStart );
+        log.info( "maxShards {} shardGrowWait {} shardShrinkWindows {}", maxShards, Dates.durationToString( shardGrowWait ), shardShrinkWindows );
+
+        Preconditions.checkArgument( maxShards >= 1 && maxShards <= 999, "maxShards must be 1..999: %s", maxShards );
+        Preconditions.checkArgument( shardGrowWait >= 0, "shardGrowWait must not be negative: %s", shardGrowWait );
+        Preconditions.checkArgument( shardShrinkWindows >= 1, "shardShrinkWindows must be positive: %s", shardShrinkWindows );
 
         filePatternValidation( "*", filePattern );
         filePatternByType.forEach( ( k, v ) -> filePatternValidation( k, v.path ) );
@@ -195,9 +219,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         if( !java.nio.file.Files.isDirectory( logDirectory ) ) return;
 
         Set<Path> open = new HashSet<>();
-        for( AbstractWriter writer : writers.asMap().values() ) {
-            Path file = writer.currentFile();
-            if( file != null ) open.add( file );
+        for( WriterShards writer : writers.asMap().values() ) {
+            open.addAll( writer.currentFiles() );
         }
 
         Set<Path> candidates = new LinkedHashSet<>();
@@ -254,7 +277,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      * fdatasync of the open files ({@link SyncMode#PERIODIC})
      */
     public void sync() {
-        for( AbstractWriter writer : writers.asMap().values() ) {
+        for( WriterShards writer : writers.asMap().values() ) {
             try {
                 writer.sync();
             } catch( Exception e ) {
@@ -313,7 +336,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
         loggingCounter.increment();
         loggingBuffers.record( length );
-        AbstractWriter writer = writers.get( new WriterKey( logId, compression ) );
+        WriterShards writer = writers.get( new WriterKey( logId, compression ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
@@ -341,12 +364,20 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     }
 
     /**
-     * @return the file currently open for writing for the log id and the compression, null - none
+     * @return the file currently open for writing for the log id and the compression in shard 0, null - none
      */
     @Nullable
     public LogFile getLogFile( LogId logId, LogStreamCompression compression ) {
-        AbstractWriter writer = writers.getIfPresent( new WriterKey( logId, compression ) );
+        WriterShards writer = writers.getIfPresent( new WriterKey( logId, compression ) );
         return writer != null ? writer.getLogFile() : null;
+    }
+
+    /**
+     * @return the files currently open for writing for the log id and the compression in all the shards
+     */
+    public List<LogFile> getLogFiles( LogId logId, LogStreamCompression compression ) {
+        WriterShards writer = writers.getIfPresent( new WriterKey( logId, compression ) );
+        return writer != null ? writer.getLogFiles() : List.of();
     }
 
     @Override
@@ -393,11 +424,12 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public void refresh( boolean forceSync ) {
         log.trace( "refresh forceSync {}", forceSync );
 
-        for( AbstractWriter writer : writers.asMap().values() ) {
+        for( WriterShards writer : writers.asMap().values() ) {
             try {
+                writer.adjust();
                 writer.refresh( forceSync );
             } catch( Exception e ) {
-                log.error( "Cannot refresh ", e );
+                log.error( "Cannot refresh {}", writer, e );
             }
         }
 
@@ -414,6 +446,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
             .add( "buffer", bufferSize )
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "writers", writers.size() )
+            .add( "maxShards", maxShards )
             .toString();
     }
 
@@ -421,6 +454,13 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public void fileClosed( Path outFilename ) {
         for( FileWriterNotification notification : notifications ) {
             notification.fileClosed( outFilename );
+        }
+    }
+
+    @Override
+    public void fileFailed( Path outFilename, Throwable cause ) {
+        for( FileWriterNotification notification : notifications ) {
+            notification.fileFailed( outFilename, cause );
         }
     }
 

@@ -45,7 +45,16 @@ public class RowBinaryWriter extends AbstractWriter {
 
     public RowBinaryWriter( TemplateEngine templateEngine, LogStreamCompression compression, SyncMode syncMode, Path logDirectory, String filePattern, LogId logId,
                             int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification ) {
-        super( templateEngine, compression.logFormat, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification );
+        this( templateEngine, compression, syncMode, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification, 0 );
+    }
+
+    /**
+     * @param shard shard index of the (LogId, codec) key: k &gt; 0 writes {@code <pattern>-s<k>.<codec extension>} with
+     *              the metadata property {@code SHARD=k}
+     */
+    public RowBinaryWriter( TemplateEngine templateEngine, LogStreamCompression compression, SyncMode syncMode, Path logDirectory, String filePattern, LogId logId,
+                            int bufferSize, Timestamp timestamp, int maxVersions, String hostname, FileWriterNotification notification, int shard ) {
+        super( templateEngine, compression.logFormat, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname, notification, shard );
         this.compression = compression;
         this.syncMode = syncMode;
         this.header = compressedHeader( logId, compression );
@@ -67,46 +76,63 @@ public class RowBinaryWriter extends AbstractWriter {
         }
     }
 
+    /**
+     * Appends the buffer to the file under the writer lock; with {@link SyncMode#ALWAYS} commits it outside the lock,
+     * so the messages written meanwhile share one force (group commit).
+     */
     @Override
     public String write( LogStreamProtocol.ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
-        boolean sync = syncMode == SyncMode.ALWAYS;
-
+        Pending pending;
         lock.lock();
         try {
-            refresh();
+            pending = append( protocolVersion, buffer, offset, length );
+        } finally {
+            lock.unlock();
+        }
+        if( syncMode == SyncMode.ALWAYS ) commit( pending );
+        return pending.filename();
+    }
 
-            ByteBuffer payload = ByteBuffer.wrap( buffer, offset, length );
+    /**
+     * Writes the buffer (page cache only), does not commit it. Must be called under {@link #lock}.
+     */
+    Pending append( LogStreamProtocol.ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+        refresh();
 
-            if( logFile == null ) {
-                Path filename = openNewFile();
+        ByteBuffer payload = ByteBuffer.wrap( buffer, offset, length );
 
-                log.trace( "[{}] write headers {} and {} bytes", filename, logId.headers, length );
-                try {
-                    logFile.append( sync, ByteBuffer.wrap( header ), payload );
-                } catch( LoggerException e ) {
-                    // nothing has been written: free the version
-                    log.error( "[{}] {}", filename, e.getMessage(), e );
-                    try {
-                        logFile.close();
-                    } catch( Exception closeError ) {
-                        e.addSuppressed( closeError );
-                    } finally {
-                        logFile.delete();
-                        logFile = null;
-                    }
-                    throw e;
-                }
+        if( logFile == null ) {
+            Path filename = openNewFile();
 
-                return filename.toString();
-            }
-
-            log.trace( "writing {} bytes to {}", length, this );
-
+            log.trace( "[{}] write headers {} and {} bytes", filename, logId.headers, length );
             try {
-                logFile.append( sync, payload );
+                return new Pending( logFile, logFile.write( ByteBuffer.wrap( header ), payload ), filename.toString() );
             } catch( LoggerException e ) {
+                // nothing has been written: free the version
+                log.error( "[{}] {}", filename, e.getMessage(), e );
+                try {
+                    logFile.close();
+                } catch( Exception closeError ) {
+                    e.addSuppressed( closeError );
+                } finally {
+                    logFile.delete();
+                    logFile = null;
+                }
+                throw e;
+            }
+        }
+
+        log.trace( "writing {} bytes to {}", length, this );
+
+        try {
+            return new Pending( logFile, logFile.write( payload ), logFile.outFilename.toString() );
+        } catch( LoggerException e ) {
+            log.error( "[{}] {}", logFile.outFilename, e.getMessage(), e );
+            if( syncMode == SyncMode.ALWAYS && logFile.isFailed() ) {
+                // a concurrent commit failed: drop the bytes nobody got an ACK for
+                abortOutput( e );
+            } else {
                 // the file is truncated to the last complete frame: close it, the next write goes to the next version
-                log.error( "[{}] {}", logFile.outFilename, e.getMessage(), e );
                 try {
                     closeOutput();
                 } catch( Exception closeError ) {
@@ -114,13 +140,51 @@ public class RowBinaryWriter extends AbstractWriter {
                 } finally {
                     logFile = null;
                 }
-                throw e;
             }
-
-            return logFile.outFilename.toString();
-        } finally {
-            lock.unlock();
+            throw e;
         }
+    }
+
+    /**
+     * Commits the pending write outside the lock. On failure the file (if it is still the current one) is truncated
+     * to the committed data, closed and the next write goes to the next version.
+     */
+    void commit( Pending pending ) throws LoggerException {
+        try {
+            pending.file().commit( pending.end() );
+        } catch( LoggerException e ) {
+            lock.lock();
+            try {
+                if( logFile == pending.file() ) {
+                    log.error( "[{}] {}", logFile.outFilename, e.getMessage(), e );
+                    abortOutput( e );
+                }
+            } finally {
+                lock.unlock();
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * under lock, after a failed commit: the bytes after committed belong to the messages that get an error
+     */
+    private void abortOutput( LoggerException cause ) {
+        try {
+            logFile.truncateToCommitted();
+            closeOutput();
+        } catch( Exception e ) {
+            cause.addSuppressed( e );
+            // not truncated: closed without .completed, recover() repairs it on the next start
+            if( logFile != null ) failOutput( cause );
+        }
+    }
+
+    /**
+     * a test hook
+     */
+    protected LogFile newLogFile( Path filename ) {
+        return new LogFile( filename );
     }
 
     /**
@@ -129,11 +193,13 @@ public class RowBinaryWriter extends AbstractWriter {
     private Path openNewFile() {
         while( true ) {
             Path filename = filename();
-            LogFile checkLogFile = new LogFile( filename );
+            LogFile checkLogFile = newLogFile( filename );
             if( !checkLogFile.exists() ) {
                 log.debug( "[{}] open new file v{}", filename, fileVersion );
                 String version = new LogIdTemplate( logId ).getHashWithVersion( fileVersion, Inet.hostname() );
-                logFile = checkLogFile.create( logId, Map.of( "VERSION", version ) );
+                logFile = checkLogFile.create( logId, shard == 0
+                    ? Map.of( "VERSION", version )
+                    : Map.of( "VERSION", version, "SHARD", String.valueOf( shard ) ) );
                 return filename;
             }
 
@@ -143,4 +209,11 @@ public class RowBinaryWriter extends AbstractWriter {
             refresh();
         }
     }
+
+    /**
+     * a write not committed yet
+     *
+     * @param end the end of its bytes in the file
+     */
+    record Pending( LogFile file, long end, String filename ) {}
 }
