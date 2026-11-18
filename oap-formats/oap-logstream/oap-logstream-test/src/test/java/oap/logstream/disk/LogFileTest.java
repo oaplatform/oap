@@ -11,11 +11,20 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -171,6 +180,115 @@ public class LogFileTest extends Fixtures {
 
         logFile.close();
         assertThat( Files.readString( file ) ).isEqualTo( "hello" );
+    }
+
+    /**
+     * the messages written while a force runs share the next one: fewer forces than messages, all of them committed
+     */
+    @Test
+    public void groupCommitSharesForce() throws Exception {
+        Path file = testDirectoryFixture.testPath( "file" );
+        TestLogFile logFile = ( TestLogFile ) new TestLogFile( file ).create( newLogId() );
+        logFile.forceDelayMillis = 50;
+
+        int count = 32;
+        ReentrantLock writerLock = new ReentrantLock();
+        try( ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor() ) {
+            List<Future<?>> futures = new ArrayList<>();
+            for( int i = 0; i < count; i++ ) {
+                String message = "m%02d;".formatted( i );
+                futures.add( executor.submit( () -> {
+                    long end;
+                    writerLock.lock();
+                    try {
+                        end = logFile.write( bytes( message ) );
+                    } finally {
+                        writerLock.unlock();
+                    }
+                    logFile.commit( end );
+                    return null;
+                } ) );
+            }
+            for( Future<?> future : futures ) future.get( 30, TimeUnit.SECONDS );
+        }
+
+        assertThat( logFile.committed() ).isEqualTo( logFile.written() ).isEqualTo( count * 4L );
+        assertThat( logFile.forces.get() ).isLessThan( count );
+        logFile.close();
+
+        String content = Files.readString( file );
+        assertThat( content ).hasSize( count * 4 );
+        for( int i = 0; i < count; i++ ) assertThat( content ).contains( "m%02d;".formatted( i ) );
+    }
+
+    @Test
+    public void commitAfterClose() {
+        LogFile logFile = new LogFile( testDirectoryFixture.testPath( "file" ) ).create( newLogId() );
+        long end = logFile.write( bytes( "hello" ) );
+        logFile.close();
+
+        logFile.commit( end );
+        assertThat( logFile.committed() ).isEqualTo( 5L );
+    }
+
+    @Test
+    public void commitFailureFailsFile() throws IOException {
+        LogFile logFile = new LogFile( testDirectoryFixture.testPath( "file" ) ).create( newLogId() );
+        long end = logFile.write( bytes( "hello" ) );
+
+        logFile.out.close();
+        assertThatThrownBy( () -> logFile.commit( end ) ).isInstanceOf( LoggerException.class );
+        assertThat( logFile.isFailed() ).isTrue();
+        assertThat( logFile.committed() ).isZero();
+
+        assertThatThrownBy( () -> logFile.write( bytes( "world" ) ) ).isInstanceOf( LoggerException.class );
+        assertThatThrownBy( () -> logFile.commit( end ) ).isInstanceOf( LoggerException.class );
+    }
+
+    @Test
+    public void truncateToCommitted() throws IOException {
+        Path file = testDirectoryFixture.testPath( "file" );
+        TestLogFile logFile = ( TestLogFile ) new TestLogFile( file ).create( newLogId() );
+        logFile.commit( logFile.write( bytes( "hello" ) ) );
+
+        long end = logFile.write( bytes( "world" ) );
+        logFile.failNext.set( new IOException( "force failed" ) );
+        assertThatThrownBy( () -> logFile.commit( end ) ).isInstanceOf( LoggerException.class );
+        assertThat( Files.size( file ) ).isEqualTo( 10L );
+
+        logFile.truncateToCommitted();
+        assertThat( Files.size( file ) ).isEqualTo( 5L );
+        assertThat( logFile.written() ).isEqualTo( 5L );
+        assertThat( logFile.hasUnsyncedData() ).isFalse();
+
+        logFile.close();
+        assertThat( Files.readString( file ) ).isEqualTo( "hello" );
+    }
+
+    /**
+     * a failed write truncates only its own bytes and does not fail the file: the bytes written before are committed
+     */
+    @Test
+    public void writeFailureKeepsEarlierBytesCommittable() throws IOException {
+        Path file = testDirectoryFixture.testPath( "file" );
+        Files.createDirectories( file.getParent() );
+        FailingFileChannel channel = new FailingFileChannel( FileChannel.open( file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE ) );
+        TestLogFile logFile = new TestLogFile( file, channel );
+
+        long end = logFile.write( bytes( "hello" ) );
+
+        channel.failWrites = true;
+        assertThatThrownBy( () -> logFile.write( bytes( "world" ) ) ).isInstanceOf( LoggerException.class );
+        assertThat( logFile.isFailed() ).isFalse();
+        assertThat( logFile.written() ).isEqualTo( 5L );
+
+        logFile.commit( end );
+        assertThat( logFile.committed() ).isEqualTo( 5L );
+
+        channel.failWrites = false;
+        logFile.commit( logFile.write( bytes( "!" ) ) );
+        logFile.close();
+        assertThat( Files.readString( file ) ).isEqualTo( "hello!" );
     }
 
     @Test

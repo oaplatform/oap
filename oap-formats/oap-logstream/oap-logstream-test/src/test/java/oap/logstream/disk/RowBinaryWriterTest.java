@@ -47,6 +47,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -265,6 +266,204 @@ public class RowBinaryWriterTest extends Fixtures {
             assertThat( v2 ).isNotEqualTo( v1 );
             assertThat( new LogFile( v2 ).getLogMetadata().getString( "VERSION" ) ).endsWith( "-2" );
         }
+    }
+
+    @Test
+    public void shardSuffix() throws IOException {
+        Dates.setTimeFixed( 2022, 3, 8, 21, 11 );
+        LogStreamCompression compression = LogStreamCompression.ZSTD;
+        byte[] content = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "a", 1L ) ) ) );
+        Path logs = testDirectoryFixture.testPath( "logs" );
+
+        Path shard0;
+        Path shard2;
+        try( RowBinaryWriter writer0 = new RowBinaryWriter( templateEngineFixture.templateEngine, compression, SyncMode.ALWAYS, logs, FILE_PATTERN, logId(), 1024, BPH_12, 20, "localhost", null, 0 );
+             RowBinaryWriter writer2 = new RowBinaryWriter( templateEngineFixture.templateEngine, compression, SyncMode.ALWAYS, logs, FILE_PATTERN, logId(), 1024, BPH_12, 20, "localhost", null, 2 ) ) {
+            shard0 = Path.of( writer0.write( CURRENT_PROTOCOL_VERSION, content, 0, content.length ) );
+            shard2 = Path.of( writer2.write( CURRENT_PROTOCOL_VERSION, content, 0, content.length ) );
+        }
+
+        assertThat( shard0.getFileName().toString() ).endsWith( "-1.rb.gz.rb.zst" );
+        assertThat( shard2.getFileName().toString() ).endsWith( "-1.rb.gz-s2.rb.zst" );
+        assertThat( shard2.getParent() ).isEqualTo( shard0.getParent() );
+
+        assertThat( new LogFile( shard0 ).getLogMetadata().getString( "SHARD" ) ).isNull();
+        assertThat( new LogFile( shard2 ).getLogMetadata().getString( "SHARD" ) ).isEqualTo( "2" );
+        assertThat( new LogFile( shard2 ).getLogMetadata().getString( "VERSION" ) )
+            .isEqualTo( new LogFile( shard0 ).getLogMetadata().getString( "VERSION" ) );
+        assertThat( new LogFile( shard0 ).isCompleted() ).isTrue();
+        assertThat( new LogFile( shard2 ).isCompleted() ).isTrue();
+    }
+
+    private RowBinaryWriter testWriter( LogStreamCompression compression, Path logs ) {
+        return testWriter( compression, SyncMode.ALWAYS, logs, null );
+    }
+
+    private RowBinaryWriter testWriter( LogStreamCompression compression, SyncMode syncMode, Path logs, FileWriterNotification notification ) {
+        return new RowBinaryWriter( templateEngineFixture.templateEngine, compression, syncMode, logs, FILE_PATTERN, logId(), 1024, BPH_12, 20, "localhost", notification ) {
+            @Override
+            protected LogFile newLogFile( Path filename ) {
+                return new TestLogFile( filename );
+            }
+        };
+    }
+
+    private static List<List<Object>> rows( LogStreamCompression compression, Path file ) throws IOException {
+        byte[] rb = Frames.decompress( compression, Files.readAllBytes( file ) );
+        return RowBinaryUtils.read( rb, 0, rb.length, null, null )._1;
+    }
+
+    /**
+     * a failed commit: the file is truncated to the committed data, completed, and the next buffer goes to the next version
+     */
+    @Test
+    public void commitFailureGoesToNextVersion() throws IOException {
+        Dates.setTimeFixed( 2022, 3, 8, 21, 11 );
+        LogStreamCompression compression = LogStreamCompression.ZSTD;
+
+        byte[] content1 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "a", 1L ) ) ) );
+        byte[] content2 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "b", 2L ) ) ) );
+        byte[] content3 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "c", 3L ) ) ) );
+
+        try( RowBinaryWriter writer = testWriter( compression, testDirectoryFixture.testPath( "logs" ) ) ) {
+            Path v1 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content1, 0, content1.length ) );
+            long committed = Files.size( v1 );
+
+            ( ( TestLogFile ) writer.logFile ).failNext.set( new IOException( "force failed" ) );
+            assertThatThrownBy( () -> writer.write( CURRENT_PROTOCOL_VERSION, content2, 0, content2.length ) ).isInstanceOf( LoggerException.class );
+
+            assertThat( writer.logFile ).isNull();
+            assertThat( new LogFile( v1 ).isCompleted() ).isTrue();
+            assertThat( Files.size( v1 ) ).isEqualTo( committed );
+            assertThat( rows( compression, v1 ) ).containsExactly( List.of( "a", 1L ) );
+
+            Path v2 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content3, 0, content3.length ) );
+            assertThat( v2 ).isNotEqualTo( v1 );
+            assertThat( new LogFile( v2 ).getLogMetadata().getString( "VERSION" ) ).endsWith( "-2" );
+            assertThat( rows( compression, v2 ) ).containsExactly( List.of( "c", 3L ) );
+        }
+    }
+
+    /**
+     * A's commit fails the file, B appends before A gets the lock back: B's append drops the uncommitted bytes and
+     * completes the file; A's commit then fails without touching the writer
+     */
+    @Test
+    public void appendAfterFailedCommitAbortsTheFile() throws IOException {
+        Dates.setTimeFixed( 2022, 3, 8, 21, 11 );
+        LogStreamCompression compression = LogStreamCompression.ZSTD;
+
+        byte[] content1 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "a", 1L ) ) ) );
+        byte[] content2 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "b", 2L ) ) ) );
+        byte[] content3 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "c", 3L ) ) ) );
+
+        try( RowBinaryWriter writer = testWriter( compression, testDirectoryFixture.testPath( "logs" ) ) ) {
+            Path v1 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content1, 0, content1.length ) );
+            long committed = Files.size( v1 );
+
+            RowBinaryWriter.Pending a;
+            writer.lock.lock();
+            try {
+                a = writer.append( CURRENT_PROTOCOL_VERSION, content2, 0, content2.length );
+            } finally {
+                writer.lock.unlock();
+            }
+
+            // A's force fails, A has not taken the lock yet
+            ( ( TestLogFile ) a.file() ).failNext.set( new IOException( "force failed" ) );
+            assertThatThrownBy( () -> a.file().commit( a.end() ) ).isInstanceOf( LoggerException.class );
+
+            writer.lock.lock();
+            try {
+                assertThatThrownBy( () -> writer.append( CURRENT_PROTOCOL_VERSION, content3, 0, content3.length ) ).isInstanceOf( LoggerException.class );
+            } finally {
+                writer.lock.unlock();
+            }
+            assertThat( writer.logFile ).isNull();
+            assertThat( new LogFile( v1 ).isCompleted() ).isTrue();
+            assertThat( Files.size( v1 ) ).isEqualTo( committed );
+
+            assertThatThrownBy( () -> writer.commit( a ) ).isInstanceOf( LoggerException.class );
+            assertThat( rows( compression, v1 ) ).containsExactly( List.of( "a", 1L ) );
+        }
+    }
+
+    private static class Notifications implements FileWriterNotification {
+        final List<Path> closed = new CopyOnWriteArrayList<>();
+        final List<Path> failed = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void fileClosed( Path outFilename ) {
+            closed.add( outFilename );
+        }
+
+        @Override
+        public void fileFailed( Path outFilename, Throwable cause ) {
+            assertThat( cause ).isInstanceOf( LoggerException.class );
+            failed.add( outFilename );
+        }
+    }
+
+    /**
+     * PERIODIC: a failed sync fails the file at once - closed without .completed, notified; the next write goes to the next version
+     */
+    @Test
+    public void periodicSyncFailureNotifies() throws IOException {
+        Dates.setTimeFixed( 2022, 3, 8, 21, 11 );
+        LogStreamCompression compression = LogStreamCompression.ZSTD;
+        byte[] content1 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "a", 1L ) ) ) );
+        byte[] content2 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "b", 2L ) ) ) );
+
+        Notifications notifications = new Notifications();
+        try( RowBinaryWriter writer = testWriter( compression, SyncMode.PERIODIC, testDirectoryFixture.testPath( "logs" ), notifications ) ) {
+            Path v1 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content1, 0, content1.length ) );
+
+            ( ( TestLogFile ) writer.logFile ).failNext.set( new IOException( "force failed" ) );
+            assertThatThrownBy( writer::sync ).isInstanceOf( LoggerException.class );
+
+            assertThat( notifications.failed ).containsExactly( v1 );
+            assertThat( writer.logFile ).isNull();
+            assertThat( new LogFile( v1 ).isCompleted() ).isFalse();
+
+            // nothing open: a sync does nothing
+            writer.sync();
+
+            Path v2 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content2, 0, content2.length ) );
+            assertThat( new LogFile( v2 ).getLogMetadata().getString( "VERSION" ) ).endsWith( "-2" );
+        }
+
+        assertThat( notifications.failed ).hasSize( 1 );
+        assertThat( notifications.closed ).hasSize( 1 ).doesNotContain( notifications.failed.get( 0 ) );
+    }
+
+    /**
+     * ON_CLOSE: the sync on rotation fails - the file is left without .completed, notified; the next write goes to the next version
+     */
+    @Test
+    public void onCloseSyncFailureNotifies() throws IOException {
+        Dates.setTimeFixed( 2022, 3, 8, 21, 11 );
+        LogStreamCompression compression = LogStreamCompression.ZSTD;
+        byte[] content1 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "a", 1L ) ) ) );
+        byte[] content2 = Frames.frame( compression, RowBinaryUtils.lines( List.of( List.of( "b", 2L ) ) ) );
+
+        Notifications notifications = new Notifications();
+        try( RowBinaryWriter writer = testWriter( compression, SyncMode.ON_CLOSE, testDirectoryFixture.testPath( "logs" ), notifications ) ) {
+            Path v1 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content1, 0, content1.length ) );
+
+            ( ( TestLogFile ) writer.logFile ).failNext.set( new IOException( "force failed" ) );
+            assertThatThrownBy( () -> writer.refresh( true ) ).isInstanceOf( LoggerException.class );
+
+            assertThat( notifications.failed ).containsExactly( v1 );
+            assertThat( notifications.closed ).isEmpty();
+            assertThat( writer.logFile ).isNull();
+            assertThat( new LogFile( v1 ).isCompleted() ).isFalse();
+
+            Path v2 = Path.of( writer.write( CURRENT_PROTOCOL_VERSION, content2, 0, content2.length ) );
+            assertThat( new LogFile( v2 ).getLogMetadata().getString( "VERSION" ) ).endsWith( "-2" );
+        }
+
+        assertThat( notifications.failed ).hasSize( 1 );
+        assertThat( notifications.closed ).hasSize( 1 ).doesNotContain( notifications.failed.get( 0 ) );
     }
 
     @Test

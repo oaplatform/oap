@@ -26,6 +26,7 @@ package oap.logstream.disk;
 
 import oap.compression.Compression;
 import oap.logstream.LogId;
+import oap.logstream.LogStreamCompression;
 import oap.logstream.Logger;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
@@ -38,18 +39,25 @@ import oap.util.Result;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -237,11 +245,185 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             new Logger( backend ).log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, lines );
 
-            AbstractWriter writer = backend.writers.asMap().values().iterator().next();
-            assertThat( writer.logFile.hasUnsyncedData() ).isTrue();
+            LogFile logFile = backend.writers.asMap().values().iterator().next().getLogFile();
+            assertThat( logFile.hasUnsyncedData() ).isTrue();
 
             backend.sync();
-            assertThat( writer.logFile.hasUnsyncedData() ).isFalse();
+            assertThat( logFile.hasUnsyncedData() ).isFalse();
+        }
+    }
+
+    private static final String[] SHARD_HEADERS = new String[] { "REQUEST_ID", "REQUEST_ID2" };
+    private static final byte[][] SHARD_TYPES = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+
+    private static void log( DiskLoggerBackend backend, String id ) {
+        byte[] lines;
+        try {
+            lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( id, id ) ) ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+        Result<Void, LogstreamException> result = new Logger( backend ).log( Map.of( "PREFIX", "lfn1" ), "log", SHARD_HEADERS, SHARD_TYPES, lines );
+        assertThat( result.isSuccess() ).isTrue();
+    }
+
+    private DiskLoggerBackend shardedBackend( int shrinkWindows ) {
+        DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) );
+        backend.maxShards = 4;
+        // any wait grows the shards
+        backend.shardGrowWait = 0;
+        backend.shardShrinkWindows = shrinkWindows;
+        // the windows are ended by the test only
+        backend.refreshInitDelay = Dates.h( 1 );
+        return backend;
+    }
+
+    /**
+     * logs from another thread while shard 0 is held: with one active shard the log waits for it, then the window ends
+     */
+    private static void growTo2( DiskLoggerBackend backend, WriterShards shards, String id ) throws Exception {
+        assertThat( shards.activeShards() ).isEqualTo( 1 );
+        ReentrantLock lock = shards.shardWriter( 0 ).lock;
+        try( ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor() ) {
+            Future<?> future;
+            lock.lock();
+            try {
+                future = executor.submit( () -> log( backend, id ) );
+                long deadline = System.currentTimeMillis() + 10_000;
+                while( !lock.hasQueuedThreads() ) {
+                    assertThat( System.currentTimeMillis() ).isLessThan( deadline );
+                    Thread.sleep( 1 );
+                }
+                Thread.sleep( 5 );
+            } finally {
+                lock.unlock();
+            }
+            future.get( 10, TimeUnit.SECONDS );
+        }
+        shards.adjust();
+        assertThat( shards.activeShards() ).isEqualTo( 2 );
+    }
+
+    /**
+     * logs from another thread while shard 0 is held: with two active shards the log goes to shard 1 without a wait
+     */
+    private static void logToShard1( DiskLoggerBackend backend, WriterShards shards, String id ) throws Exception {
+        ReentrantLock lock = shards.shardWriter( 0 ).lock;
+        lock.lock();
+        try( ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor() ) {
+            executor.submit( () -> log( backend, id ) ).get( 10, TimeUnit.SECONDS );
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Test
+    public void shardsGrow() throws Exception {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+
+        try( DiskLoggerBackend backend = shardedBackend( 30 ) ) {
+            backend.start();
+
+            log( backend, "1" );
+            WriterShards shards = backend.writers.asMap().values().iterator().next();
+            growTo2( backend, shards, "2" );
+            logToShard1( backend, shards, "3" );
+
+            Path file0 = shards.shardWriter( 0 ).currentFile();
+            Path file1 = shards.shardWriter( 1 ).currentFile();
+            assertThat( file0 ).isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz.rb.gz" ) );
+            assertThat( file1 ).isEqualTo( testDirectoryFixture.testPath( "logs/localhost/lfn1/2015-10/10/log_v59193f7e0-1-2015-10-10-01-00.tsv.gz-s1.rb.gz" ) );
+            assertThat( new LogFile( file0 ).getLogMetadata().getString( "SHARD" ) ).isNull();
+            assertThat( new LogFile( file1 ).getLogMetadata().getString( "SHARD" ) ).isEqualTo( "1" );
+            assertThat( backend.getLogFiles( new LogId( "log", Map.of( "PREFIX", "lfn1" ), SHARD_HEADERS, SHARD_TYPES ), LogStreamCompression.GZIP ) )
+                .extracting( f -> f.outFilename )
+                .containsExactly( file0, file1 );
+
+            backend.refresh( true );
+            // one window without waits: the shards stay
+            assertThat( shards.activeShards() ).isEqualTo( 2 );
+
+            assertThat( new LogFile( file0 ).isCompleted() ).isTrue();
+            assertThat( new LogFile( file1 ).isCompleted() ).isTrue();
+            assertRowBinaryFile( file0, GZIP ).containsExactlyInAnyOrderEntriesOf( List.of( "1", "1" ), List.of( "2", "2" ) );
+            assertRowBinaryFile( file1, GZIP ).containsExactlyInAnyOrderEntriesOf( List.of( "3", "3" ) );
+        }
+    }
+
+    @Test
+    public void shardsShrink() throws Exception {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+
+        try( DiskLoggerBackend backend = shardedBackend( 2 ) ) {
+            backend.start();
+
+            log( backend, "1" );
+            WriterShards shards = backend.writers.asMap().values().iterator().next();
+            growTo2( backend, shards, "2" );
+
+            // a window without appends changes nothing
+            shards.adjust();
+            assertThat( shards.activeShards() ).isEqualTo( 2 );
+
+            // quiet windows: never more than one shard held at once
+            log( backend, "3" );
+            shards.adjust();
+            assertThat( shards.activeShards() ).isEqualTo( 2 );
+            log( backend, "4" );
+            shards.adjust();
+            assertThat( shards.activeShards() ).isEqualTo( 1 );
+
+            // shard 0 only
+            long shard1Before = written( shards, 1 );
+            long shard0Before = written( shards, 0 );
+            log( backend, "5" );
+            log( backend, "6" );
+            assertThat( written( shards, 1 ) ).isEqualTo( shard1Before );
+            assertThat( written( shards, 0 ) ).isGreaterThan( shard0Before );
+        }
+    }
+
+    private static long written( WriterShards shards, int shard ) {
+        RowBinaryWriter writer = shards.shardWriter( shard );
+        LogFile logFile = writer != null ? writer.getLogFile() : null;
+        return logFile != null ? logFile.written() : 0;
+    }
+
+    @Test
+    public void recoverySkipsOpenShardFiles() throws Exception {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+
+        try( DiskLoggerBackend backend = shardedBackend( 30 ) ) {
+            backend.start();
+
+            log( backend, "1" );
+            WriterShards shards = backend.writers.asMap().values().iterator().next();
+            growTo2( backend, shards, "2" );
+            logToShard1( backend, shards, "3" );
+
+            Path file0 = shards.shardWriter( 0 ).currentFile();
+            Path file1 = shards.shardWriter( 1 ).currentFile();
+            assertThat( shards.currentFiles() ).containsExactly( file0, file1 );
+
+            backend.recover();
+
+            assertThat( new LogFile( file0 ).isCompleted() ).isFalse();
+            assertThat( new LogFile( file1 ).isCompleted() ).isFalse();
+            assertThat( shards.currentFiles() ).containsExactly( file0, file1 );
+
+            logToShard1( backend, shards, "4" );
+            backend.refresh( true );
+            assertRowBinaryFile( file1, GZIP ).containsExactlyInAnyOrderEntriesOf( List.of( "3", "3" ), List.of( "4", "4" ) );
+        }
+    }
+
+    @Test
+    public void invalidShardSettingsAreRejected() {
+        try( DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) ) {
+            backend.maxShards = 1000;
+            assertThatThrownBy( backend::start ).isInstanceOf( IllegalArgumentException.class );
+            backend.maxShards = 0;
+            assertThatThrownBy( backend::start ).isInstanceOf( IllegalArgumentException.class );
         }
     }
 

@@ -46,6 +46,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -254,6 +255,35 @@ public class LogFilePerftest extends Fixtures {
         long[][] result = new long[futures.size()][];
         for( int i = 0; i < futures.size(); i++ ) result[i] = futures.get( i ).get();
         return result;
+    }
+
+    /**
+     * (d) 1 key x N threads: the group commit shares one force among the concurrent writes of a key
+     * (with {@link SyncMode#ALWAYS} the throughput grows with N instead of staying at 1 / fsync latency)
+     */
+    @Test( enabled = false )
+    public void sharedFileThreads() throws Exception {
+        LogStreamCompression compression = LogStreamCompression.ZSTD;
+        byte[] payload = payload( compression );
+        System.out.println( compression + " payload " + payload.length + " bytes" );
+
+        for( int threads : new int[] { 1, 8, 64 } ) {
+            Path directory = directory( "shared-" + threads );
+            if( threads == 1 ) printDirectory( directory );
+
+            try( RowBinaryWriter writer = writer( directory, compression, logId( "shared", "1" ) );
+                 ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor() ) {
+                List<RowBinaryWriter> writers = Collections.nCopies( threads, writer );
+                run( executor, writers, payload, MULTI_WARMING );
+
+                long start = System.nanoTime();
+                long[][] latencies = run( executor, writers, payload, MULTI_SAMPLES );
+                long total = System.nanoTime() - start;
+
+                long[] all = Arrays.stream( latencies ).flatMapToLong( Arrays::stream ).toArray();
+                print( "1 file x " + threads + " threads", all, total, ( long ) payload.length * all.length );
+            }
+        }
     }
 
     /**

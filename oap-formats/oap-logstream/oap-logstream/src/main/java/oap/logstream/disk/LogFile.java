@@ -24,6 +24,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -37,6 +39,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The data file is a sequence of self-contained compressed frames (gzip members / LZ4 frames / zstd frames).
  * A write is committed when it is synced to the device ({@link SyncMode}); there is no separate commit record.
  * A file left without {@code .completed} by a crash is repaired by {@link #recover()}.
+ * <p>
+ * Group commit: {@link #write(ByteBuffer...)} appends the bytes (page cache only) and returns their end;
+ * {@link #commit(long)} makes them durable. The first committer forces everything written so far, the committers
+ * arriving meanwhile wait for that force and are covered by it or force the next group together. A failed force
+ * fails the file: every later write / commit of bytes after {@link #committed()} throws, so the bytes after it belong
+ * to the messages that were never acknowledged ({@link #truncateToCommitted()} drops them).
+ * <p>
+ * {@link #write(ByteBuffer...)}, {@link #truncateToCommitted()} and {@link #close()} must be called by one thread
+ * at a time (the writer lock); {@link #commit(long)} may be called from any thread.
  */
 @Slf4j
 @ToString( of = "outFilename" )
@@ -55,16 +66,31 @@ public class LogFile implements AutoCloseable {
     private final Path transactionFile;
     private final Path metadataFile;
     private final Path completedFile;
+    private final ReentrantLock commitLock = new ReentrantLock();
+    private final Condition synced = commitLock.newCondition();
     @Nullable
-    protected FileChannel out;
+    protected volatile FileChannel out;
     /**
-     * end of the data written to out
+     * end of the data written to out, guarded by commitLock
      */
-    private long position;
+    private long written;
     /**
-     * data written to out but not yet synced
+     * end of the data forced to the device, always {@code <= written}, guarded by commitLock
      */
-    private boolean unsynced;
+    private long committed;
+    /**
+     * a force is in progress, guarded by commitLock
+     */
+    private boolean syncing;
+    /**
+     * a force failed, the file takes no more bytes, guarded by commitLock
+     */
+    @Nullable
+    private LoggerException failure;
+    /**
+     * closed, the file takes no more bytes, guarded by commitLock
+     */
+    private boolean closed;
 
     public LogFile( Path outFilename ) {
         this( outFilename, null );
@@ -120,8 +146,16 @@ public class LogFile implements AutoCloseable {
         try {
             oap.io.Files.ensureDirectory( outFilename.getParent() );
             out = FileChannel.open( outFilename, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE );
-            position = 0;
-            unsynced = false;
+            commitLock.lock();
+            try {
+                written = 0;
+                committed = 0;
+                syncing = false;
+                failure = null;
+                closed = false;
+            } finally {
+                commitLock.unlock();
+            }
 
             LogMetadata metadata = new LogMetadata( logId );
             properties.forEach( metadata::setProperty );
@@ -134,37 +168,123 @@ public class LogFile implements AutoCloseable {
     }
 
     /**
-     * Appends the buffers with one gathering write. On failure the file is truncated back to the previous end,
-     * so it always ends at a frame boundary.
+     * Appends the buffers with one gathering write, without sync. On failure the file is truncated back to the previous
+     * end, so it always ends at a frame boundary; the file is not failed: the bytes before can still be committed.
+     * Called by one thread at a time.
      *
-     * @param sync fdatasync before return
+     * @return the end of the written bytes, for {@link #commit(long)}
+     * @throws LoggerException the write failed or the file is failed / closed
      */
-    public void append( boolean sync, ByteBuffer... buffers ) throws LoggerException {
-        Preconditions.checkState( out != null, "%s is not open", outFilename );
+    public long write( ByteBuffer... buffers ) throws LoggerException {
+        FileChannel channel = out;
+        Preconditions.checkState( channel != null, "%s is not open", outFilename );
 
         long length = 0;
         for( ByteBuffer buffer : buffers ) length += buffer.remaining();
 
-        long start = position;
+        long start;
+        commitLock.lock();
         try {
-            out.position( start );
-            long written = 0;
-            while( written < length ) {
-                written += out.write( buffers );
-            }
-            if( sync ) out.force( false );
-            else unsynced = true;
+            throwIfFailed();
+            start = written;
+        } finally {
+            commitLock.unlock();
+        }
 
-            position = start + length;
+        try {
+            channel.position( start );
+            long count = 0;
+            while( count < length ) {
+                count += channel.write( buffers );
+            }
         } catch( IOException e ) {
             try {
-                out.truncate( start );
-                out.position( start );
+                channel.truncate( start );
+                channel.position( start );
             } catch( IOException truncateError ) {
                 e.addSuppressed( truncateError );
             }
             throw new LoggerException( e );
         }
+
+        commitLock.lock();
+        try {
+            // failed / closed during the write: the bytes are after committed and will be dropped
+            throwIfFailed();
+            written = start + length;
+            return written;
+        } finally {
+            commitLock.unlock();
+        }
+    }
+
+    /**
+     * Group commit: returns when the bytes up to {@code end} are forced to the device. If a force is in progress,
+     * waits for it; otherwise forces everything written so far, covering the other waiting committers too.
+     *
+     * @throws LoggerException the force failed (the file is failed) or the file was failed / closed before the bytes
+     *                         were forced
+     */
+    public void commit( long end ) throws LoggerException {
+        FileChannel channel;
+        long target;
+
+        commitLock.lock();
+        try {
+            while( true ) {
+                if( committed >= end ) return;
+                throwIfFailed();
+                if( !syncing ) break;
+                synced.awaitUninterruptibly();
+            }
+            channel = out;
+            Preconditions.checkState( channel != null, "%s is not open", outFilename );
+            syncing = true;
+            target = written;
+        } finally {
+            commitLock.unlock();
+        }
+
+        LoggerException error = null;
+        try {
+            force( channel, false );
+        } catch( IOException | RuntimeException e ) {
+            error = new LoggerException( "commit " + outFilename + ": " + e.getMessage(), e );
+        }
+
+        commitLock.lock();
+        try {
+            syncing = false;
+            if( error == null ) committed = Math.max( committed, target );
+            else if( failure == null ) failure = error;
+            synced.signalAll();
+        } finally {
+            commitLock.unlock();
+        }
+
+        if( error != null ) throw error;
+    }
+
+    /**
+     * the only place the data is forced; a test hook
+     */
+    protected void force( FileChannel channel, boolean metaData ) throws IOException {
+        channel.force( metaData );
+    }
+
+    private void throwIfFailed() throws LoggerException {
+        if( failure != null ) throw new LoggerException( failure.getMessage(), failure );
+        if( closed ) throw new LoggerException( "closed: " + outFilename );
+    }
+
+    /**
+     * {@link #write(ByteBuffer...)} and, with sync, {@link #commit(long)}
+     *
+     * @param sync fdatasync before return
+     */
+    public void append( boolean sync, ByteBuffer... buffers ) throws LoggerException {
+        long end = write( buffers );
+        if( sync ) commit( end );
     }
 
     public void append( boolean sync, byte[] buffer, int offset, int length ) throws LoggerException {
@@ -172,27 +292,115 @@ public class LogFile implements AutoCloseable {
     }
 
     /**
-     * fdatasync of the data appended without sync
+     * fdatasync of the data written and not committed yet; a failure fails the file
      */
     public void sync() throws LoggerException {
-        if( out == null || !unsynced ) return;
-        try {
-            out.force( false );
-            unsynced = false;
-        } catch( IOException e ) {
-            throw new LoggerException( e );
-        }
-    }
-
-    public long position() {
-        return position;
+        if( out == null ) return;
+        commit( written() );
     }
 
     /**
-     * data appended without sync and not synced yet
+     * Drops the bytes after {@link #committed()} (written, but nobody got an ACK for them) and syncs the file.
+     * Called after a failed commit, by one thread at a time (the writer lock).
+     */
+    public void truncateToCommitted() throws LoggerException {
+        FileChannel channel = out;
+        Preconditions.checkState( channel != null, "%s is not open", outFilename );
+
+        long end = committed();
+        try {
+            channel.truncate( end );
+            channel.position( end );
+            force( channel, true );
+        } catch( IOException e ) {
+            throw new LoggerException( e );
+        }
+
+        commitLock.lock();
+        try {
+            written = end;
+        } finally {
+            commitLock.unlock();
+        }
+    }
+
+    /**
+     * closes the file without a sync and without {@code .completed}; {@link #recover()} repairs it on the next start
+     */
+    public void closeQuietlyWithoutCompleted() {
+        failClosed();
+        FileChannel channel = out;
+        out = null;
+        if( channel != null ) try {
+            channel.close();
+        } catch( IOException e ) {
+            log.warn( "[{}] close: {}", outFilename, e.getMessage() );
+        }
+    }
+
+    private void failClosed() {
+        commitLock.lock();
+        try {
+            closed = true;
+            synced.signalAll();
+        } finally {
+            commitLock.unlock();
+        }
+    }
+
+    /**
+     * the end of the written data
+     */
+    public long written() {
+        commitLock.lock();
+        try {
+            return written;
+        } finally {
+            commitLock.unlock();
+        }
+    }
+
+    /**
+     * the end of the data forced to the device
+     */
+    public long committed() {
+        commitLock.lock();
+        try {
+            return committed;
+        } finally {
+            commitLock.unlock();
+        }
+    }
+
+    /**
+     * a force failed: the file takes no more bytes
+     */
+    public boolean isFailed() {
+        commitLock.lock();
+        try {
+            return failure != null;
+        } finally {
+            commitLock.unlock();
+        }
+    }
+
+    /**
+     * @see #written()
+     */
+    public long position() {
+        return written();
+    }
+
+    /**
+     * data written and not committed yet
      */
     public boolean hasUnsyncedData() {
-        return unsynced;
+        commitLock.lock();
+        try {
+            return written > committed;
+        } finally {
+            commitLock.unlock();
+        }
     }
 
     public void readyForUpload() throws LoggerException {
@@ -213,23 +421,32 @@ public class LogFile implements AutoCloseable {
     }
 
     /**
-     * syncs the unsynced data and closes the file
+     * Commits the written data (waits for a running force) and closes the file. A later {@link #commit(long)} returns
+     * if its bytes were committed, otherwise throws. Called by one thread at a time (the writer lock).
+     *
+     * @throws LoggerException the commit failed: the waiting committers get the error, the file is closed anyway
      */
     @Override
-    public void close() {
+    public void close() throws LoggerException {
+        FileChannel channel = out;
+        if( channel == null ) return;
+
+        LoggerException error = null;
         try {
-            if( out != null ) {
-                try {
-                    if( unsynced && out.isOpen() ) out.force( false );
-                } finally {
-                    unsynced = false;
-                    out.close();
-                    out = null;
-                }
+            commit( written() );
+        } catch( LoggerException e ) {
+            error = e;
+        } finally {
+            failClosed();
+            out = null;
+            try {
+                channel.close();
+            } catch( IOException e ) {
+                if( error != null ) error.addSuppressed( e );
+                else error = new LoggerException( e );
             }
-        } catch( IOException e ) {
-            throw new LoggerException( e );
         }
+        if( error != null ) throw error;
     }
 
     public LogMetadata getLogMetadata() {
