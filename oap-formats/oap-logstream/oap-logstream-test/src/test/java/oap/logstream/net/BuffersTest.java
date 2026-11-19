@@ -510,13 +510,127 @@ public class BuffersTest {
         int cores = Runtime.getRuntime().availableProcessors();
         BufferConfigurationMap configurations = BufferConfigurationMap.defaultMap( header + 4 );
 
-        assertThat( new Buffers( configurations, 1 ).stripes ).isEqualTo( 1 );
-        assertThat( new Buffers( configurations, 3 ).stripes ).isEqualTo( 4 );
-        assertThat( new Buffers( configurations, 16 ).stripes ).isEqualTo( 16 );
-        assertThat( new Buffers( configurations, 0 ).stripes ).isEqualTo( powerOf2( cores ) );
-        assertThat( new Buffers( configurations ).stripes ).isEqualTo( powerOf2( cores ) );
-        assertThat( new Buffers( configurations, -1 ).stripes ).isEqualTo( powerOf2( cores - 1 ) );
-        assertThat( new Buffers( configurations, -1000 ).stripes ).isEqualTo( 1 );
+        assertThat( new Buffers( configurations, 1 ).getStripes() ).isEqualTo( 1 );
+        assertThat( new Buffers( configurations, 3 ).getStripes() ).isEqualTo( 4 );
+        assertThat( new Buffers( configurations, 16 ).getStripes() ).isEqualTo( 16 );
+        assertThat( new Buffers( configurations, 0 ).getStripes() ).isEqualTo( powerOf2( cores ) );
+        assertThat( new Buffers( configurations ).getStripes() ).isEqualTo( powerOf2( cores ) );
+        assertThat( new Buffers( configurations, -1 ).getStripes() ).isEqualTo( powerOf2( cores - 1 ) );
+        assertThat( new Buffers( configurations, -1000 ).getStripes() ).isEqualTo( 1 );
+
+        Buffers buffers = new Buffers( configurations, 1 );
+        buffers.setStripes( 3 );
+        assertThat( buffers.getStripes() ).isEqualTo( 4 );
+        buffers.setStripes( -1000 );
+        assertThat( buffers.getStripes() ).isEqualTo( 1 );
+        buffers.setStripes( 0 );
+        assertThat( buffers.getStripes() ).isEqualTo( powerOf2( cores ) );
+    }
+
+    /**
+     * runtime change: a LogId switches on its next put, the current buffer of the replaced slot is made ready
+     */
+    @Test
+    public void setStripes() {
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 4 ), 1 );
+        LogId id = new LogId( "x/y", Map.of(), HEADERS, TYPES );
+
+        buffers.put( id, BINARY_V2, new byte[] { 1 } );
+        assertThat( buffers.readyBuffers() ).isZero();
+
+        buffers.setStripes( 4 );
+        assertThat( buffers.getStripes() ).isEqualTo( 4 );
+        assertThat( buffers.readyBuffers() ).isZero();
+
+        buffers.put( id, BINARY_V2, new byte[] { 2 } );
+        assertThat( buffers.readyBuffers() ).isEqualTo( 1 );
+
+        // shrink
+        buffers.setStripes( 1 );
+        buffers.put( id, BINARY_V2, new byte[] { 3 } );
+        assertThat( buffers.readyBuffers() ).isEqualTo( 2 );
+
+        assertThat( readyData( buffers ) ).containsExactly(
+            tuple( "x/y", new byte[] { 1 }, header + 4 ),
+            tuple( "x/y", new byte[] { 2 }, header + 4 ),
+            tuple( "x/y", new byte[] { 3 }, header + 4 )
+        );
+
+        // the same number of stripes - the slot is kept
+        buffers.setStripes( 1 );
+        buffers.put( id, BINARY_V2, new byte[] { 4 } );
+        buffers.put( id, BINARY_V2, new byte[] { 5 } );
+        assertThat( buffers.readyBuffers() ).isZero();
+        assertThat( readyData( buffers ) ).containsExactly( tuple( "x/y", new byte[] { 4, 5 }, header + 4 ) );
+    }
+
+    /**
+     * stripedConcurrentPut + the number of stripes is changed concurrently: every byte is delivered exactly once
+     */
+    @Test
+    public void stripedConcurrentPutWithStripesChange() throws Exception {
+        int threads = 32;
+        int puts = 20_000;
+        Buffers buffers = new Buffers( BufferConfigurationMap.defaultMap( header + 64 ), 16 );
+        LogId[] ids = new LogId[] {
+            new LogId( "x/1", Map.of(), HEADERS, TYPES ),
+            new LogId( "x/2", Map.of(), HEADERS, TYPES )
+        };
+
+        AtomicLongArray delivered = new AtomicLongArray( threads * ids.length );
+        AtomicBoolean wrongLogId = new AtomicBoolean();
+        ObjIntConsumer<Buffer> consumer = ( b, worker ) -> {
+            int id = b.id.logType.equals( "x/1" ) ? 0 : 1;
+            byte[] data = b.data();
+            for( int i = b.headerLength(); i < b.length(); i += 2 ) {
+                if( data[i + 1] != id ) wrongLogId.set( true );
+                delivered.incrementAndGet( data[i] * ids.length + id );
+            }
+        };
+
+        AtomicBoolean done = new AtomicBoolean();
+        ExecutorService workers = Executors.newFixedThreadPool( 3 );
+        ExecutorService executor = Executors.newFixedThreadPool( threads + 2 );
+        try {
+            Future<?> drain = executor.submit( () -> {
+                while( !done.get() ) buffers.forEachReadyData( workers, 4, consumer );
+            } );
+            Future<?> switcher = executor.submit( () -> {
+                double[] values = new double[] { 1, 4, 16, 2 };
+                int i = 0;
+                while( !done.get() ) {
+                    buffers.setStripes( values[i++ % values.length] );
+                    Thread.yield();
+                }
+            } );
+
+            List<Future<?>> writers = new ArrayList<>();
+            for( int t = 0; t < threads; t++ ) {
+                byte value = ( byte ) t;
+                writers.add( executor.submit( () -> {
+                    for( int i = 0; i < puts; i++ ) {
+                        int id = i % ids.length;
+                        buffers.put( ids[id], BINARY_V2, new byte[] { value, ( byte ) id } );
+                    }
+                } ) );
+            }
+            for( Future<?> writer : writers ) writer.get( 1, TimeUnit.MINUTES );
+
+            done.set( true );
+            drain.get( 1, TimeUnit.MINUTES );
+            switcher.get( 1, TimeUnit.MINUTES );
+
+            buffers.forEachReadyData( workers, 4, consumer );
+        } finally {
+            executor.shutdownNow();
+            workers.shutdownNow();
+        }
+
+        assertThat( wrongLogId ).isFalse();
+        for( int i = 0; i < delivered.length(); i++ ) {
+            assertThat( delivered.get( i ) ).as( "writer %d, LogId %d", i / ids.length, i % ids.length ).isEqualTo( puts / ids.length );
+        }
+        assertThat( buffers.readyBuffers() ).isZero();
     }
 
     private static int powerOf2( int n ) {

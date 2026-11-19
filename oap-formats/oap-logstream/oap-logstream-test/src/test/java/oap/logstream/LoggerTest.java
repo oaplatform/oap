@@ -452,6 +452,11 @@ public class LoggerTest extends Fixtures {
             clientBackend.setSendThreads( 8 );
             assertThat( clientBackend.getSendThreads() ).isEqualTo( 8 );
 
+            // stripes: the log id switches on its next write
+            assertThat( clientBackend.getStripes() ).isEqualTo( 4 );
+            clientBackend.setStripes( 1 );
+            assertThat( clientBackend.getStripes() ).isEqualTo( 1 );
+
             // flushInterval: sent without sendAsync()
             clientBackend.setFlushInterval( 100 );
             assertThat( clientBackend.getFlushInterval() ).isEqualTo( 100L );
