@@ -13,6 +13,15 @@ services {
       storageLockExpiration = 1h
       concurrency = 1
       maxMessages = 5000
+      // disk spool ( <persistenceDirectory>/spool ) of the messages that cannot be delivered now, see README
+      spool = false
+      spoolMaxAge = 0
+      spoolMaxSize = 0
+      spoolMinFreeSpace = 0
+      spoolSegmentSize = 67108864
+      spoolSync = PERIODIC
+      spoolSyncInterval = 1s
+      spoolReplayMessages = 64
       port = 8081
 
       //      host = <unknown>

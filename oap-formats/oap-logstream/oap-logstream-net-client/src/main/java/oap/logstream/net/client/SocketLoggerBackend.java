@@ -25,6 +25,7 @@
 package oap.logstream.net.client;
 
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Metrics;
 import lombok.Getter;
 import lombok.ToString;
@@ -38,6 +39,7 @@ import oap.logstream.LogId;
 import oap.logstream.LogStreamCompression;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.disk.LogstreamException;
+import oap.logstream.net.Buffer;
 import oap.logstream.net.BufferCompressor;
 import oap.logstream.net.BufferConfigurationMap;
 import oap.logstream.net.Buffers;
@@ -48,6 +50,7 @@ import oap.util.Result;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -111,6 +114,11 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
      */
     @Getter
     private volatile int sendThreads = 2;
+    /**
+     * logType -&gt; meters of the sent buffers
+     */
+    @ToString.Exclude
+    private final ConcurrentHashMap<String, BufferMeters> bufferMeters = new ConcurrentHashMap<>();
 
     public SocketLoggerBackend( MessageSender sender, int bufferSize, long flushInterval ) {
         this( sender, BufferConfigurationMap.defaultMap( bufferSize ), flushInterval );
@@ -279,6 +287,7 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
                 log.trace( "Sending {} {}/{} priority {}", b, compression, level, priority );
                 byte[] data = compressors[worker].compress( b, compression, level );
                 sender.send( MESSAGE_TYPE, ( short ) ProtocolVersion.ROW_BINARY_V5.version, priority, data, 0, data.length );
+                bufferMeters.computeIfAbsent( b.id.logType, BufferMeters::new ).record( b, data.length );
             } );
             log.trace( "Data sent to server" );
             return true;
@@ -348,5 +357,26 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         state.put( FAILURE_SHUTDOWN_STATE, closed ? FAILED : OPERATIONAL );
         if( buffersFailed ) this.buffers.report();
         return new AvailabilityReport( FAILED, state );
+    }
+
+    /**
+     * per buffer passed to the sender: records ( rows ), uncompressed data bytes, compressed ( sent ) bytes
+     */
+    private static final class BufferMeters {
+        final DistributionSummary records;
+        final DistributionSummary bytes;
+        final DistributionSummary compressedBytes;
+
+        BufferMeters( String logType ) {
+            records = Metrics.summary( "logstream_logging_buffer_records", "type", logType );
+            bytes = Metrics.summary( "logstream_logging_buffer_bytes", "type", logType );
+            compressedBytes = Metrics.summary( "logstream_logging_buffer_compressed_bytes", "type", logType );
+        }
+
+        void record( Buffer buffer, int compressed ) {
+            records.record( buffer.records() );
+            bytes.record( buffer.dataLength() );
+            compressedBytes.record( compressed );
+        }
     }
 }

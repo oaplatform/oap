@@ -258,6 +258,7 @@ public class Buffers implements Closeable {
             }
 
             b.put( buffer, offset, length );
+            b.records++;
             stripe.buffer = b;
         } finally {
             stripe.lock.unlock();

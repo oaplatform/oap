@@ -46,6 +46,10 @@ public class Buffer implements Serializable {
      * resolves the runtime parameters of the buffer ( priority ) at send time; null - no configuration
      */
     String configuration;
+    /**
+     * number of records put by {@link Buffers}; written under the stripe lock, read after the buffer is ready
+     */
+    int records;
     private int position = DIGESTION_POSITION;
     /**
      * not volatile: read/written only under the slot lock ( Buffers.Slot.lock ), like position
@@ -222,7 +226,15 @@ public class Buffer implements Serializable {
     final void reset( LogId id, byte[] header ) {
         this.closed = false;
         this.id = id;
+        this.records = 0;
         initMetadata( header );
+    }
+
+    /**
+     * number of records put by {@link Buffers}
+     */
+    public final int records() {
+        return records;
     }
 
     public final boolean isEmpty() {

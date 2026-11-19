@@ -24,6 +24,9 @@
 
 package oap.logstream;
 
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import oap.compression.Compression;
 import oap.http.server.nio.NioHttpServer;
@@ -208,7 +211,7 @@ public class LoggerTest extends Fixtures {
             Logger logger = new Logger( clientBackend );
 
             assertThat( clientBackend.getCompression() ).isEqualTo( LogStreamCompression.ZSTD );
-            assertThat( clientBackend.getZstdLevel() ).isEqualTo( 1 );
+            assertThat( clientBackend.getZstdLevel() ).isEqualTo( 3 );
             logger.log( Map.of( "PREFIX", "lfn1" ), "log", headers, types, line1 );
             clientBackend.sendAsync();
             client.syncMemory();
@@ -315,6 +318,80 @@ public class LoggerTest extends Fixtures {
             clientBackend.sendAsync();
             client.syncMemory();
             assertThat( received ).containsExactly( "log", "other" );
+        }
+    }
+
+    @Test
+    public void netSpool() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        byte[] line = RowBinaryUtils.line( List.of( "12345678" ) );
+        String[] headers = new String[] { "REQUEST_ID" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
+
+        List<String> received = new CopyOnWriteArrayList<>();
+        AbstractLoggerBackend serverBackend = new AbstractLoggerBackend() {
+            @Override
+            public Result<Void, LogstreamException> log( LogStreamProtocol.ProtocolVersion version, Map<String, String> properties, String logType,
+                                                           String[] h, byte[][] t, byte[] buffer, int offset, int length ) {
+                received.add( logType );
+                return Result.success( null );
+            }
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public AvailabilityReport availabilityReport() {
+                return new AvailabilityReport( AvailabilityReport.State.OPERATIONAL );
+            }
+        };
+
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        Metrics.addRegistry( registry );
+        try( SocketLoggerServer server = new SocketLoggerServer( serverBackend );
+             NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
+             SocketLoggerBackend clientBackend = new SocketLoggerBackend( client, 256, -1 ) ) {
+            client.setSpool( true );
+            client.start();
+
+            Logger logger = new Logger( clientBackend );
+
+            // the server is unavailable
+            client.networkAvailable.set( 10 );
+            assertThat( logger.isLoggingAvailable() ).isTrue();
+
+            logger.log( Map.of(), "spool", headers, types, line );
+            logger.log( Map.of(), "spool", headers, types, line );
+            logger.log( Map.of(), "spool", headers, types, line );
+            clientBackend.sendAsync();
+            logger.log( Map.of(), "spool", headers, types, line );
+            clientBackend.sendAsync();
+
+            assertThat( client.getSpoolMessages() ).isEqualTo( 2 );
+            assertThat( logger.isLoggingAvailable() ).isTrue();
+
+            DistributionSummary records = registry.get( "logstream_logging_buffer_records" ).tag( "type", "spool" ).summary();
+            assertThat( records.count() ).isEqualTo( 2 );
+            assertThat( records.totalAmount() ).isEqualTo( 4 );
+            DistributionSummary bytes = registry.get( "logstream_logging_buffer_bytes" ).tag( "type", "spool" ).summary();
+            assertThat( bytes.totalAmount() ).isEqualTo( 4.0 * line.length );
+            assertThat( registry.get( "logstream_logging_buffer_compressed_bytes" ).tag( "type", "spool" ).summary().count() ).isEqualTo( 2 );
+
+            mServer.start();
+            messageHttpHandler.preStart();
+
+            client.syncMemory(); // the probe
+            client.syncMemory();
+
+            assertThat( received ).containsExactly( "spool", "spool" );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+        } finally {
+            Metrics.removeRegistry( registry );
         }
     }
 

@@ -36,7 +36,8 @@ public class MessageSenderUtils {
 
             while( messageSender.getReadyMessages() != 0
                 || messageSender.getRetryMessages() != 0
-                || messageSender.getInProgressMessages() != 0 ) {
+                || messageSender.getInProgressMessages() != 0
+                || messageSender.getSpoolMessages() != 0 ) {
                 if( System.currentTimeMillis() > now + timeout )
                     throw new TimeoutException();
 

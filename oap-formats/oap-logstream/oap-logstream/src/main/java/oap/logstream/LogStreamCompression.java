@@ -39,7 +39,7 @@ import oap.logstream.disk.LogFormat;
 public enum LogStreamCompression {
     GZIP( ( byte ) 0, LogFormat.ROW_BINARY_GZ, 1, 9, 1 ),
     LZ4( ( byte ) 1, LogFormat.ROW_BINARY_LZ4, 0, 17, 0 ),
-    ZSTD( ( byte ) 2, LogFormat.ROW_BINARY_ZSTD, -( 1 << 17 ), 22, 1 );
+    ZSTD( ( byte ) 2, LogFormat.ROW_BINARY_ZSTD, -( 1 << 17 ), 22, 3 );
 
     /**
      * protocol value (v4 header), must not change
