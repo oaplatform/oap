@@ -25,8 +25,10 @@
 package oap.logstream.disk;
 
 import oap.compression.Compression;
+import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamCompression;
+import oap.logstream.LogStreamProtocol;
 import oap.logstream.Logger;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
@@ -34,6 +36,7 @@ import oap.template.TemplateEngineFixture;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Cuid;
 import oap.util.Dates;
 import oap.util.Result;
 import org.testng.annotations.Test;
@@ -43,6 +46,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -50,6 +54,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static oap.io.IoStreams.Encoding.GZIP;
@@ -430,6 +436,100 @@ public class DiskLoggerBackendTest extends Fixtures {
     /**
      * the file prefix is a property of the log id: {{ PREFIX }}
      */
+    @Test
+    public void logAfterClose() throws IOException {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+        DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) );
+        backend.start();
+        backend.close();
+
+        Result<Void, LogstreamException> result = new Logger( backend ).log( Map.of( "PREFIX", "lfn1" ), "log", CLOSE_HEADERS, CLOSE_TYPES, closeLines( "1" ) );
+
+        assertThat( result.isSuccess() ).isFalse();
+        assertThat( result.failureValue.status ).isEqualTo( LogStreamProtocol.ErrorStatus.ERROR_RETRY );
+        assertThat( dataFiles() ).isEmpty();
+        assertThat( backend.availabilityReport().state ).isEqualTo( AvailabilityReport.State.FAILED );
+
+        backend.close(); // idempotent
+    }
+
+    /**
+     * log() concurrent with close(): every successful log() is in a file that is closed ( completed ) and reported as ready,
+     * no writer is created after close, a log() after close is retryable
+     */
+    @Test( invocationCount = 5 )
+    public void closeRace() throws Exception {
+        Dates.setTimeFixed( 2015, 10, 10, 1 );
+        Path logs = testDirectoryFixture.testPath( "close-race-" + Cuid.UNIQUE.next() );
+        DiskLoggerBackend backend = prefixed( new DiskLoggerBackend( templateEngineFixture.templateEngine, logs, BPH_12, 4000, "localhost" ) );
+        CopyOnWriteArrayList<Path> ready = new CopyOnWriteArrayList<>();
+        backend.addNotificationListener( ready::add );
+        backend.start();
+
+        AtomicInteger successes = new AtomicInteger();
+        CopyOnWriteArrayList<Object> failures = new CopyOnWriteArrayList<>();
+        AtomicBoolean stop = new AtomicBoolean();
+        byte[] lines = closeLines( "1" );
+
+        int threads = 8;
+        ExecutorService executor = Executors.newFixedThreadPool( threads );
+        try {
+            List<Future<?>> futures = new ArrayList<>();
+            for( int t = 0; t < threads; t++ ) {
+                int thread = t;
+                futures.add( executor.submit( () -> {
+                    Logger logger = new Logger( backend );
+                    for( int i = 0; !stop.get(); i++ ) {
+                        try {
+                            // a new writer and file per call
+                            Result<Void, LogstreamException> result = logger.log( Map.of( "PREFIX", "t" + thread + "-" + i ), "log", CLOSE_HEADERS, CLOSE_TYPES, lines );
+                            if( result.isSuccess() ) successes.incrementAndGet();
+                            else {
+                                failures.add( result.failureValue.status );
+                                stop.set( true );
+                            }
+                        } catch( Exception e ) {
+                            failures.add( e );
+                            stop.set( true );
+                        }
+                    }
+                } ) );
+            }
+
+            Thread.sleep( 100 );
+            backend.close();
+            stop.set( true );
+            for( Future<?> future : futures ) future.get( 30, TimeUnit.SECONDS );
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertThat( failures ).containsOnly( LogStreamProtocol.ErrorStatus.ERROR_RETRY );
+        List<Path> files = dataFiles( logs );
+        assertThat( successes.get() ).isPositive();
+        assertThat( files ).hasSize( successes.get() );
+        for( Path file : files ) assertThat( new LogFile( file ).isCompleted() ).describedAs( file.toString() ).isTrue();
+        assertThat( ready ).containsExactlyInAnyOrderElementsOf( files );
+    }
+
+    private static final String[] CLOSE_HEADERS = new String[] { "REQUEST_ID" };
+    private static final byte[][] CLOSE_TYPES = new byte[][] { new byte[] { Types.STRING.id } };
+
+    private static byte[] closeLines( String value ) throws IOException {
+        return Compression.gzip( RowBinaryUtils.lines( List.of( List.of( value ) ) ) );
+    }
+
+    private List<Path> dataFiles() throws IOException {
+        return dataFiles( testDirectoryFixture.testPath( "logs" ) );
+    }
+
+    private static List<Path> dataFiles( Path directory ) throws IOException {
+        if( !Files.exists( directory ) ) return List.of();
+        try( var stream = Files.walk( directory ) ) {
+            return stream.filter( Files::isRegularFile ).filter( p -> LogFile.compressionOf( p ).isPresent() ).toList();
+        }
+    }
+
     private static DiskLoggerBackend prefixed( DiskLoggerBackend backend ) {
         backend.filePattern = "{{ PREFIX }}/" + backend.filePattern;
         return backend;

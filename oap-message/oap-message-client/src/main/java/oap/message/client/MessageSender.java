@@ -27,6 +27,7 @@ package oap.message.client;
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -69,8 +70,11 @@ import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -90,6 +94,14 @@ public class MessageSender implements Closeable, AutoCloseable {
     public static final String FAILURE_IO_STATE = "IO";
     public static final String FAILURE_MESSAGES_STATE = "MESSAGES";
     public static final String FAILURE_SHUTDOWN_STATE = "SHUTDOWN";
+    /**
+     * the spool is enabled and cannot take messages: a limit is reached or the write failed
+     */
+    public static final String FAILURE_SPOOL_STATE = "SPOOL";
+    /**
+     * subdirectory of the persistence directory
+     */
+    public static final String SPOOL_DIRECTORY = "spool";
     /**
      * the ready messages are sent in the order of priority ( higher first ), FIFO within the same priority
      */
@@ -131,6 +143,47 @@ public class MessageSender implements Closeable, AutoCloseable {
      * {@code <= 0} disables the check.
      */
     public int maxMessages = 5000;
+    /**
+     * runtime parameter: a message that cannot be delivered now ( the server is unavailable, see {@link #FAILURE_IO_STATE},
+     * or the memory queue reached {@link #maxMessages} ) is written to the disk spool ( {@code <directory>/spool} ) instead of
+     * the memory; {@link #availabilityReport(byte)} stays {@link State#OPERATIONAL} until a spool limit is reached
+     * ( {@link #FAILURE_SPOOL_STATE} ). The spool is replayed when the server is available, whether enabled or not.
+     */
+    public volatile boolean spool = false;
+    /**
+     * runtime parameter, ms: limit on the age of the oldest spooled message; &lt;= 0 - no limit
+     */
+    public volatile long spoolMaxAge = 0;
+    /**
+     * runtime parameter, bytes: limit on the size of the spool; &lt;= 0 - no limit
+     */
+    public volatile long spoolMaxSize = 0;
+    /**
+     * runtime parameter, bytes: the spool is full when the usable space of its file store is below; &lt;= 0 - no limit
+     */
+    public volatile long spoolMinFreeSpace = 0;
+    /**
+     * runtime parameter, bytes: the active spool segment is closed when it reaches the size
+     */
+    public volatile long spoolSegmentSize = 64L * 1024 * 1024;
+    /**
+     * runtime parameter
+     */
+    public volatile SpoolSync spoolSync = SpoolSync.PERIODIC;
+    /**
+     * runtime parameter, ms: period of {@link SpoolSync#PERIODIC}
+     */
+    public volatile long spoolSyncInterval = Dates.s( 1 );
+    /**
+     * runtime parameter: max number of spooled messages replayed into the memory at once
+     * ( 1 while the server is unavailable - the probe )
+     */
+    public volatile int spoolReplayMessages = 64;
+    public Scheduled spoolSyncScheduler;
+    private final MessageSpool messageSpool;
+    private final Timer spoolSyncTimer;
+    private volatile boolean spoolWriteFailed;
+    private volatile boolean started;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
         this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
@@ -148,6 +201,25 @@ public class MessageSender implements Closeable, AutoCloseable {
         Metrics.gaugeCollectionSize( "message_count", Tags.of( "host", host, "type", "ready", "port", String.valueOf( port ) ), messages.ready );
         Metrics.gaugeCollectionSize( "message_count", Tags.of( "host", host, "type", "retry", "port", String.valueOf( port ) ), messages.retry );
         Metrics.gaugeMapSize( "message_count", Tags.of( "host", host, "type", "inprogress", "port", String.valueOf( port ) ), messages.inProgress );
+
+        Tags tags = Tags.of( "host", host, "port", String.valueOf( port ) );
+        messageSpool = persistenceDirectory != null
+            ? new MessageSpool( persistenceDirectory.resolve( SPOOL_DIRECTORY ), clientId, uniqueName )
+            : null;
+        if( messageSpool != null ) {
+            Metrics.gauge( "message_spool_bytes", tags, messageSpool, MessageSpool::bytes );
+            Metrics.gauge( "message_spool_messages", tags, messageSpool, MessageSpool::messages );
+            Metrics.gauge( "message_spool_segments", tags, messageSpool, MessageSpool::segments );
+            Metrics.gauge( "message_spool_oldest_age_ms", tags, messageSpool, MessageSpool::oldestAge );
+            Metrics.gauge( "message_spool_free_space_bytes", tags, messageSpool, MessageSpool::freeSpace );
+        }
+        Metrics.gauge( "message_spool_offline", tags, this, s -> s.isOffline() ? 1 : 0 );
+        for( SpoolLimit limit : SpoolLimit.values() ) {
+            if( limit == SpoolLimit.NONE ) continue;
+            Metrics.gauge( "message_spool_limit", tags.and( "limit", limit.name().toLowerCase( Locale.ROOT ) ), this,
+                s -> s.getSpoolLimit() == limit ? 1 : 0 );
+        }
+        spoolSyncTimer = Metrics.timer( "message_spool_sync", tags );
     }
 
     public static Path lock( String uniqueName, Path file, long storageLockExpiration ) {
@@ -177,14 +249,97 @@ public class MessageSender implements Closeable, AutoCloseable {
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
         log.info( "[{}] concurrency {} maxMessages {}", uniqueName, concurrency, maxMessages );
+        log.info( "[{}] spool {} maxAge '{}' maxSize {} minFreeSpace {} segmentSize {} sync {} syncInterval '{}' replayMessages {}",
+            uniqueName, spool, Dates.durationToString( spoolMaxAge ), spoolMaxSize, spoolMinFreeSpace, spoolSegmentSize,
+            spoolSync, Dates.durationToString( spoolSyncInterval ), spoolReplayMessages );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
 
-        if( diskSyncPeriod > 0 )
-            diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
+        adoptSpool();
 
-        if( memorySyncPeriod > 0 )
-            memorySyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
+        lock.lock();
+        try {
+            if( diskSyncPeriod > 0 )
+                diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
+
+            if( memorySyncPeriod > 0 )
+                memorySyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
+
+            rescheduleSpoolSync();
+            started = true;
+        } finally {
+            lock.unlock();
+        }
         log.info( "[{}] message server started", uniqueName );
+    }
+
+    /**
+     * under lock
+     */
+    private void rescheduleSpoolSync() {
+        Scheduled.cancel( spoolSyncScheduler );
+        spoolSyncScheduler = messageSpool != null && spoolSyncInterval > 0 && !closed
+            ? Scheduler.scheduleWithFixedDelay( spoolSyncInterval, TimeUnit.MILLISECONDS, this::syncSpool )
+            : null;
+    }
+
+    /**
+     * {@link SpoolSync#PERIODIC}: fdatasync of the active spool segments
+     */
+    public void syncSpool() {
+        if( messageSpool != null && spoolSync == SpoolSync.PERIODIC ) spoolSyncTimer.record( messageSpool::sync );
+    }
+
+    public void setSpool( boolean spool ) {
+        log.info( "[{}] spool {} -> {}", uniqueName, this.spool, spool );
+        this.spool = spool;
+    }
+
+    public void setSpoolMaxAge( long spoolMaxAge ) {
+        log.info( "[{}] spoolMaxAge '{}' -> '{}'", uniqueName, Dates.durationToString( this.spoolMaxAge ), Dates.durationToString( spoolMaxAge ) );
+        this.spoolMaxAge = spoolMaxAge;
+    }
+
+    public void setSpoolMaxSize( long spoolMaxSize ) {
+        log.info( "[{}] spoolMaxSize {} -> {}", uniqueName, this.spoolMaxSize, spoolMaxSize );
+        this.spoolMaxSize = spoolMaxSize;
+    }
+
+    public void setSpoolMinFreeSpace( long spoolMinFreeSpace ) {
+        log.info( "[{}] spoolMinFreeSpace {} -> {}", uniqueName, this.spoolMinFreeSpace, spoolMinFreeSpace );
+        this.spoolMinFreeSpace = spoolMinFreeSpace;
+    }
+
+    public void setSpoolSegmentSize( long spoolSegmentSize ) {
+        Preconditions.checkArgument( spoolSegmentSize > 0, "spoolSegmentSize must be > 0, but %s", spoolSegmentSize );
+        log.info( "[{}] spoolSegmentSize {} -> {}", uniqueName, this.spoolSegmentSize, spoolSegmentSize );
+        this.spoolSegmentSize = spoolSegmentSize;
+    }
+
+    public void setSpoolSync( SpoolSync spoolSync ) {
+        Preconditions.checkNotNull( spoolSync );
+        log.info( "[{}] spoolSync {} -> {}", uniqueName, this.spoolSync, spoolSync );
+        this.spoolSync = spoolSync;
+    }
+
+    /**
+     * runtime change: the periodic sync is rescheduled immediately
+     */
+    public void setSpoolSyncInterval( long spoolSyncInterval ) {
+        log.info( "[{}] spoolSyncInterval '{}' -> '{}'", uniqueName,
+            Dates.durationToString( this.spoolSyncInterval ), Dates.durationToString( spoolSyncInterval ) );
+        lock.lock();
+        try {
+            this.spoolSyncInterval = spoolSyncInterval;
+            if( started ) rescheduleSpoolSync();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void setSpoolReplayMessages( int spoolReplayMessages ) {
+        Preconditions.checkArgument( spoolReplayMessages > 0, "spoolReplayMessages must be > 0, but %s", spoolReplayMessages );
+        log.info( "[{}] spoolReplayMessages {} -> {}", uniqueName, this.spoolReplayMessages, spoolReplayMessages );
+        this.spoolReplayMessages = spoolReplayMessages;
     }
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
@@ -218,11 +373,142 @@ public class MessageSender implements Closeable, AutoCloseable {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
-        byte[] md5 = DigestUtils.getMd5Digest().digest( data );
+        MessageDigest digest = DigestUtils.getMd5Digest();
+        digest.update( data, offset, length );
+        byte[] md5 = digest.digest();
+
+        if( spool && spoolable( messageType ) && toSpool( priority, messageType, version, md5, data, offset, length ) ) return this;
+
         Message message = new Message( clientId, messageType, version, priority, ByteSequence.of( md5 ), data, offset, length );
         messages.add( message );
 
         return this;
+    }
+
+    /**
+     * the message cannot be delivered now and the spool can take it
+     */
+    private boolean spoolable( byte messageType ) {
+        return messageSpool != null && !closed
+            && ( isOffline( messageType ) || maxMessages > 0 && messages.size() >= maxMessages )
+            && getSpoolLimit() == SpoolLimit.NONE;
+    }
+
+    /**
+     * @return false - the write failed, the message is not in the spool
+     */
+    private boolean toSpool( int priority, byte messageType, short version, byte[] md5, byte[] data, int offset, int length ) {
+        try {
+            int written = messageSpool.append( priority, messageType, version, md5, data, offset, length, spoolSegmentSize, spoolSync );
+            spoolWriteFailed = false;
+            spoolEvent( messageType, "written", written );
+            return true;
+        } catch( IOException | RuntimeException e ) {
+            spoolWriteFailed = true;
+            spoolEvent( messageType, "write_error", 0 );
+            LogConsolidated.log( log, Level.ERROR, timeBetweenLogs, "[" + uniqueName + "] spool: " + e.getMessage(), e );
+            return false;
+        }
+    }
+
+    private static void spoolEvent( byte messageType, String event, long bytes ) {
+        String type = MessageProtocol.messageTypeToString( messageType );
+        Metrics.counter( "oap.messages.spool", "type", type, "event", event ).increment();
+        if( bytes > 0 ) Metrics.counter( "oap.messages.spool.bytes", "type", type, "event", event ).increment( bytes );
+    }
+
+    private static void spoolEvent( String event, int count ) {
+        Metrics.counter( "oap.messages.spool", "type", "-", "event", event ).increment( count );
+    }
+
+    /**
+     * the server is unavailable: network errors or the last delivery of the message type returned a retryable error
+     */
+    private boolean isOffline( byte messageType ) {
+        return isOffline() || lastStatus.getOrDefault( messageType, STATUS_OK )._1 == MessageStatus.ERROR;
+    }
+
+    private boolean isOffline() {
+        return networkAvailable.get() > networkAvailableMaxErrors;
+    }
+
+    /**
+     * the spool limit reached ( whether the spool is enabled or not )
+     */
+    public SpoolLimit getSpoolLimit() {
+        return messageSpool != null ? messageSpool.limit( spoolMaxAge, spoolMaxSize, spoolMinFreeSpace ) : SpoolLimit.NONE;
+    }
+
+    /**
+     * not delivered spooled messages
+     */
+    public long getSpoolMessages() {
+        return messageSpool != null ? messageSpool.messages() : 0;
+    }
+
+    public long getSpoolBytes() {
+        return messageSpool != null ? messageSpool.bytes() : 0;
+    }
+
+    public int getSpoolSegments() {
+        return messageSpool != null ? messageSpool.segments() : 0;
+    }
+
+    private void adoptSpool() {
+        if( messageSpool == null ) return;
+        int adopted = messageSpool.adoptOrphans( storageLockExpiration );
+        if( adopted > 0 ) spoolEvent( "adopted", adopted );
+    }
+
+    /**
+     * the server is unavailable: the messages of the memory queues ( not the ones read from the spool ) go to the spool
+     */
+    private void spill() {
+        if( !spool || messageSpool == null || closed || getSpoolLimit() != SpoolLimit.NONE ) return;
+
+        List<Messages.MessageInfo> drained = messages.drain( mi -> mi.segment == null && isOffline( mi.message.messageType ) );
+        if( drained.isEmpty() ) return;
+
+        int spilled = 0;
+        for( Messages.MessageInfo mi : drained ) {
+            Message m = mi.message;
+            if( toSpool( m.priority, m.messageType, m.version, m.md5.bytes, m.data, 0, m.data.length ) ) spilled++;
+            else messages.add( mi );
+        }
+        log.debug( "[{}] spilled {}/{} message(s)", uniqueName, spilled, drained.size() );
+    }
+
+    /**
+     * reads the spooled messages into the memory: up to {@link #spoolReplayMessages} in flight, 1 while the server is
+     * unavailable ( the probe )
+     */
+    private void replay() {
+        if( messageSpool == null || closed ) return;
+
+        int window = isOffline() ? 1 : Math.max( 1, spoolReplayMessages );
+        long now = DateTimeUtils.currentTimeMillis();
+        while( messageSpool.inFlight() < window ) {
+            SpoolSegment.Record record = messageSpool.next( event -> spoolEvent( event, 1 ) );
+            if( record == null ) break;
+
+            Message message = new Message( clientId, record.messageType(), record.version(), record.segment().priority,
+                ByteSequence.of( record.md5() ), record.data() );
+            Messages.MessageInfo messageInfo = new Messages.MessageInfo( message, now );
+            messageInfo.segment = record.segment();
+            messages.add( messageInfo );
+            spoolEvent( record.messageType(), "replayed", record.data().length );
+        }
+    }
+
+    /**
+     * a spooled message got a final status
+     */
+    private void spoolDone( Messages.MessageInfo messageInfo, String event ) {
+        SpoolSegment segment = messageInfo.segment;
+        if( segment == null ) return;
+        messageInfo.segment = null;
+        messageSpool.ack( segment );
+        spoolEvent( messageInfo.message.messageType, event, 0 );
     }
 
 
@@ -235,6 +521,8 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             Closeables.close( diskSyncScheduler );
             Closeables.close( memorySyncScheduler );
+            Scheduled.cancel( spoolSyncScheduler );
+            spoolSyncScheduler = null;
         } finally {
             lock.unlock();
         }
@@ -250,9 +538,17 @@ public class MessageSender implements Closeable, AutoCloseable {
             }
         }
 
-        saveMessagesToDirectory( directory );
+        try {
+            saveMessagesToDirectory( directory );
+        } finally {
+            if( messageSpool != null ) messageSpool.close();
+        }
     }
 
+    /**
+     * the unsent messages: to the spool when it is enabled, else a file per message;
+     * a message read from the spool stays in its segment
+     */
     private void saveMessagesToDirectory( Path directory ) {
         while( true ) {
             Messages.MessageInfo messageInfo = messages.poll( false );
@@ -266,6 +562,17 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             if( messageInfo == null ) break;
             Message message = messageInfo.message;
+
+            if( messageInfo.segment != null ) {
+                messageInfo.segment = null;
+                messageSpool.release();
+                continue;
+            }
+
+            if( spool && messageSpool != null && getSpoolLimit() == SpoolLimit.NONE
+                && toSpool( message.priority, message.messageType, message.version, message.md5.bytes, message.data, 0, message.data.length ) ) {
+                continue;
+            }
 
             Path parentDirectory = directory
                 .resolve( Long.toHexString( clientId ) )
@@ -284,19 +591,24 @@ public class MessageSender implements Closeable, AutoCloseable {
         }
     }
 
+    /**
+     * With {@link #spool} enabled and not failed the IO and the memory queue size do not matter ( the messages go to the spool ).
+     */
     public MessageAvailabilityReport availabilityReport( byte messageType ) {
-        boolean ioFailed = networkAvailable.get() > networkAvailableMaxErrors
-            || lastStatus.getOrDefault( messageType, STATUS_OK )._1 == MessageStatus.ERROR;
-        boolean messagesFailed = maxMessages > 0 && messages.size() > maxMessages;
+        boolean spoolFailed = spool && ( messageSpool == null || spoolWriteFailed || getSpoolLimit() != SpoolLimit.NONE );
+        boolean spoolOperational = spool && !spoolFailed;
+        boolean ioFailed = !spoolOperational && isOffline( messageType );
+        boolean messagesFailed = !spoolOperational && maxMessages > 0 && messages.size() > maxMessages;
         boolean shutdown = closed;
 
-        if( !ioFailed && !messagesFailed && !shutdown ) return new MessageAvailabilityReport( State.OPERATIONAL );
+        if( !ioFailed && !messagesFailed && !shutdown && !spoolFailed ) return new MessageAvailabilityReport( State.OPERATIONAL );
 
-        return new MessageAvailabilityReport( State.FAILED, Map.of(
-            FAILURE_IO_STATE, ioFailed ? State.FAILED : State.OPERATIONAL,
-            FAILURE_MESSAGES_STATE, messagesFailed ? State.FAILED : State.OPERATIONAL,
-            FAILURE_SHUTDOWN_STATE, shutdown ? State.FAILED : State.OPERATIONAL
-        ) );
+        Map<String, State> states = new LinkedHashMap<>();
+        states.put( FAILURE_IO_STATE, ioFailed ? State.FAILED : State.OPERATIONAL );
+        states.put( FAILURE_MESSAGES_STATE, messagesFailed ? State.FAILED : State.OPERATIONAL );
+        states.put( FAILURE_SHUTDOWN_STATE, shutdown ? State.FAILED : State.OPERATIONAL );
+        if( spool ) states.put( FAILURE_SPOOL_STATE, spoolFailed ? State.FAILED : State.OPERATIONAL );
+        return new MessageAvailabilityReport( State.FAILED, states );
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
@@ -384,10 +696,12 @@ public class MessageSender implements Closeable, AutoCloseable {
                     log.trace( "[{}] already written {}", uniqueName, message.getHexMd5() );
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "already_written" ).increment();
                     lastStatus.put( message.messageType, Pair.__( MessageStatus.ALREADY_WRITTEN, status ) );
+                    spoolDone( messageInfo, "delivered" );
                 }
                 case MessageProtocol.STATUS_OK -> {
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "success" ).increment();
                     lastStatus.put( message.messageType, Pair.__( MessageStatus.OK, status ) );
+                    spoolDone( messageInfo, "delivered" );
                 }
                 case MessageProtocol.STATUS_UNKNOWN_ERROR -> {
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "error" ).increment();
@@ -399,11 +713,13 @@ public class MessageSender implements Closeable, AutoCloseable {
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "error_no_retry" ).increment();
                     log.error( "[{}] unknown error -> no retry", uniqueName );
                     lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR_NO_RETRY, status ) );
+                    spoolDone( messageInfo, "dropped" );
                 }
                 case MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE -> {
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "unknown_message_type" ).increment();
                     log.error( "[{}] unknown message type: {}", uniqueName, status );
                     lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR_NO_RETRY, status ) );
+                    spoolDone( messageInfo, "dropped" );
                 }
                 default -> {
                     String clientStatus = MessageProtocol.getStatus( status );
@@ -433,12 +749,15 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             long now = DateTimeUtils.currentTimeMillis();
 
+            spill();
+
             if( isGlobalIoRetryTimeout( now ) ) {
                 log.trace( "skip, isGlobalIoRetryTimeout" );
                 return true;
             }
 
             messages.retry();
+            replay();
 
             if( concurrency <= 1 ) return syncMemoryWorker();
 
@@ -505,8 +824,14 @@ public class MessageSender implements Closeable, AutoCloseable {
     public MessageSender syncDisk() {
         if( closed ) return this;
 
+        adoptSpool();
+
+        if( !java.nio.file.Files.isDirectory( directory ) ) return this;
+
         try( DirectoryStream<Path> clientIdStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             for( Path clientIdPath : clientIdStream ) {
+                if( messageSpool != null && clientIdPath.toAbsolutePath().normalize().equals( messageSpool.directory ) ) continue;
+
                 if( !isValidClientId( clientIdPath ) ) {
                     log.warn( "invalid client id {}", clientIdPath );
                     Files.deleteSafely( clientIdPath );
@@ -577,10 +902,10 @@ public class MessageSender implements Closeable, AutoCloseable {
                         }
                     }
                 }
+                // not the whole directory: the spool keeps its empty directories
+                Files.deleteEmptyDirectories( clientIdPath, true );
             }
         }
-
-        Files.deleteEmptyDirectories( directory, false );
 
         return this;
     }
@@ -633,5 +958,21 @@ public class MessageSender implements Closeable, AutoCloseable {
 
     public void reset() {
         messages.reset();
+    }
+
+    public enum SpoolLimit {
+        NONE,
+        /**
+         * {@link #spoolMaxSize}
+         */
+        SIZE,
+        /**
+         * {@link #spoolMaxAge}
+         */
+        AGE,
+        /**
+         * {@link #spoolMinFreeSpace}
+         */
+        FREE_SPACE
     }
 }

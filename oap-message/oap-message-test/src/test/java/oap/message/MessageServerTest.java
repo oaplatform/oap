@@ -801,6 +801,399 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
+    public void spoolNetwork() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.retryTimeout = 100;
+            client.setSpool( true );
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            server.preStop();
+            messageHttpHandler.close();
+
+            // networkAvailableMaxErrors = 2 -> offline after the 3rd error
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "m0", ofString() ).syncMemory();
+            for( int i = 0; i < 2; i++ ) {
+                Dates.incFixed( 100 + 1 );
+                client.syncMemory();
+            }
+            assertThat( client.networkAvailable.get() ).isEqualTo( 3 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            // offline -> to the spool
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "m1", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 1 );
+
+            // m0 is spilled, m1 is replayed as the probe
+            Dates.incFixed( 100 + 1 );
+            client.syncMemory();
+            assertThat( client.getSpoolMessages() ).isEqualTo( 2 );
+            assertThat( client.getReadyMessages() + client.getRetryMessages() ).isEqualTo( 1 );
+
+            client
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "m2", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "m3", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "m4", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 5 );
+            assertThat( client.getReadyMessages() + client.getRetryMessages() ).isEqualTo( 1 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            messageHttpHandler.preStart();
+            server.start();
+
+            // the probe, then the rest
+            Dates.incFixed( 100 + 1 );
+            client.syncMemory();
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactlyInAnyOrder(
+                new TestMessage( 1, "m0" ),
+                new TestMessage( 1, "m1" ),
+                new TestMessage( 1, "m2" ),
+                new TestMessage( 1, "m3" ),
+                new TestMessage( 1, "m4" ) );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+            assertThat( client.getSpoolSegments() ).isEqualTo( 0 );
+            assertThat( client.getSpoolBytes() ).isEqualTo( 0 );
+            assertThat( client.getReadyMessages() + client.getRetryMessages() + client.getInProgressMessages() ).isEqualTo( 0 );
+            assertThat( segments( testDirectoryFixture.testPath( "tmp" ) ) ).isEmpty();
+        }
+    }
+
+    @Test
+    public void spoolStatusError() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.retryTimeout = 100;
+            client.setSpool( true );
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            listener1.setStatus( 300 );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "s1", ofString() ).syncMemory();
+            assertThat( client.getRetryMessages() ).isEqualTo( 1 );
+
+            // the last status is an error -> to the spool
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "s2", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 1 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            Dates.incFixed( 100 + 1 );
+            client.syncMemory();
+            assertThat( client.getSpoolMessages() ).isEqualTo( 2 );
+
+            listener1.setStatusOk();
+            Dates.incFixed( 100 + 1 );
+            client.syncMemory();
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactlyInAnyOrder( new TestMessage( 1, "s1" ), new TestMessage( 1, "s2" ) );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+            assertThat( client.getSpoolSegments() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void spoolMaxMessages() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.maxMessages = 2;
+            client.setSpool( true );
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            for( int i = 0; i < 5; i++ ) client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "mm" + i, ofString() );
+
+            assertThat( client.getReadyMessages() ).isEqualTo( 2 );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 3 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).hasSize( 5 );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void spoolPriority() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.setSpool( true );
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            client.networkAvailable.set( 10 ); // offline
+
+            client
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "p0-a", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 5, "p5-a", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 0, "p0-b", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 10, "p10", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 5, "p5-b", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, -1, "p-1", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 6 );
+            assertThat( client.getSpoolSegments() ).isEqualTo( 4 );
+
+            client.syncMemory(); // the probe
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactly(
+                new TestMessage( 1, "p10" ),
+                new TestMessage( 1, "p5-a" ),
+                new TestMessage( 1, "p5-b" ),
+                new TestMessage( 1, "p0-a" ),
+                new TestMessage( 1, "p0-b" ),
+                new TestMessage( 1, "p-1" ) );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void spoolLimitSize() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+
+        try( MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.setSpool( true );
+            client.setSpoolMaxSize( 1 );
+            client.networkAvailable.set( 10 );
+
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "l1", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 1 );
+            assertThat( client.getSpoolLimit() ).isEqualTo( MessageSender.SpoolLimit.SIZE );
+
+            // nothing is dropped: the old behaviour
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "l2", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 1 );
+            assertThat( client.getReadyMessages() ).isEqualTo( 1 );
+
+            MessageAvailabilityReport report = client.availabilityReport( MessageListenerMock.MESSAGE_TYPE );
+            assertThat( report.state ).isEqualTo( FAILED );
+            assertThat( report.subsystemStates ).containsOnly(
+                entry( MessageSender.FAILURE_IO_STATE, FAILED ),
+                entry( MessageSender.FAILURE_MESSAGES_STATE, OPERATIONAL ),
+                entry( MessageSender.FAILURE_SHUTDOWN_STATE, OPERATIONAL ),
+                entry( MessageSender.FAILURE_SPOOL_STATE, FAILED ) );
+
+            // runtime change
+            client.setSpoolMaxSize( 0 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+        }
+    }
+
+    @Test
+    public void spoolLimitAge() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+
+        try( MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.setSpool( true );
+            client.setSpoolMaxAge( Dates.s( 10 ) );
+            client.networkAvailable.set( 10 );
+
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "a1", ofString() );
+            assertThat( client.getSpoolLimit() ).isEqualTo( MessageSender.SpoolLimit.NONE );
+
+            Dates.incFixed( Dates.s( 5 ) );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "a2", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 2 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            Dates.incFixed( Dates.s( 5 ) );
+            assertThat( client.getSpoolLimit() ).isEqualTo( MessageSender.SpoolLimit.AGE );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).subsystemStates )
+                .contains( entry( MessageSender.FAILURE_SPOOL_STATE, FAILED ) );
+
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "a3", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 2 );
+            assertThat( client.getReadyMessages() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    public void spoolLimitFreeSpace() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+
+        try( MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.setSpool( true );
+            client.setSpoolMinFreeSpace( Long.MAX_VALUE );
+            client.networkAvailable.set( 10 );
+
+            assertThat( client.getSpoolLimit() ).isEqualTo( MessageSender.SpoolLimit.FREE_SPACE );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "f1", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+            assertThat( client.getReadyMessages() ).isEqualTo( 1 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( FAILED );
+
+            client.setSpoolMinFreeSpace( 1 );
+            assertThat( client.getSpoolLimit() ).isEqualTo( MessageSender.SpoolLimit.NONE );
+        }
+    }
+
+    @Test
+    public void spoolNoLimits() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+
+        try( MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.maxMessages = 2;
+            client.setSpool( true );
+            client.networkAvailable.set( 10 );
+
+            for( int i = 0; i < 100; i++ ) client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "n" + i, ofString() );
+
+            assertThat( client.getSpoolMessages() ).isEqualTo( 100 );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0 );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            // runtime switch: the old rules
+            client.setSpool( false );
+            MessageAvailabilityReport report = client.availabilityReport( MessageListenerMock.MESSAGE_TYPE );
+            assertThat( report.state ).isEqualTo( FAILED );
+            assertThat( report.subsystemStates ).containsOnly(
+                entry( MessageSender.FAILURE_IO_STATE, FAILED ),
+                entry( MessageSender.FAILURE_MESSAGES_STATE, OPERATIONAL ),
+                entry( MessageSender.FAILURE_SHUTDOWN_STATE, OPERATIONAL ) );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "memory", ofString() );
+            assertThat( client.getReadyMessages() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    public void spoolRuntimeSwitch() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.setSpool( true );
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            client.networkAvailable.set( 10 );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "r1", ofString() );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 1 );
+
+            client.setSpool( false );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "r2", ofString() );
+            assertThat( client.getReadyMessages() ).isEqualTo( 1 );
+
+            // the backlog is replayed with the spool disabled
+            client.syncMemory();
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactlyInAnyOrder( new TestMessage( 1, "r1" ), new TestMessage( 1, "r2" ) );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void spoolRestart() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+        Path directory = testDirectoryFixture.testPath( "tmp" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( MessageSender client = new MessageSender( "localhost", port, "/messages", directory, -1 ) ) {
+            client.setSpool( true );
+            client.networkAvailable.set( 10 );
+            client
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "x1", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 2, "x2", ofString() )
+                .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, 3, "x3", ofString() );
+            client.networkAvailable.set( 0 );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "x4", ofString() ); // memory -> spool on close
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "torn", ofString() );
+        }
+
+        List<Path> segments = segments( directory );
+        assertThat( segments ).hasSize( 2 );
+
+        // a torn tail: the last record of priority 0 is cut
+        Path p0 = segments.stream().filter( p -> p.getParent().getFileName().toString().equals( "p0" ) ).findFirst().orElseThrow();
+        try( var channel = java.nio.channels.FileChannel.open( p0, java.nio.file.StandardOpenOption.WRITE ) ) {
+            channel.truncate( channel.size() - 3 );
+        }
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", directory, -1 ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start(); // adopts the spool of the previous sender
+            messageHttpHandler.preStart();
+            server.start();
+
+            // the header scan does not count the torn record
+            assertThat( client.getSpoolMessages() ).isEqualTo( 4 );
+
+            client.syncMemory();
+
+            assertThat( listener1.getMessages() ).containsExactly(
+                new TestMessage( 1, "x3" ),
+                new TestMessage( 1, "x1" ),
+                new TestMessage( 2, "x2" ),
+                new TestMessage( 1, "x4" ) );
+            assertThat( client.getSpoolMessages() ).isEqualTo( 0 );
+            assertThat( client.getSpoolSegments() ).isEqualTo( 0 );
+        }
+
+        assertThat( segments( directory ) ).isEmpty();
+    }
+
+    private static List<Path> segments( Path directory ) throws IOException {
+        Path spool = directory.resolve( MessageSender.SPOOL_DIRECTORY );
+        if( !java.nio.file.Files.exists( spool ) ) return List.of();
+        try( var stream = java.nio.file.Files.walk( spool ) ) {
+            return stream.filter( p -> p.toString().endsWith( ".seg" ) ).sorted().toList();
+        }
+    }
+
+    @Test
     public void testKernel() {
         KernelFixture kernelFixture = new KernelFixture(
             new TestDirectoryFixture(),

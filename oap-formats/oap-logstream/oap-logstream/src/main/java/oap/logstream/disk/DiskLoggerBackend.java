@@ -49,6 +49,7 @@ import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamCompression;
+import oap.logstream.LogStreamProtocol.ErrorStatus;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
@@ -77,6 +78,8 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -92,6 +95,8 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWriterNotification, Cloneable, AutoCloseable {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
+    private static final Result<Void, LogstreamException> CLOSED =
+        Result.failure( new LogstreamException( new LoggerException( "already closed" ), ErrorStatus.ERROR_RETRY ) );
     public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
     public final WriterConfiguration writerConfiguration;
     public final Path logDirectory;
@@ -133,6 +138,13 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
      */
     public int shardShrinkWindows = 30;
     public volatile boolean closed;
+    /**
+     * log() - read lock ( the appends run in parallel ), close() - write lock to set {@link #closed}: close() waits for the
+     * appends in progress, a later log() sees closed. Without it a log() that passed the closed check could create a writer
+     * ( and a file ) after writers.invalidateAll() - never closed, never made ready - or append to a closing writer, while
+     * the sender gets a success.
+     */
+    private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
     private volatile UsableSpace usableSpace;
     private final Counter loggingCounter = Metrics.counter( "logstream_logging_disk_counter" );
     private final DistributionSummary loggingBuffers = Metrics.summary( "logstream_logging_disk_buffers" );
@@ -330,28 +342,33 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     @SneakyThrows
     private Result<Void, LogstreamException> log( ProtocolVersion protocolVersion, LogStreamCompression compression,
                                                     LogId logId, byte[] buffer, int offset, int length ) {
-        if( closed ) {
-            throw new LoggerException( "already closed!" );
-        }
-
-        loggingCounter.increment();
-        loggingBuffers.record( length );
-        WriterShards writer = writers.get( new WriterKey( logId, compression ) );
-
-        log.trace( "logging {} bytes to {}", length, writer );
+        Lock lock = closeLock.readLock();
+        lock.lock();
         try {
-            writer.write( protocolVersion, buffer, offset, length );
-            return SUCCESS;
-        } catch( Exception e ) {
-            var headersWithTypes = new ArrayList<String>();
-            for( int i = 0; i < logId.headers.length; i++ ) {
-                headersWithTypes.add( logId.headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( logId.types[i] ) ), oap.template.Types::valueOf ) + "]" );
+            // a retryable failure, not an exception: the server answers "retry", the client does not drop the message
+            if( closed ) return CLOSED;
+
+            loggingCounter.increment();
+            loggingBuffers.record( length );
+            WriterShards writer = writers.get( new WriterKey( logId, compression ) );
+
+            log.trace( "logging {} bytes to {}", length, writer );
+            try {
+                writer.write( protocolVersion, buffer, offset, length );
+                return SUCCESS;
+            } catch( Exception e ) {
+                var headersWithTypes = new ArrayList<String>();
+                for( int i = 0; i < logId.headers.length; i++ ) {
+                    headersWithTypes.add( logId.headers[i] + " [" + Lists.map( List.of( ArrayUtils.toObject( logId.types[i] ) ), oap.template.Types::valueOf ) + "]" );
+                }
+
+                log.error( "logType {} properties {} headers {} path {}",
+                    logId.logType, logId.properties, headersWithTypes, writer.currentPattern() );
+
+                throw e;
             }
-
-            log.error( "logType {} properties {} headers {} path {}",
-                logId.logType, logId.properties, headersWithTypes, writer.currentPattern() );
-
-            throw e;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -380,18 +397,30 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         return writer != null ? writer.getLogFiles() : List.of();
     }
 
+    /**
+     * Waits for the appends in progress, then closes the writers: every file opened before close is closed and made ready.
+     * A log() after close returns a retryable failure.
+     */
     @Override
     public void close() {
-        if( !closed ) {
+        Lock lock = closeLock.writeLock();
+        lock.lock();
+        try {
+            if( closed ) return;
             closed = true;
-            pool.shutdown( 20, SECONDS );
-            Closeables.close( pool );
-            writers.invalidateAll();
+        } finally {
+            lock.unlock();
         }
+
+        pool.shutdown( 20, SECONDS );
+        Closeables.close( pool );
+        writers.invalidateAll();
     }
 
     @Override
     public AvailabilityReport availabilityReport() {
+        if( closed ) return new AvailabilityReport( FAILED );
+
         long usableSpaceAtDirectory = usableSpace();
         boolean enoughSpace = usableSpaceAtDirectory > requiredFreeSpace;
         if( !enoughSpace ) {

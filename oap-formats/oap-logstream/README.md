@@ -184,11 +184,24 @@ SocketLoggerBackend backend = new SocketLoggerBackend(
 | `priority` | Per configuration (`new BufferConfiguration( bufferSize, pattern, priority )`, default `0`): `oap-message` priority of the buffers — higher is sent earlier, see [`MessageSender` priority](../../oap-message/oap-message-client/README.md#priority) | `setPriority( name, p )` / `setPriority( p )` (all configurations), `getPriorities()` — from the next `sendAsync()`, for all not yet sent buffers (current and ready); messages already passed to the `MessageSender` keep their priority |
 | `flushInterval` | How often buffered rows are sent to the server (milliseconds); `<= 0` — no automatic sending, the application calls `sendAsync()` | `setFlushInterval( ms )`, `getFlushInterval()` — rescheduled immediately |
 | `maxBuffers` | Maximum number of ready (not yet sent) buffers before the backend reports FAILED (default 5000) | `setMaxBuffers( n )`, `getMaxBuffers()` — from the next `availabilityReport()` |
-| `compression` | Payload codec: `ZSTD` (default, level 1), `LZ4`, `GZIP` | `setCompression( codec )`, `setGzipLevel` / `setLz4Level` / `setZstdLevel` — from the next `sendAsync()` |
+| `compression` | Payload codec: `ZSTD` (default, level 3), `LZ4`, `GZIP` | `setCompression( codec )`, `setGzipLevel` / `setLz4Level` / `setZstdLevel` — from the next `sendAsync()` |
 | `sendThreads` | Number of threads compressing the ready buffers and passing them to the sender (default 2; the thread of `sendAsync()` is one of them) | `setSendThreads( n )`, `getSendThreads()` — from the next `sendAsync()` |
 | `stripes` | Constructor parameter: max number of buffers filled concurrently per log ID, relative to the number of cores: `0` (default) — cores, `N` — N, `-N` — cores - N, `1.5` — cores * 1.5, `-1.5` — cores / 1.5; rounded up to a power of 2. A log ID starts with one buffer; the number doubles only when the writing threads contend for it | — |
 
 All setters validate the value (`IllegalArgumentException`) and log the change; `setFlushInterval` after `close()` throws `IllegalStateException`. Buffers that are already ready are sent unchanged.
+
+**Server unavailable.** By default, when the `MessageSender` cannot deliver, `availabilityReport()` becomes `FAILED` (`IO`) and
+`isLoggingAvailable()` is `false`. With the [`MessageSender` spool](../../oap-message/oap-message-client/README.md#spool-store-and-forward)
+enabled (`spool = true`, runtime) the sent buffers are written to the disk spool and replayed when the server is back;
+`isLoggingAvailable()` stays `true` until a spool limit (`spoolMaxAge`, `spoolMaxSize`, `spoolMinFreeSpace`) is reached.
+
+Metrics per buffer passed to the sender (`DistributionSummary`, tag `type` = log type; `count` = buffers, `sum` = total):
+
+| Metric | Value per buffer |
+|---|---|
+| `logstream_logging_buffer_records` | rows put into the buffer |
+| `logstream_logging_buffer_bytes` | uncompressed data bytes (without the header) |
+| `logstream_logging_buffer_compressed_bytes` | compressed bytes (the message size) |
 
 ---
 

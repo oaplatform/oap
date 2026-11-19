@@ -31,14 +31,17 @@ import oap.util.ByteSequence;
 import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 @Slf4j
 class Messages {
@@ -100,6 +103,16 @@ class Messages {
                 log.trace( "retrying " + retryInfo.messageInfo.message.md5 + " ..." );
             }
         }
+    }
+
+    /**
+     * removes the ready and retry messages matching the filter ( not the in progress ones )
+     */
+    public synchronized List<MessageInfo> drain( Predicate<MessageInfo> filter ) {
+        ArrayList<MessageInfo> drained = new ArrayList<>();
+        ready.removeIf( mi -> filter.test( mi ) && drained.add( mi ) );
+        retry.removeIf( ri -> filter.test( ri.messageInfo ) && drained.add( ri.messageInfo ) );
+        return drained;
     }
 
     public boolean isEmpty() {
@@ -166,6 +179,10 @@ class Messages {
          * order within the priority, assigned by {@link Messages#add(MessageInfo)} before the message enters the ready queue
          */
         long seq;
+        /**
+         * the spool segment the message was read from ( replay ), null - not from the spool
+         */
+        SpoolSegment segment;
 
         MessageInfo( Message message, long startTime ) {
             this.message = message;
