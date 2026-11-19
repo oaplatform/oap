@@ -186,7 +186,7 @@ SocketLoggerBackend backend = new SocketLoggerBackend(
 | `maxBuffers` | Maximum number of ready (not yet sent) buffers before the backend reports FAILED (default 5000) | `setMaxBuffers( n )`, `getMaxBuffers()` — from the next `availabilityReport()` |
 | `compression` | Payload codec: `ZSTD` (default, level 3), `LZ4`, `GZIP` | `setCompression( codec )`, `setGzipLevel` / `setLz4Level` / `setZstdLevel` — from the next `sendAsync()` |
 | `sendThreads` | Number of threads compressing the ready buffers and passing them to the sender (default 2; the thread of `sendAsync()` is one of them) | `setSendThreads( n )`, `getSendThreads()` — from the next `sendAsync()` |
-| `stripes` | Constructor parameter: max number of buffers filled concurrently per log ID, relative to the number of cores: `0` (default) — cores, `N` — N, `-N` — cores - N, `1.5` — cores * 1.5, `-1.5` — cores / 1.5; rounded up to a power of 2. A log ID starts with one buffer; the number doubles only when the writing threads contend for it | — |
+| `stripes` | Constructor / runtime parameter: max number of buffers filled concurrently per log ID, relative to the number of cores: `0` (default) — cores, `N` — N, `-N` — cores - N, `1.5` — cores * 1.5, `-1.5` — cores / 1.5; rounded up to a power of 2. A log ID starts with one buffer; the number doubles only when the writing threads contend for it | `setStripes( n )`, `getStripes()` (resolved power of 2) — every log ID switches on its next write: its current non-empty buffers become ready and are sent with the next `sendAsync()` |
 
 All setters validate the value (`IllegalArgumentException`) and log the change; `setFlushInterval` after `close()` throws `IllegalStateException`. Buffers that are already ready are sent unchanged.
 

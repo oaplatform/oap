@@ -135,7 +135,7 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     public SocketLoggerBackend( MessageSender sender, BufferConfigurationMap configurations, long flushInterval, double stripes ) {
         this.sender = sender;
         this.buffers = new Buffers( configurations, stripes );
-        log.info( "flushInterval = {} stripes = {} ({})", durationToString( flushInterval ), stripes, buffers.stripes );
+        log.info( "flushInterval = {} stripes = {} ({})", durationToString( flushInterval ), stripes, buffers.getStripes() );
 
         reschedule( flushInterval );
         Metrics.gauge( "logstream_logging_buffers_cache", buffers.cache, Buffers.BufferCache::size );
@@ -192,6 +192,23 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
      */
     public void setPriority( int priority ) {
         buffers.setPriority( priority );
+    }
+
+    /**
+     * max number of concurrently filled buffers of a log id ( resolved, a power of 2 )
+     */
+    public int getStripes() {
+        return buffers.getStripes();
+    }
+
+    /**
+     * runtime change: every log id switches on its next write, its current non-empty buffers are sent with the
+     * next {@link #sendAsync()}
+     *
+     * @param stripes relative to the number of cores ( 0 - auto ), see {@link Buffers#Buffers(BufferConfigurationMap, double)}
+     */
+    public void setStripes( double stripes ) {
+        buffers.setStripes( stripes );
     }
 
     /**

@@ -80,9 +80,10 @@ public class Buffers implements Closeable {
     public BufferCache cache;
     ReadyQueue readyBuffers = new ReadyQueue();
     /**
-     * max number of buffers (stripes) of a LogId, a power of 2
+     * max number of buffers (stripes) of a LogId, a power of 2; runtime parameter - a slot with another number of
+     * stripes is replaced on the next put of its LogId ( see {@link #resize(LogId, Slot)} )
      */
-    public final int stripes;
+    private volatile int stripes;
     private volatile boolean closed;
 
     public Buffers( BufferConfigurationMap configurations ) {
@@ -96,13 +97,34 @@ public class Buffers implements Closeable {
      *                for the buffer of the LogId
      */
     public Buffers( BufferConfigurationMap configurations, double stripes ) {
-        int count = Threads.count( stripes, Runtime.getRuntime().availableProcessors() );
-        this.stripes = count <= 1 ? 1 : Integer.highestOneBit( count - 1 ) << 1;
+        this.stripes = resolveStripes( stripes );
         log.debug( "stripes {} -> {}", stripes, this.stripes );
 
         this.configurations = Collections.unmodifiableMap( new LinkedHashMap<>( configurations ) );
         this.cache = new BufferCache();
         this.cache.retainSizes( sizes( this.configurations ) );
+    }
+
+    private static int resolveStripes( double stripes ) {
+        int count = Threads.count( stripes, Runtime.getRuntime().availableProcessors() );
+        return count <= 1 ? 1 : Integer.highestOneBit( count - 1 ) << 1;
+    }
+
+    /**
+     * max number of buffers (stripes) of a LogId, a power of 2
+     */
+    public int getStripes() {
+        return stripes;
+    }
+
+    /**
+     * Runtime change of the max number of concurrently filled buffers of a LogId ( see {@link #Buffers(BufferConfigurationMap, double)} ).
+     * A LogId switches on its next put: its current non-empty buffers are made ready, the empty ones are returned to the pool.
+     */
+    public void setStripes( double stripes ) {
+        int resolved = resolveStripes( stripes );
+        log.info( "stripes {} -> {} ({})", this.stripes, resolved, stripes );
+        this.stripes = resolved;
     }
 
     private static Set<Integer> sizes( Map<String, BufferConfiguration> configurations ) {
@@ -217,16 +239,27 @@ public class Buffers implements Closeable {
         // fast-fail without a lock
         if( closed ) throw new IllegalStateException( "current buffer is already closed" );
 
-        // lock-free; identity match for a cached LogId
-        Slot slot = currentBuffers.get( id );
-        if( slot == null ) {
-            slot = currentBuffers.computeIfAbsent( id, k -> {
-                int slotGeneration = generation;
-                return new Slot( findConfiguration( k ), Buffer.encodeHeader( k ), slotGeneration, stripes );
-            } );
+        Slot slot;
+        Stripe stripe;
+        while( true ) {
+            // lock-free; identity match for a cached LogId
+            slot = currentBuffers.get( id );
+            if( slot == null ) {
+                slot = currentBuffers.computeIfAbsent( id, k -> {
+                    int slotGeneration = generation;
+                    return new Slot( findConfiguration( k ), Buffer.encodeHeader( k ), slotGeneration, stripes );
+                } );
+            }
+            if( slot.stripes.length != stripes ) slot = resize( id, slot );
+
+            stripe = lock( slot );
+            // under the stripe lock: retire() sets retired before it drains the stripes
+            if( !slot.retired ) break;
+            stripe.lock.unlock();
+            // the retired slot is replaced when its resize() returns
+            Thread.onSpinWait();
         }
 
-        Stripe stripe = lock( slot );
         try {
             // under the stripe lock: close() sets closed before flush(), so no buffer is left in a slot after the last flush
             if( closed ) throw new IllegalStateException( "current buffer is already closed" );
@@ -262,6 +295,42 @@ public class Buffers implements Closeable {
             stripe.buffer = b;
         } finally {
             stripe.lock.unlock();
+        }
+    }
+
+    /**
+     * Replaces the slot of the LogId by a slot with the current number of stripes. The old slot is retired and drained
+     * within compute(), so it stays visible to a concurrent flush() until it is drained; a concurrent resize of the
+     * same LogId waits on the bin lock and gets the new slot.
+     */
+    private Slot resize( LogId id, Slot slot ) {
+        return currentBuffers.compute( id, ( k, current ) -> {
+            int count = stripes;
+            if( current == null ) return new Slot( findConfiguration( k ), slot.header, generation, count );
+            if( current.stripes.length == count ) return current;
+
+            retire( current );
+            return new Slot( findConfiguration( k ), current.header, generation, count );
+        } );
+    }
+
+    /**
+     * a writer holding the retired slot sees the flag under the stripe lock and retries with the new slot
+     */
+    private void retire( Slot slot ) {
+        slot.retired = true;
+        for( Stripe stripe : slot.stripes ) {
+            stripe.lock.lock();
+            try {
+                Buffer buffer = stripe.buffer;
+                if( buffer != null ) {
+                    if( buffer.isEmpty() ) cache.release( buffer );
+                    else readyBuffers.ready( buffer );
+                    stripe.buffer = null;
+                }
+            } finally {
+                stripe.lock.unlock();
+            }
         }
     }
 
@@ -444,6 +513,11 @@ public class Buffers implements Closeable {
          * number of the stripes in use, a power of 2; grows on contention
          */
         volatile int width = 1;
+        /**
+         * replaced by a slot with another number of stripes ( see {@link Buffers#resize(LogId, Slot)} );
+         * written before the stripes are drained under their locks, read under a stripe lock
+         */
+        boolean retired;
 
         Slot( Map.Entry<String, BufferConfiguration> conf, byte[] header, int generation, int stripes ) {
             this.header = header;
