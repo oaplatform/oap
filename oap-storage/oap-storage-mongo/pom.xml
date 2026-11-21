@@ -57,14 +57,39 @@
             <artifactId>commons-exec</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongock-standalone</artifactId>
-            <version>${oap.deps.mongock.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongodb-sync-v4-driver</artifactId>
-            <version>${oap.deps.mongock.version}</version>
+            <groupId>io.flamingock</groupId>
+            <artifactId>flamingock-community</artifactId>
+            <version>${oap.deps.flamingock.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-couchbase-targetsystem</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-couchbase-auditstore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-dynamodb-targetsystem</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-dynamodb-auditstore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-sql-targetsystem</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-sql-auditstore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.flamingock</groupId>
+                    <artifactId>flamingock-mongodb-springdata-targetsystem</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

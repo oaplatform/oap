@@ -27,18 +27,20 @@ package oap.storage.mongo.mongoclienttest;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import io.mongock.api.annotations.ChangeUnit;
-import io.mongock.api.annotations.Execution;
-import io.mongock.api.annotations.RollbackExecution;
+import io.flamingock.api.annotations.Apply;
+import io.flamingock.api.annotations.Change;
+import io.flamingock.api.annotations.Rollback;
+import io.flamingock.api.annotations.TargetSystem;
 import org.bson.Document;
 
 import java.util.Map;
 
-
-@ChangeUnit( id = "MongoClientMigration", order = "1", systemVersion = "1" )
-public class MongoClientMigration {
-    @Execution
-    public void execution( MongoClient mongoClient, MongoDatabase mongoDatabase ) {
+@SuppressWarnings( "checkstyle:TypeName" )
+@TargetSystem( id = oap.storage.mongo.MongoClient.TARGET_SYSTEM )
+@Change( id = "MongoClientMigration", author = "oap", transactional = false )
+public class _0001__MongoClientMigration {
+    @Apply
+    public void apply( MongoClient mongoClient, MongoDatabase mongoDatabase ) {
         mongoDatabase
             .getCollection( "test" )
             .insertOne( new Document( Map.of( "_id", "test", "c", 17 ) ) );
@@ -48,7 +50,7 @@ public class MongoClientMigration {
             .insertOne( new Document( Map.of( "_id", "test3", "v", 1 ) ) );
     }
 
-    @RollbackExecution
+    @Rollback
     public void rollback( MongoDatabase mongoDatabase ) {
         mongoDatabase.getCollection( "test" )
             .deleteOne( Filters.eq( "_id", "test" ) );

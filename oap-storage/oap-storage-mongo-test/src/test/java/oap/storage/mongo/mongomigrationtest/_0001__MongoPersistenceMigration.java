@@ -26,21 +26,24 @@ package oap.storage.mongo.mongomigrationtest;
 
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Updates;
-import io.mongock.api.annotations.ChangeUnit;
-import io.mongock.api.annotations.Execution;
-import io.mongock.api.annotations.RollbackExecution;
+import io.flamingock.api.annotations.Apply;
+import io.flamingock.api.annotations.Change;
+import io.flamingock.api.annotations.Rollback;
+import io.flamingock.api.annotations.TargetSystem;
+import oap.storage.mongo.MongoClient;
 import org.bson.Document;
 
-
-@ChangeUnit( id = "MongoPersistenceMigration", order = "1", systemVersion = "1" )
-public class MongoPersistenceMigration {
-    @Execution
-    public void execution( MongoDatabase mongoDatabase ) {
+@SuppressWarnings( "checkstyle:TypeName" )
+@TargetSystem( id = MongoClient.TARGET_SYSTEM )
+@Change( id = "MongoPersistenceMigration", author = "oap", transactional = false )
+public class _0001__MongoPersistenceMigration {
+    @Apply
+    public void apply( MongoDatabase mongoDatabase ) {
         mongoDatabase.getCollection( "beans" )
             .updateMany( new Document(), Updates.rename( "object.noname", "object.name" ) );
     }
 
-    @RollbackExecution
+    @Rollback
     public void rollback( MongoDatabase mongoDatabase ) {
     }
 }

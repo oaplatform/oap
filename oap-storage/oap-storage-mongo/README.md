@@ -6,48 +6,89 @@ Depends on: `oap-storage`
 
 ## `MongoClient`
 
-OAP's thin wrapper around the MongoDB Java driver. Manages the connection and runs schema migrations via Mongock on startup.
+OAP's thin wrapper around the MongoDB Java driver. Manages the connection and runs schema migrations via [Flamingock](https://docs.flamingock.io) on startup.
 
 ```java
 // Basic — no migrations
 MongoClient client = new MongoClient( "mongodb://localhost:27017/mydb" );
 
-// With Mongock migration package(s)
-MongoClient client = new MongoClient(
-    "mongodb://localhost:27017/mydb",
-    List.of( "com.example.migrations" )
-);
+// With Flamingock migrations
+MongoClient client = new MongoClient( "mongodb://localhost:27017/mydb", true );
 client.preStart();  // runs migrations
 ```
 
 | Parameter | Default | Description |
 |---|---|---|
 | `connectionString` | — | Standard MongoDB URI including database name |
-| `migrationPackage` | `null` | Package(s) scanned by Mongock for `@ChangeUnit` classes |
+| `migrations` | `false` | Run all Flamingock changes found on the classpath on `preStart()` |
 | `throwIfMigrationFailed` | `true` | Rethrow migration exceptions; set `false` to log-and-continue |
 
 `preStart()` is called automatically by the OAP Kernel if registered as a supervised service.
 
-### Migrations with Mongock
+### Migrations with Flamingock
 
-Annotate your migration classes with `@ChangeUnit` and place them in the package configured in `migrationPackage`:
+Flamingock discovers changes **at compile time**. Every module that contains changes needs:
+
+1. the annotation processor (keep the parent's processors with `combine.children="append"`):
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths combine.children="append">
+            <path>
+                <groupId>io.flamingock</groupId>
+                <artifactId>flamingock-processor</artifactId>
+                <version>${oap.deps.flamingock.version}</version>
+            </path>
+        </annotationProcessorPaths>
+    </configuration>
+</plugin>
+```
+
+2. one class declaring the stages (stage names must be unique across modules):
 
 ```java
-@ChangeUnit( id = "add-status-field", order = "001", author = "team" )
-public class AddStatusField {
-    @Execution
-    public void execute( MongoDatabase db ) {
+@EnableFlamingock( stages = { @Stage( name = "my-app", location = "com.example.migrations" ) } )
+public final class MyAppMigrations {}
+```
+
+3. change classes bound to the `MongoClient` target system. The order is taken from the class name (`_<order>__<Name>`, order of at least 4 characters):
+
+```java
+@SuppressWarnings( "checkstyle:TypeName" )
+@TargetSystem( id = MongoClient.TARGET_SYSTEM )
+@Change( id = "add-status-field", author = "team", transactional = false )
+public class _0001__AddStatusField {
+    @Apply
+    public void apply( MongoDatabase db ) {
         db.getCollection( "users" )
           .updateMany( new Document(), Updates.set( "status", "ACTIVE" ) );
     }
 
-    @RollbackExecution
+    @Rollback
     public void rollback( MongoDatabase db ) {
         db.getCollection( "users" )
           .updateMany( new Document(), Updates.unset( "status" ) );
     }
 }
 ```
+
+Notes:
+
+- `transactional` defaults to `true`; use `transactional = false` on a standalone MongoDB (no replica set).
+- Every `MongoClient` with `migrations = true` runs **all** changes on the classpath — there is no per-client package filter.
+- Audit and lock are stored in `flamingockAuditLog` / `flamingockLock`.
+- Run one clean build after adding the processor, so `META-INF/flamingock/metadata_*` is generated.
+
+### Migrating from Mongock
+
+Mongock has been replaced by Flamingock; the `migrationPackage` parameter is gone.
+
+- `migrationPackage = [...]` → `migrations = true`; `new MongoClient( uri, List.of( ... ) )` → `new MongoClient( uri, true )`.
+- `@ChangeUnit`/`@Execution`/`@RollbackExecution` → `@Change`/`@Apply`/`@Rollback` + `@TargetSystem( id = MongoClient.TARGET_SYSTEM )`; `order` moves into the class name.
+- Mongock history (`mongockChangeLog`) is **not** imported: on an existing database, rewritten changes run again, so make them idempotent (or drop changes that are already applied everywhere).
 
 ### `Version`
 
@@ -109,7 +150,7 @@ dependsOn = [oap-storage-mongo]
 services {
   oap-storage-mongo.mongo-client.parameters {
     connectionString = "mongodb://mongo:27017/mydb"
-    migrationPackage = ["com.example.migrations"]
+    migrations = true
   }
 
   order-storage {

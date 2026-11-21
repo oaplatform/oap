@@ -31,39 +31,45 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
-import io.mongock.driver.mongodb.sync.v4.driver.MongoSync4Driver;
-import io.mongock.runner.standalone.MongockStandalone;
+import io.flamingock.community.Flamingock;
+import io.flamingock.store.mongodb.sync.MongoDBSyncAuditStore;
+import io.flamingock.targetsystem.mongodb.sync.MongoDBSyncTargetSystem;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
-import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ * Migrations are Flamingock changes discovered at compile time (flamingock-processor + @EnableFlamingock),
+ * all changes found on the classpath run on {@link #preStart()} when {@code migrations = true}.
+ * Changes must be bound to {@link #TARGET_SYSTEM}: {@code @TargetSystem( id = MongoClient.TARGET_SYSTEM )}.
+ */
 @Slf4j
-@ToString( exclude = { "migrations", "shell", "mongoClient", "database" } )
+@ToString( exclude = { "mongoClient", "database" } )
 public class MongoClient implements Closeable {
+    public static final String TARGET_SYSTEM = "oap-mongo";
+
     final com.mongodb.client.MongoClient mongoClient;
     private final MongoDatabase database;
-    private final List<String> migrationPackage;
+    private final boolean migrations;
     public boolean throwIfMigrationFailed = true;
     private ConnectionString connectionString;
 
     public MongoClient( String connectionString ) {
-        this( connectionString, null );
+        this( connectionString, false );
     }
 
-    public MongoClient( String connectionString, @Nonnull List<String> migrationPackage ) {
+    public MongoClient( String connectionString, boolean migrations ) {
         this.connectionString = new ConnectionString( connectionString );
-        this.migrationPackage = migrationPackage;
+        this.migrations = migrations;
 
         Preconditions.checkNotNull( this.connectionString.getDatabase(), "database is required" );
 
@@ -71,7 +77,7 @@ public class MongoClient implements Closeable {
             .applyConnectionString( this.connectionString );
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( this.connectionString.getDatabase() );
-        log.debug( "creating connectionString {} migrationPackage {}", this.connectionString, migrationPackage );
+        log.debug( "creating connectionString {} migrations {}", this.connectionString, migrations );
     }
 
     private MongoClientSettings.Builder defaultBuilder() {
@@ -107,20 +113,20 @@ public class MongoClient implements Closeable {
     }
 
     public void preStart() {
+        if( !migrations ) {
+            return;
+        }
+
         try {
-            MongoSync4Driver driver = MongoSync4Driver.withDefaultLock( mongoClient, database.getName() );
-            driver.disableTransaction();
+            MongoDBSyncTargetSystem targetSystem = new MongoDBSyncTargetSystem( TARGET_SYSTEM, mongoClient, database.getName() );
 
-            if( migrationPackage != null ) {
-                MongockStandalone
-                    .builder()
-                    .addMigrationScanPackages( migrationPackage )
-                    .setDriver( driver )
-                    .addDependency( com.mongodb.client.MongoClient.class, mongoClient )
-                    .buildRunner()
-                    .execute();
-
-            }
+            Flamingock
+                .builder()
+                .setAuditStore( MongoDBSyncAuditStore.from( targetSystem ) )
+                .addTargetSystem( targetSystem )
+                .addDependency( com.mongodb.client.MongoClient.class, mongoClient )
+                .build()
+                .run();
         } catch( Exception ex ) {
             if( throwIfMigrationFailed ) {
                 throw ex;
