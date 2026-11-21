@@ -51,7 +51,7 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testUpdateCreateNewIndex() {
-        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
+        try( MongoClient client = mongoFixture.createMongoClient() ) {
             MongoCollection<Document> collection = client.getCollection( "test" );
             MongoIndex mongoIndex = new MongoIndex( collection );
 
@@ -81,7 +81,7 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testReorderKeys() {
-        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
+        try( MongoClient client = mongoFixture.createMongoClient() ) {
             MongoCollection<Document> collection = client.getCollection( "test" );
             MongoIndex mongoIndex = new MongoIndex( collection );
 
@@ -100,7 +100,7 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testSync() {
-        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
+        try( MongoClient client = mongoFixture.createMongoClient() ) {
             MongoCollection<Document> collection = client.getCollection( "test" );
             MongoIndex mongoIndex = new MongoIndex( collection );
 

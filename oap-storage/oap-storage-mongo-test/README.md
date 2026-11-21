@@ -51,7 +51,7 @@ Default database name is `"test"` when using the no-arg constructor.
 |---|---|
 | `client()` | Returns the connected `MongoClient` for the fixture database |
 | `createMongoClient()` | Create a new `MongoClient` connected to the fixture database |
-| `createMongoClient(migrationPackage, ...)` | Create a `MongoClient` that runs Mongock migrations from the given packages on `preStart()` |
+| `createMongoClient(migrations)` | Create a `MongoClient` that, when `migrations` is `true`, runs all Flamingock changes on the classpath on `preStart()` |
 | `getConnectionString()` | `mongodb://localhost:<PORT>/<DATABASE>` |
 | `getConnectionString(database)` | Connection string for an alternate database |
 | `insertDocument(contextClass, collection, resourceName)` | Insert a JSON document loaded from a test resource file |
