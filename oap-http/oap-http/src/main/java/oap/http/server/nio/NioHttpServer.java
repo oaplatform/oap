@@ -25,8 +25,11 @@
 package oap.http.server.nio;
 
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.ConnectorStatistics;
@@ -66,8 +69,12 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -79,6 +86,22 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public static final String NIO_POOL_SIZE = "nio_pool_size";
     public static final String ACTIVE = "active";
     public static final String WORKER = "worker";
+    /**
+     * gauge, type = queue | active. Counts SSLEngine delegated tasks (a handshake produces one or more of them), not handshakes.
+     */
+    public static final String NIO_SSL_HANDSHAKE = "nio_ssl_handshake";
+    /**
+     * counter of completed SSLEngine delegated tasks (one or more per handshake)
+     */
+    public static final String NIO_SSL_HANDSHAKE_COMPLETED = "nio_ssl_handshake_completed";
+    /**
+     * counter of SSLEngine delegated tasks rejected by a full queue; each rejection closes the new connection
+     */
+    public static final String NIO_SSL_HANDSHAKE_REJECTED = "nio_ssl_handshake_rejected";
+    /**
+     * timer of SSLEngine delegated task execution (count/sum/max)
+     */
+    public static final String NIO_SSL_HANDSHAKE_TASK = "nio_ssl_handshake_task";
 
     public final DefaultPort defaultPort;
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
@@ -93,6 +116,24 @@ public class NioHttpServer implements Closeable, AutoCloseable {
      * relative to the number of cores, see {@link Threads#count(double, int)}: 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5
      */
     public double ioThreads = 0;
+    /**
+     * https only: true = run TLS handshake tasks (SSLEngine delegated tasks) in a separate bounded pool of platform threads
+     * instead of xnio io threads; false = inline on io threads
+     */
+    public boolean sslHandshakeOffload = true;
+    /**
+     * TLS handshake pool size (sslHandshakeOffload = true), relative to the number of cores, see {@link Threads#count(double, int)}:
+     * 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5
+     */
+    public double sslHandshakeThreads = 0.25;
+    /**
+     * lower bound of the TLS handshake pool size
+     */
+    public int sslHandshakeMinThreads = 2;
+    /**
+     * pending TLS handshake tasks (sslHandshakeOffload = true); overflow closes the new connection
+     */
+    public int sslHandshakeQueue = 1024;
     public int workerThreads = -1; // default = Runtime.getRuntime().availableProcessors() * 8
     public long maxEntitySize = -1; // default = unlimited
     public int maxParameters = -1; // default = 1000
@@ -107,6 +148,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     private KeyManager[] keyManagers;
     private XnioWorker xnioWorker;
     private Scheduled autoRefreshCertificatesScheduled;
+    volatile ThreadPoolExecutor sslHandshakeExecutor;
+    private volatile long sslHandshakeCompletedBefore;
+    private boolean sslHandshakeMetricsRegistered;
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
@@ -200,6 +244,14 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             .build();
         builder.setWorker( xnioWorker );
 
+        if( sslHandshakeOffload ) {
+            if( isHttpsEnabled() ) {
+                builder.setSslEngineDelegatedTaskExecutor( createSslHandshakeExecutor() );
+            } else {
+                log.warn( "sslHandshakeOffload = true, but https is disabled" );
+            }
+        }
+
         if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
         builder.setIoThreads( io );
         if( workerThreads > 0 ) builder.setWorkerThreads( workerThreads );
@@ -226,12 +278,61 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             autoRefreshCertificatesScheduled = Scheduler.scheduleWithFixedDelay( autoRefreshCertificates, TimeUnit.MILLISECONDS, this::refreshCertificates );
         }
 
-        log.info( "server on ports: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
+        ThreadPoolExecutor sslExecutor = sslHandshakeExecutor;
+        log.info( "server on ports: {} (statistics: {}, ioThreads: {}, workerThreads: {}, sslHandshakeThreads: {}) has started in {} ms",
             pathHandler.keySet(), statistics,
             undertow.getWorker().getMXBean().getIoThreadCount(),
             undertow.getWorker().getMXBean().getMaxWorkerPoolSize(),
+            sslExecutor != null ? sslExecutor.getCorePoolSize() : "inline",
             System.currentTimeMillis() - time
         );
+    }
+
+    private Executor createSslHandshakeExecutor() {
+        Preconditions.checkArgument( sslHandshakeMinThreads >= 1, "sslHandshakeMinThreads must be >= 1, but %s", sslHandshakeMinThreads );
+        Preconditions.checkArgument( sslHandshakeQueue >= 1, "sslHandshakeQueue must be >= 1, but %s", sslHandshakeQueue );
+
+        int threads = Math.max( sslHandshakeMinThreads,
+            Threads.count( sslHandshakeThreads, Math.max( Runtime.getRuntime().availableProcessors(), 2 ) ) );
+
+        Tags tags = Tags.of( "port", String.valueOf( defaultPort.httpsPort ) );
+        Counter rejected = Metrics.counter( NIO_SSL_HANDSHAKE_REJECTED, tags );
+        Timer taskTimer = Timer.builder( NIO_SSL_HANDSHAKE_TASK ).tags( tags ).register( Metrics.globalRegistry );
+
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( threads, threads, 60, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>( sslHandshakeQueue ),
+            Thread.ofPlatform().name( "ssl-handshake-", 0 ).daemon( true ).factory(),
+            ( r, e ) -> {
+                rejected.increment();
+                throw new RejectedExecutionException( "ssl handshake queue is full" );
+            } );
+        sslHandshakeExecutor = executor;
+
+        if( !sslHandshakeMetricsRegistered ) {
+            Metrics.gauge( NIO_SSL_HANDSHAKE, tags.and( "type", "queue" ), this, s -> {
+                ThreadPoolExecutor e = s.sslHandshakeExecutor;
+                return e != null ? e.getQueue().size() : 0;
+            } );
+            Metrics.gauge( NIO_SSL_HANDSHAKE, tags.and( "type", ACTIVE ), this, s -> {
+                ThreadPoolExecutor e = s.sslHandshakeExecutor;
+                return e != null ? e.getActiveCount() : 0;
+            } );
+            FunctionCounter.builder( NIO_SSL_HANDSHAKE_COMPLETED, this, s -> {
+                ThreadPoolExecutor e = s.sslHandshakeExecutor;
+                return s.sslHandshakeCompletedBefore + ( e != null ? e.getCompletedTaskCount() : 0 );
+            } ).tags( tags ).register( Metrics.globalRegistry );
+            sslHandshakeMetricsRegistered = true;
+        }
+
+        // xnio io threads stay free for established connections; RejectedExecutionException closes the new connection (SslConduit)
+        return task -> executor.execute( () -> {
+            long start = System.nanoTime();
+            try {
+                task.run();
+            } finally {
+                taskTimer.record( System.nanoTime() - start, TimeUnit.NANOSECONDS );
+            }
+        } );
     }
 
     @SneakyThrows
@@ -357,6 +458,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
                     xnioWorker.shutdownNow();
                 }
                 xnioWorker = null;
+            }
+            ThreadPoolExecutor sslExecutor = sslHandshakeExecutor;
+            if( sslExecutor != null ) {
+                sslExecutor.shutdownNow();
+                sslHandshakeCompletedBefore += sslExecutor.getCompletedTaskCount();
+                sslHandshakeExecutor = null;
             }
         } catch( Exception ex ) {
             log.error( "Cannot stop server", ex );
