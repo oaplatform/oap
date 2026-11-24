@@ -44,6 +44,10 @@ services {
 | `tcpNodelay` | `true` | Disable Nagle algorithm |
 | `ioThreads` | `0` = `max(2, CPU count)` | Undertow IO threads, relative to the CPU count: `N` — N, `-N` — CPU count - N, `1.5` — CPU count × 1.5, `-1.5` — CPU count / 1.5 (at least 1) |
 | `workerThreads` | `CPU count × 8` | Undertow worker threads |
+| `sslHandshakeOffload` | `true` | HTTPS only: run TLS handshake tasks (SSLEngine delegated tasks) in a separate bounded pool instead of the IO threads; `false` — inline on the IO threads. Runtime: `setSslHandshakeOffload` (new handshakes switch immediately, the pool completes its queued tasks) |
+| `sslHandshakeThreads` | `0.25` | TLS handshake pool size, relative to the CPU count (same rules as `ioThreads`). Runtime: `setSslHandshakeThreads` (resized in place) |
+| `sslHandshakeMinThreads` | `2` | Lower bound of the TLS handshake pool size. Runtime: `setSslHandshakeMinThreads` (resized in place) |
+| `sslHandshakeQueue` | `1024` | Pending TLS handshake tasks; overflow closes the new connection. Runtime: `setSslHandshakeQueue` (a new pool, the old one completes its queued tasks) |
 | `maxEntitySize` | `-1` (unlimited) | Maximum request body size in bytes |
 | `maxParameters` | `-1` (unlimited) | Maximum number of query/form parameters |
 | `maxHeaders` | `-1` (unlimited) | Maximum number of request headers |
