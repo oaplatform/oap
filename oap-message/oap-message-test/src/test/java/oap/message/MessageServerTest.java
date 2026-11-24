@@ -574,6 +574,7 @@ public class MessageServerTest extends Fixtures {
 
             listener1.setStatus( MessageProtocol.STATUS_OK );
 
+            Dates.incFixed( 100 + 1 );
             client.syncMemory();
 
             assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );

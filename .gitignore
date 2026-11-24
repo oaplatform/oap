@@ -22,5 +22,4 @@ kotlinc.xml
 .flattened-pom.xml
 /.idea
 /codemr/*
-/CLAUDE.md
 /.claude

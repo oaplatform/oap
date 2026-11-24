@@ -24,6 +24,7 @@
 
 package oap.http.server.nio;
 
+import io.micrometer.core.instrument.Tags;
 import oap.http.Http;
 import oap.http.client.OapHttpClient;
 import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
@@ -31,6 +32,7 @@ import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
 import oap.http.server.nio.health.HealthHttpHandler;
 import oap.io.Resources;
+import oap.metrics.MetricsFixture;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
@@ -41,13 +43,20 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
 import static oap.http.test.HttpAsserts.assertGet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class NioHttpServerTest extends Fixtures {
+    private final MetricsFixture metrics = fixture( new MetricsFixture() );
+
     @Test
     public void testResponseHeaders() throws IOException {
         int port = Ports.getFreePort( getClass() );
@@ -125,6 +134,139 @@ public class NioHttpServerTest extends Fixtures {
 
             assertGet( httpClient, "https://localhost:" + httpsPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
             assertGet( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakePool() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+        Tags tags = Tags.of( "port", String.valueOf( httpsPort ) );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort );
+             org.eclipse.jetty.client.HttpClient httpClient = httpsClient() ) {
+            httpServer.sslHandshakeThreads = 2;
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+
+            httpServer.start();
+
+            assertGet( httpClient, "https://localhost:" + httpsPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
+
+            assertThat( httpServer.sslHandshakeExecutor.getCorePoolSize() ).isEqualTo( 2 );
+            assertThat( metrics.get( NioHttpServer.NIO_SSL_HANDSHAKE_COMPLETED, tags ).functionCounter().count() ).isGreaterThan( 0 );
+            assertThat( metrics.get( NioHttpServer.NIO_SSL_HANDSHAKE_TASK, tags ).timer().count() ).isGreaterThan( 0 );
+            metrics.assertMetric( NioHttpServer.NIO_SSL_HANDSHAKE, tags.and( "type", "queue" ) ).isGauge().isEqualTo( 0 );
+            metrics.assertMetric( NioHttpServer.NIO_SSL_HANDSHAKE, tags.and( "type", "active" ) ).isGauge();
+            metrics.assertMetric( NioHttpServer.NIO_SSL_HANDSHAKE_REJECTED, tags ).isCounter().isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeRejected() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+        Tags tags = Tags.of( "port", String.valueOf( httpsPort ) );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort );
+             org.eclipse.jetty.client.HttpClient httpClient = httpsClient() ) {
+            httpServer.sslHandshakeThreads = 1;
+            httpServer.sslHandshakeMinThreads = 1;
+            httpServer.sslHandshakeQueue = 1;
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+            new HealthHttpHandler( httpServer, "/healtz", "default-http" ).start();
+
+            httpServer.start();
+
+            CountDownLatch latch = new CountDownLatch( 1 );
+            try {
+                // the only handshake thread is busy, the queue is full
+                httpServer.sslHandshakeExecutor.execute( () -> awaitUninterruptibly( latch ) );
+                httpServer.sslHandshakeExecutor.execute( () -> awaitUninterruptibly( latch ) );
+
+                assertThatThrownBy( () -> httpClient.newRequest( "https://localhost:" + httpsPort + "/test" )
+                    .timeout( 10, TimeUnit.SECONDS )
+                    .send() )
+                    .isInstanceOfAny( ExecutionException.class, TimeoutException.class );
+                assertThat( metrics.get( NioHttpServer.NIO_SSL_HANDSHAKE_REJECTED, tags ).counter().count() ).isGreaterThan( 0 );
+
+                // io threads are free
+                assertGet( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
+            } finally {
+                latch.countDown();
+            }
+
+            assertGet( httpClient, "https://localhost:" + httpsPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeInline() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort );
+             org.eclipse.jetty.client.HttpClient httpClient = httpsClient() ) {
+            httpServer.sslHandshakeOffload = false;
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+
+            httpServer.start();
+
+            assertGet( httpClient, "https://localhost:" + httpsPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
+            assertThat( httpServer.sslHandshakeExecutor ).isNull();
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeThreadsRelativeToCores() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            httpServer.sslHandshakeThreads = -1;
+
+            httpServer.start();
+
+            assertThat( httpServer.sslHandshakeExecutor.getCorePoolSize() )
+                .isEqualTo( Math.max( 2, Runtime.getRuntime().availableProcessors() - 1 ) );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeMinThreads() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            httpServer.sslHandshakeThreads = 1;
+
+            httpServer.start();
+
+            assertThat( httpServer.sslHandshakeExecutor.getCorePoolSize() ).isEqualTo( 2 );
+        }
+    }
+
+    private NioHttpServer httpsServer( int httpPort, int httpsPort ) {
+        return new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
+    }
+
+    private org.eclipse.jetty.client.HttpClient httpsClient() throws Exception {
+        ClientConnector connector = new ClientConnector();
+
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setKeyStorePath( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get() );
+        sslContextFactory.setKeyStorePassword( "1234567" );
+        connector.setSslContextFactory( sslContextFactory );
+
+        org.eclipse.jetty.client.HttpClient httpClient = OapHttpClient.customHttpClient().transport( new HttpClientTransportDynamic( connector ) ).build();
+        httpClient.start();
+        return httpClient;
+    }
+
+    private static void awaitUninterruptibly( CountDownLatch latch ) {
+        try {
+            latch.await();
+        } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
         }
     }
 
