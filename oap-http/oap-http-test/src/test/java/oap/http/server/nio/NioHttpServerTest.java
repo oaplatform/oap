@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -242,6 +243,121 @@ public class NioHttpServerTest extends Fixtures {
             httpServer.start();
 
             assertThat( httpServer.sslHandshakeExecutor.getCorePoolSize() ).isEqualTo( 2 );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeOffloadRuntime() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+        Tags tags = Tags.of( "port", String.valueOf( httpsPort ) );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            httpServer.sslHandshakeOffload = false;
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+
+            httpServer.start();
+
+            assertHttpsOk( httpsPort );
+            assertThat( httpServer.sslHandshakeExecutor ).isNull();
+
+            httpServer.setSslHandshakeOffload( true );
+
+            ThreadPoolExecutor executor = httpServer.sslHandshakeExecutor;
+            assertThat( executor ).isNotNull();
+            assertHttpsOk( httpsPort );
+            double completed = metrics.get( NioHttpServer.NIO_SSL_HANDSHAKE_COMPLETED, tags ).functionCounter().count();
+            assertThat( completed ).isGreaterThan( 0 );
+
+            httpServer.setSslHandshakeOffload( false );
+
+            assertThat( httpServer.sslHandshakeExecutor ).isNull();
+            assertThat( executor.isShutdown() ).isTrue();
+            assertHttpsOk( httpsPort );
+            assertThat( metrics.get( NioHttpServer.NIO_SSL_HANDSHAKE_COMPLETED, tags ).functionCounter().count() )
+                .isGreaterThanOrEqualTo( completed );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeThreadsRuntime() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            httpServer.sslHandshakeThreads = 2;
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+
+            httpServer.start();
+
+            ThreadPoolExecutor executor = httpServer.sslHandshakeExecutor;
+            assertThat( executor.getCorePoolSize() ).isEqualTo( 2 );
+
+            httpServer.setSslHandshakeThreads( 3 );
+            assertThat( httpServer.sslHandshakeExecutor ).isSameAs( executor );
+            assertThat( executor.getCorePoolSize() ).isEqualTo( 3 );
+            assertThat( executor.getMaximumPoolSize() ).isEqualTo( 3 );
+
+            httpServer.setSslHandshakeMinThreads( 4 );
+            assertThat( executor.getCorePoolSize() ).isEqualTo( 4 );
+            assertThat( executor.getMaximumPoolSize() ).isEqualTo( 4 );
+
+            httpServer.setSslHandshakeMinThreads( 1 );
+            httpServer.setSslHandshakeThreads( 1 );
+            assertThat( httpServer.sslHandshakeExecutor ).isSameAs( executor );
+            assertThat( executor.getCorePoolSize() ).isEqualTo( 1 );
+            assertThat( executor.getMaximumPoolSize() ).isEqualTo( 1 );
+
+            assertHttpsOk( httpsPort );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeQueueRuntime() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+        Tags tags = Tags.of( "port", String.valueOf( httpsPort ) );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            httpServer.sslHandshakeQueue = 1;
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+
+            httpServer.start();
+
+            ThreadPoolExecutor executor = httpServer.sslHandshakeExecutor;
+            assertThat( executor.getQueue().remainingCapacity() ).isEqualTo( 1 );
+
+            httpServer.setSslHandshakeQueue( 8 );
+
+            assertThat( httpServer.sslHandshakeExecutor ).isNotSameAs( executor );
+            assertThat( httpServer.sslHandshakeExecutor.getQueue().remainingCapacity() ).isEqualTo( 8 );
+            assertThat( executor.isShutdown() ).isTrue();
+
+            assertHttpsOk( httpsPort );
+            metrics.assertMetric( NioHttpServer.NIO_SSL_HANDSHAKE_REJECTED, tags ).isCounter().isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    public void testHttpsSslHandshakeSetterBeforeStart() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            httpServer.setSslHandshakeThreads( 3 );
+            httpServer.setSslHandshakeOffload( true );
+            assertThat( httpServer.sslHandshakeExecutor ).isNull();
+
+            httpServer.start();
+
+            assertThat( httpServer.sslHandshakeExecutor.getCorePoolSize() ).isEqualTo( 3 );
+        }
+    }
+
+    private void assertHttpsOk( int httpsPort ) throws Exception {
+        // a new client - a new TLS handshake
+        try( org.eclipse.jetty.client.HttpClient httpClient = httpsClient() ) {
+            assertGet( httpClient, "https://localhost:" + httpsPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
         }
     }
 

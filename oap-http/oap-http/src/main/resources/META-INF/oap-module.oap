@@ -36,10 +36,10 @@ services {
       idleTimeout = -1
       tcpNodelay = true
       ioThreads = 0 // relative to cores: 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5
-      sslHandshakeOffload = true // https only: true = run TLS handshake tasks in a separate pool instead of io threads; false = inline on io threads
-      sslHandshakeThreads = 0.25 // pool size when offload = true, relative to cores: 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5
-      sslHandshakeMinThreads = 2 // lower bound of the pool size
-      sslHandshakeQueue = 1024 // pending handshake tasks when offload = true; overflow closes the new connection
+      sslHandshakeOffload = true // https only: true = run TLS handshake tasks in a separate pool instead of io threads; false = inline on io threads; runtime: setSslHandshakeOffload
+      sslHandshakeThreads = 0.25 // pool size when offload = true, relative to cores: 0 = max(2, cores), N, -N = cores - N, 1.5 = cores * 1.5, -1.5 = cores / 1.5; runtime: setSslHandshakeThreads (resize in place)
+      sslHandshakeMinThreads = 2 // lower bound of the pool size; runtime: setSslHandshakeMinThreads (resize in place)
+      sslHandshakeQueue = 1024 // pending handshake tasks when offload = true; overflow closes the new connection; runtime: setSslHandshakeQueue (new pool, the old one completes its queue)
       workerThreads = -1
       maxEntitySize = -1
       maxParameters = -1
