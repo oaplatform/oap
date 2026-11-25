@@ -192,14 +192,15 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
 
                             return;
                         }
-                        writeResponse( exchange, status, clientId, md5 );
                         if( status == STATUS_OK ) {
+                            // the listener has already written the message; delivery of the response does not change that
                             hashes.add( messageType, clientId, md5 );
                             Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
                         } else {
                             log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
                                 clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
                         }
+                        writeResponse( exchange, status, clientId, md5 );
                     }
                 } else {
                     log.warn( "[{}/{}] buffer ({}, {}) already written.)", clientHostPort, clientId, md5, size );

@@ -26,6 +26,7 @@ package oap.message;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.testng.KernelFixture;
+import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
@@ -37,6 +38,7 @@ import oap.testng.Ports;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeUtils;
@@ -46,6 +48,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentWriter.ofJson;
@@ -314,6 +317,55 @@ public class MessageServerTest extends Fixtures {
             client.syncMemory();
 
             assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "statusError" ) );
+        }
+    }
+
+    @Test
+    public void aMessageWrittenWhileItsResponseFailsIsNotWrittenAgain() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        DateTimeUtils.setCurrentMillisFixed( 100 );
+
+        AtomicBoolean responseFailed = new AtomicBoolean();
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) {
+                 @Override
+                 public void writeResponse( HttpServerExchange exchange, short status, long clientId, String md5 ) throws IOException, DecoderException {
+                     // the client has gone (timeout) -> the response cannot be delivered
+                     if( status == MessageProtocol.STATUS_OK && responseFailed.compareAndSet( false, true ) )
+                         throw new IOException( "Broken pipe" );
+
+                     super.writeResponse( exchange, status, clientId, md5 );
+                 }
+             };
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+
+            client.retryTimeout = 100;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            messageHttpHandler.preStart();
+            server.start();
+
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "responseFailed", ofString() )
+                .syncMemory();
+
+            assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "responseFailed" ) );
+            assertThat( client.getRetryMessages() ).isEqualTo( 1 );
+
+            Dates.incFixed( 100 + 1 );
+
+            client.syncMemory();
+
+            assertThat( listener1.accessCount.get() ).isEqualTo( 1 );
+            assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "responseFailed" ) );
+            assertThat( client.lastStatus.get( MessageListenerMock.MESSAGE_TYPE )._1 ).isEqualTo( MessageStatus.ALREADY_WRITTEN );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+            assertThat( client.getRetryMessages() ).isEqualTo( 0L );
         }
     }
 

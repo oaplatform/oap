@@ -11,8 +11,8 @@ Binds to a configured HTTP path and port. On each POST it:
 1. Reads the binary message envelope (type, version, clientId, MD5, payload).
 2. Checks `MessageHashStorage` — if the MD5 was already seen within `hashTtl`, replies `STATUS_ALREADY_WRITTEN` without invoking the listener.
 3. Looks up the `MessageListener` registered for the message type byte.
-4. Calls `listener.run(...)` and returns its `short` status code to the client.
-5. On `STATUS_OK`, records the MD5 in the hash cache.
+4. Calls `listener.run(...)`; on `STATUS_OK`, records the MD5 in the hash cache before replying, so a retry after a lost response (client timeout, broken pipe) gets `STATUS_ALREADY_WRITTEN`.
+5. Returns the listener's `short` status code to the client.
 
 ### Parameters
 
