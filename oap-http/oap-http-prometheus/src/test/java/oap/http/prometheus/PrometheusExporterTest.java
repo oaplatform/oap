@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 import java.util.concurrent.TimeUnit;
 
 import static oap.http.test.HttpAsserts.assertGet;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrometheusExporterTest extends Fixtures {
     private static void clear() {
@@ -69,7 +70,12 @@ public class PrometheusExporterTest extends Fixtures {
                     """ )
                 .contains( "test2_seconds_count 1" )
                 .contains( "test2_seconds_max 2.0" )
-                .contains( "system_metrics 10.0" );
+                // system_metrics = number of exported samples; the exact number depends on the server/client meters
+                .satisfies( body -> {
+                    long samples = body.toString().lines().filter( line -> !line.isBlank() && !line.startsWith( "#" ) ).count();
+
+                    assertThat( body.toString() ).contains( "system_metrics " + samples + ".0\n" );
+                } );
         }
     }
 

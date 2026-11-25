@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.Timer;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.ConnectorStatistics;
+import io.undertow.server.OpenListener;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
@@ -46,10 +47,14 @@ import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.io.Closeables;
 import oap.util.Dates;
 import oap.util.Lists;
+import org.xnio.ChannelListener;
+import org.xnio.ChannelListeners;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
+import org.xnio.StreamConnection;
 import org.xnio.XnioWorker;
+import org.xnio.channels.AcceptingChannel;
 import org.xnio.ssl.JsseSslUtils;
 
 import javax.net.ssl.KeyManager;
@@ -58,6 +63,7 @@ import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.security.KeyStore;
@@ -105,6 +111,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
      * timer of SSLEngine delegated task execution (count/sum/max)
      */
     public static final String NIO_SSL_HANDSHAKE_TASK = "nio_ssl_handshake_task";
+    /**
+     * counter of accepted TCP connections, tag = port ( prometheus: nio_connections_opened_total ). Counted at accept:
+     * before the TLS handshake and before the first request, so the connections without requests are included.
+     * Connections accepted between the listener start and the counter installation ( server startup ) are not counted.
+     */
+    public static final String NIO_CONNECTIONS_OPENED = "nio_connections_opened";
 
     public final DefaultPort defaultPort;
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
@@ -302,6 +314,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         undertow = builder.build();
         undertow.start();
+
+        addAcceptCounters( undertow );
 
         if( statistics ) {
             addStats( undertow );
@@ -527,6 +541,46 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             builder.addHttpsListener( port, "0.0.0.0", sslContext, handler );
         } else {
             builder.addHttpListener( port, "0.0.0.0", handler );
+        }
+    }
+
+    /**
+     * Undertow has no accept hook: the accept listener of every port is replaced with the same one ( accept + openListener )
+     * that also counts the accepted connections. The channel and the openListener are private fields of ListenerInfo.
+     */
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    private void addAcceptCounters( Undertow server ) {
+        for( Undertow.ListenerInfo listenerInfo : server.getListenerInfo() ) {
+            String sPort = String.valueOf( ( ( InetSocketAddress ) listenerInfo.getAddress() ).getPort() );
+
+            AcceptingChannel<StreamConnection> channel = listenerInfoField( listenerInfo, "channel", AcceptingChannel.class );
+            OpenListener openListener = listenerInfoField( listenerInfo, "openListener", OpenListener.class );
+            Counter opened = Metrics.counter( NIO_CONNECTIONS_OPENED, Tags.of( "port", sPort ) );
+
+            ChannelListener<AcceptingChannel<StreamConnection>> acceptListener = ch -> {
+                try {
+                    StreamConnection connection = ch.accept();
+                    if( connection != null ) {
+                        opened.increment();
+                        ChannelListeners.invokeChannelListener( connection, openListener );
+                    }
+                } catch( IOException e ) {
+                    log.warn( "port {}: failed to accept a connection: {}", sPort, e.toString() );
+                }
+            };
+
+            ( ( ChannelListener.Setter ) channel.getAcceptSetter() ).set( acceptListener );
+        }
+    }
+
+    private static <T> T listenerInfoField( Undertow.ListenerInfo listenerInfo, String name, Class<T> type ) {
+        try {
+            Field field = Undertow.ListenerInfo.class.getDeclaredField( name );
+            field.setAccessible( true );
+            return type.cast( Preconditions.checkNotNull( field.get( listenerInfo ) ) );
+        } catch( ReflectiveOperationException | RuntimeException e ) {
+            throw new IllegalStateException( "Undertow.ListenerInfo." + name + " is not accessible as " + type.getName()
+                + ", the " + NIO_CONNECTIONS_OPENED + " metric cannot be installed", e );
         }
     }
 

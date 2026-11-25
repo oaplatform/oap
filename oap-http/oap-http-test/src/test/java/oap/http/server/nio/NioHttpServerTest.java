@@ -42,6 +42,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -52,6 +55,7 @@ import java.util.concurrent.TimeoutException;
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
 import static oap.http.test.HttpAsserts.assertGet;
+import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -351,6 +355,43 @@ public class NioHttpServerTest extends Fixtures {
             httpServer.start();
 
             assertThat( httpServer.sslHandshakeExecutor.getCorePoolSize() ).isEqualTo( 3 );
+        }
+    }
+
+    @Test
+    public void testConnectionsOpened() throws Exception {
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
+        Tags httpTags = Tags.of( "port", String.valueOf( httpPort ) );
+        Tags httpsTags = Tags.of( "port", String.valueOf( httpsPort ) );
+
+        List<Socket> sockets = new ArrayList<>();
+
+        try( NioHttpServer httpServer = httpsServer( httpPort, httpsPort ) ) {
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+            new HealthHttpHandler( httpServer, "/healtz", "default-http" ).start();
+
+            httpServer.start();
+
+            metrics.assertMetric( NioHttpServer.NIO_CONNECTIONS_OPENED, httpTags ).isCounter().isEqualTo( 0 );
+            metrics.assertMetric( NioHttpServer.NIO_CONNECTIONS_OPENED, httpsTags ).isCounter().isEqualTo( 0 );
+
+            // connections without requests / TLS handshake are counted at accept
+            for( int i = 0; i < 3; i++ ) sockets.add( new Socket( "localhost", httpPort ) );
+            sockets.add( new Socket( "localhost", httpsPort ) );
+
+            assertEventually( 100, 100, () -> {
+                metrics.assertMetric( NioHttpServer.NIO_CONNECTIONS_OPENED, httpTags ).isCounter().isEqualTo( 3 );
+                metrics.assertMetric( NioHttpServer.NIO_CONNECTIONS_OPENED, httpsTags ).isCounter().isEqualTo( 1 );
+            } );
+
+            assertGet( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
+            assertHttpsOk( httpsPort );
+
+            assertThat( metrics.get( NioHttpServer.NIO_CONNECTIONS_OPENED, httpTags ).counter().count() ).isGreaterThan( 3 );
+            assertThat( metrics.get( NioHttpServer.NIO_CONNECTIONS_OPENED, httpsTags ).counter().count() ).isGreaterThan( 1 );
+        } finally {
+            for( Socket socket : sockets ) socket.close();
         }
     }
 
