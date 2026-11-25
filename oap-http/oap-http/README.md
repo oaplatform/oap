@@ -56,6 +56,13 @@ services {
 | `alwaysSetDate` | `true` | Always include `Date` response header |
 | `alwaysSetKeepAlive` | `true` | Always include `Connection: keep-alive` |
 
+### Metrics
+
+| Metric | Type | Description |
+|---|---|---|
+| `nio_connections_opened{port}` | counter | Accepted TCP connections (Prometheus: `nio_connections_opened_total`). Counted at accept, before the TLS handshake and the first request, so connections without requests are included. Always enabled. Connections per second: `rate(nio_connections_opened_total[1m])` |
+| `nio_connections{port,type="active"}` | gauge | Currently open connections (`statistics = true`) |
+
 ### Named ports
 
 The `httpprivate` port (8081) is pre-configured for internal endpoints (health, admin, metrics). Handlers can be bound to a named port:
